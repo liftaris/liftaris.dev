@@ -1,7 +1,9 @@
+/* Mobile-first: Vertical stacking */
 .layout {
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
+  min-height: 100vh;
 }
 
 .layout .info_page {
@@ -9,11 +11,31 @@
 }
 
 .content {
-  margin-left: 0px;
+  display: flex;
+  flex-direction: column;
   width: 100%;
+  flex: 1;
 }
 
-@media (min-width: 768px) {
+/* Mobile: Canvas hidden, Blog takes full space */
+.canvasSection {
+  display: none;
+}
+
+.blogSection {
+  background-color: black;
+  flex: 1;
+}
+
+@media (min-width: 1040px) {
+  .canvasSection {
+    display: flex;
+    flex: 1;
+  }
+}
+
+/* Desktop: Horizontal layout with sidebar */
+@media (min-width: 1024px) {
   .layout {
     flex-direction: row;
     flex-wrap: wrap;
@@ -24,7 +46,7 @@
   }
 
   .content {
-    display: flex;
+    flex-direction: row;
     justify-content: flex-start;
   }
 }

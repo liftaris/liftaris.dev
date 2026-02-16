@@ -68,10 +68,10 @@ export default async function HomePage() {
     <section className={styles.layout}>
       <div className={styles.content}>
         <Header siteTitle={config.title} />
-        <section style={{ flex: 1, display: "flex", justifyItems: "stretch" }}>
+        <section className={styles.canvasSection}>
           <Canvas />
         </section>
-        <section style={{ backgroundColor: "black" }}>
+        <section className={styles.blogSection}>
           <BlogList allBlogs={allBlogs} />
         </section>
       </div>
