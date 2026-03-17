@@ -1,7 +1,10 @@
-import { Spectral } from "next/font/google";
+import { Spectral, Geist } from "next/font/google";
 import "../styles/output.css";
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 const spectral = Spectral({
   weight: ["400", "700"],
@@ -22,7 +25,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={spectral.variable}>
+    <html lang="en" className={cn("font-sans", geist.variable)}>
       <body className={spectral.className}>
         {children}
         <Analytics />
