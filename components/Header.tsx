@@ -1,100 +1,53 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import styles from "../styles/Header.module.css";
-import Image from "next/image";
+import { Github } from "lucide-react";
 
 interface HeaderProps {
   siteTitle?: string;
 }
 
 export default function Header({ siteTitle }: HeaderProps) {
-  const [darkMode, setDarkMode] = useState(false);
-
-  useEffect(() => {
-    if (localStorage.getItem("darkMode") === null) {
-      const OSLikesDark =
-        window.matchMedia &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches;
-      setDarkMode(OSLikesDark);
-      localStorage.setItem("darkMode", String(OSLikesDark));
-    } else if (localStorage.getItem("darkMode") === "true") {
-      setDarkMode(true);
-      document.body.classList.add("dark");
-    }
-  }, []);
-
-  useEffect(() => {
-    console.log(darkMode);
-    if (darkMode) {
-      document.body.classList.add("dark");
-    } else {
-      document.body.classList.remove("dark");
-    }
-  }, [darkMode]);
-
-  const toggleDarkMode = () => {
-    const toggle = !darkMode;
-    setDarkMode(toggle);
-    localStorage.setItem("darkMode", String(toggle));
-  };
-  /*
-display: flex;
-  padding: 0.5rem 1rem;
-  justify-content: space-between;
-  flex-direction: row;
-  align-items: center;
-  text-align: center;
-  gap: 0.5rem;
-  width: 100%;
-  background-color: #fff;
-  border-bottom: 2px solid #000;
-*/
   return (
-    <header className={styles.header}>
+    <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
       <nav
-        className="flex flex-row align-center text-center w-full"
+        className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8"
         role="navigation"
         aria-label="main navigation"
       >
-        <Link href="/" passHref>
-          <h1>{siteTitle}</h1>
-          <h5 style={{ color: "#555", fontWeight: 20, textAlign: "center" }}>
-            Barbosa-Chifan
-          </h5>
-        </Link>
-        <div className="flex justify-baseline align-baseline justify-between w-full">
-          <Link href="/about" passHref title="About">
-            <h2>About</h2>
-          </Link>
-          <div
-            className={`dark-is-${darkMode ? "on" : "off"}`}
-            onClick={toggleDarkMode}
-            title="Toggle dark mode"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-              <path d="M448 256c0-106-86-192-192-192V448c106 0 192-86 192-192zm64 0c0 141.4-114.6 256-256 256S0 397.4 0 256S114.6 0 256 0S512 114.6 512 256z" />
-            </svg>
+        {/* Logo / Site Title */}
+        <Link href="/" className="flex items-center gap-3 group">
+          <div className="flex size-9 items-center justify-center rounded-lg bg-primary">
+            <span className="text-lg font-bold text-primary-foreground">K</span>
           </div>
-          <div style={{ height: "40px" }} />
+          <div className="flex flex-col">
+            <span className="text-lg font-semibold tracking-tight text-foreground group-hover:text-primary transition-colors">
+              {siteTitle}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              Barbosa-Chifan
+            </span>
+          </div>
+        </Link>
+
+        {/* Navigation Links */}
+        <div className="flex items-center gap-6">
           <Link
-            target="_blank"
-            href="https://www.github.com/kaiobarb"
-            passHref
-            title="Github"
+            href="/about"
+            className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
           >
-            <Image
-              className="no-invert"
-              src="/icons/githublogo.png"
-              alt="Github"
-              width={52}
-              height={52}
-            />
+            About
+          </Link>
+          <Link
+            href="https://github.com/kaiobarb"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center size-9 rounded-lg border border-border hover:border-primary hover:bg-primary/10 transition-all"
+            title="GitHub"
+          >
+            <Github className="size-4 text-muted-foreground" />
           </Link>
         </div>
-
-        <div style={{ height: "80%" }} />
       </nav>
     </header>
   );
