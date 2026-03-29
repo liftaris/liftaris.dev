@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Github, Linkedin, Mail, ArrowRight } from "lucide-react";
+import ChatWidget from "./ChatWidget";
 
 interface BlogPost {
   frontmatter: {
@@ -219,7 +220,7 @@ export default function BentoHero({ siteTitle, posts }: BentoHeroProps) {
         {/* Row 2: Nav */}
         <NavLinks className="h-14 shrink-0" />
 
-        {/* Row 3: Large Image */}
+        {/* Row 3: Large Image + Chat */}
         <div className="relative flex-[3] overflow-hidden rounded-3xl border-2 border-border">
           <Image
             src="/bg-optimized.jpg"
@@ -229,6 +230,7 @@ export default function BentoHero({ siteTitle, posts }: BentoHeroProps) {
             priority
           />
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent" />
+          <ChatWidget />
         </div>
 
         {/* Row 4: Stacked boxes (1/3) + Posts (2/3) */}
@@ -258,7 +260,7 @@ export default function BentoHero({ siteTitle, posts }: BentoHeroProps) {
           {/* Top: Large image + Decorative column */}
           <div className="flex flex-1 gap-5">
             
-            {/* Large Image */}
+            {/* Large Image + Chat */}
             <div className="relative flex-1 overflow-hidden rounded-3xl border-2 border-border">
               <Image
                 src="/bg-optimized.jpg"
@@ -268,6 +270,7 @@ export default function BentoHero({ siteTitle, posts }: BentoHeroProps) {
                 priority
               />
               <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent" />
+              <ChatWidget />
             </div>
 
             {/* Decorative column */}
