@@ -1,0 +1,44 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(cat:*)",
+      "Bash(npx tinacms build:*)",
+      "Bash(npx next build:*)",
+      "mcp__next-devtools__init",
+      "Bash(find:*)",
+      "WebFetch(domain:tina.io)",
+      "Bash(npx tsx:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx:*)",
+      "Bash(curl -s http://localhost:3000 -o /dev/null -w \"%{http_code}\")",
+      "Bash(curl -s http://localhost:3000/about -o /dev/null -w \"%{http_code}\")",
+      "mcp__next-devtools__browser_eval",
+      "mcp__next-devtools__nextjs_docs",
+      "mcp__supabase__list_tables",
+      "mcp__supabase__list_extensions",
+      "mcp__supabase__search_docs",
+      "mcp__supabase__apply_migration",
+      "mcp__supabase__deploy_edge_function",
+      "Bash(source .env)",
+      "mcp__supabase__execute_sql",
+      "Bash(gh repo:*)",
+      "Bash(gh api:*)",
+      "Bash(curl -s \"https://registry.npmjs.org/hnswlib-wasm\")",
+      "Bash(curl -s \"https://registry.npmjs.org/hnswlib-wasm/0.8.2\")",
+      "Bash(curl -s \"https://registry.npmjs.org/hnswlib-wasm/0.0.1-beta.1\")",
+      "Bash(curl -s \"https://www.npmjs.com/~kaiobarb\")",
+      "Bash(curl -s \"https://registry.npmjs.org/-/v1/search?text=maintainer:kaiobarb\")",
+      "Bash(curl -s \"https://registry.npmjs.org/hnsw-wasm\")",
+      "Bash(curl -s \"https://api.npmjs.org/downloads/point/last-month/hnsw-wasm\")",
+      "Bash(curl -s \"https://api.npmjs.org/downloads/range/2023-04-01:2026-03-29/hnsw-wasm\")"
+    ],
+    "deny": [],
+    "ask": []
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "supabase"
+  ]
+}

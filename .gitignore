@@ -42,3 +42,4 @@ tina/__generated__/.cache
 .idea
 
 node_modulesstyles/output.css
+docs/

@@ -40,6 +40,8 @@ async function getRelevantChunks(query: string): Promise<string> {
       query_embedding: JSON.stringify(embedData.embedding),
       match_threshold: 0.3,
       match_count: 8,
+      filter_type: null,
+      filter_tags: null,
     },
     { schema: "liftaris" }
   );
