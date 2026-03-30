@@ -1,4 +1,5 @@
 import { Spectral, Geist } from "next/font/google";
+import { ViewTransition } from "react";
 import "../styles/output.css";
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
@@ -27,7 +28,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={cn("dark font-sans", geist.variable, spectral.variable)}>
       <body className={spectral.className}>
-        {children}
+        <ViewTransition>
+          {children}
+        </ViewTransition>
         <Analytics />
       </body>
     </html>

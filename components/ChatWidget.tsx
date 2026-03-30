@@ -1,145 +1,125 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send } from "lucide-react";
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
+import { Send, Square } from "lucide-react";
 import { Streamdown } from "streamdown";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
+
+const transport = new DefaultChatTransport({ api: "/api/ask" });
 
 export default function ChatWidget() {
-  const [messages, setMessages] = useState<
-    { role: "user" | "assistant"; content: string }[]
-  >([]);
   const [input, setInput] = useState("");
-  const [streaming, setStreaming] = useState(false);
-  const [expanded, setExpanded] = useState(false);
+  const { messages, sendMessage, status, stop } = useChat({ transport });
+
   const scrollRef = useRef<HTMLDivElement>(null);
+  const isStreaming = status === "streaming" || status === "submitted";
+  const hasMessages = messages.length > 0;
 
   useEffect(() => {
-    scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight);
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [messages]);
 
-  async function submit() {
-    const question = input.trim();
-    if (!question || streaming) return;
-
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const text = input.trim();
+    if (!text || isStreaming) return;
     setInput("");
-    if (!expanded) setExpanded(true);
-    setMessages((prev) => [...prev, { role: "user", content: question }]);
-    setStreaming(true);
-
-    setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
-
-    try {
-      const res = await fetch("/api/ask", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question }),
-      });
-
-      if (!res.ok || !res.body) {
-        setMessages((prev) => {
-          const updated = [...prev];
-          updated[updated.length - 1] = {
-            role: "assistant",
-            content: "Sorry, something went wrong. Please try again.",
-          };
-          return updated;
-        });
-        setStreaming(false);
-        return;
-      }
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const text = decoder.decode(value, { stream: true });
-        setMessages((prev) => {
-          const updated = [...prev];
-          updated[updated.length - 1] = {
-            role: "assistant",
-            content: updated[updated.length - 1].content + text,
-          };
-          return updated;
-        });
-      }
-    } catch {
-      setMessages((prev) => {
-        const updated = [...prev];
-        updated[updated.length - 1] = {
-          role: "assistant",
-          content: "Sorry, something went wrong. Please try again.",
-        };
-        return updated;
-      });
-    }
-
-    setStreaming(false);
+    sendMessage({ text });
   }
 
   return (
-    <div className="absolute inset-0 z-20 flex flex-col">
+    <div className="absolute inset-0 z-20 flex flex-col overflow-hidden rounded-3xl">
       {/* Messages area */}
-      {expanded && (
-        <ScrollArea className="flex-1 bg-background/80">
-          <div ref={scrollRef} className="flex flex-col gap-3 p-4">
-            {messages.map((msg, i) => (
-              <div
-                key={i}
-                className={`max-w-[85%] ${
-                  msg.role === "user" ? "ml-auto" : "mr-auto"
-                }`}
-              >
-                {msg.role === "user" ? (
-                  <div className="rounded-2xl bg-primary px-3 py-2 text-sm leading-relaxed text-primary-foreground">
-                    {msg.content}
-                  </div>
-                ) : (
-                  <div className="rounded-2xl bg-muted px-3 py-2 text-sm leading-relaxed text-foreground">
-                    <Streamdown
-                      isAnimating={streaming && i === messages.length - 1}
-                    >
-                      {msg.content || "..."}
-                    </Streamdown>
-                  </div>
-                )}
-              </div>
-            ))}
+      {hasMessages && (
+        <>
+          <div
+            ref={scrollRef}
+            className="flex-1 overflow-y-auto overscroll-contain p-4"
+          >
+            <div className="flex flex-col gap-4">
+              {messages.map((msg, i) => (
+                <div
+                  key={msg.id}
+                  className={cn(
+                    "max-w-[85%]",
+                    msg.role === "user" ? "ml-auto" : "mr-auto"
+                  )}
+                >
+                  {msg.role === "user" ? (
+                    <div className="rounded-2xl border border-white/10 bg-indigo-500/55 px-4 py-2.5 text-sm text-primary-foreground shadow-lg backdrop-blur-xl backdrop-saturate-150">
+                      {msg.parts.map((part, j) =>
+                        part.type === "text" ? (
+                          <span key={j}>{part.text}</span>
+                        ) : null
+                      )}
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border border-white/10 bg-blue-200/20 px-4 py-2.5 text-sm text-card-foreground shadow-lg backdrop-blur-xl backdrop-saturate-150">
+                      <Streamdown
+                        isAnimating={
+                          isStreaming && i === messages.length - 1
+                        }
+                        controls={false}
+                        linkSafety={{ enabled: false }}
+                      >
+                        {msg.parts
+                          .filter((p) => p.type === "text")
+                          .map((p) => p.text)
+                          .join("") || "..."}
+                      </Streamdown>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-        </ScrollArea>
+          <Separator />
+        </>
       )}
 
-      {/* Spacer pushes input to bottom when no messages */}
-      {!expanded && <div className="flex-1" />}
+      {/* Spacer when no messages */}
+      {!hasMessages && <div className="flex-1" />}
 
       {/* Input bar */}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          submit();
-        }}
-        className="flex shrink-0 items-center gap-2 bg-background/80 p-3"
-      >
-        <Input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask about me..."
-          disabled={streaming}
-          className="flex-1 rounded-xl"
-        />
-        <Button
-          type="submit"
-          size="icon"
-          disabled={streaming || !input.trim()}
+      <div>
+        <form
+          onSubmit={handleSubmit}
+          autoComplete="off"
+          className="flex items-center gap-2 p-3"
         >
-          <Send className="size-4" />
-        </Button>
-      </form>
+          <Input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Ask about me..."
+            disabled={isStreaming}
+            className="h-9 flex-1 border-white/10 bg-white/10 text-sm backdrop-blur-xl backdrop-saturate-150"
+          />
+          {isStreaming ? (
+            <Button
+              type="button"
+              size="icon"
+              variant="outline"
+              onClick={stop}
+            >
+              <Square className="size-3.5" />
+            </Button>
+          ) : (
+            <Button
+              type="submit"
+              size="icon"
+              disabled={!input.trim()}
+            >
+              <Send className="size-3.5" />
+            </Button>
+          )}
+        </form>
+      </div>
     </div>
   );
 }

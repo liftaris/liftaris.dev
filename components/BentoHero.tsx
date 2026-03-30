@@ -221,7 +221,7 @@ export default function BentoHero({ siteTitle, posts }: BentoHeroProps) {
         <NavLinks className="h-14 shrink-0" />
 
         {/* Row 3: Large Image + Chat */}
-        <div className="relative flex-[3] overflow-hidden rounded-3xl border-2 border-border">
+        <div className="relative min-h-[200px] flex-[3] overflow-hidden rounded-3xl border-2 border-border">
           <Image
             src="/bg-optimized.jpg"
             alt="Background"
