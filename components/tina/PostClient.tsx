@@ -5,7 +5,8 @@ import { useTina } from 'tinacms/dist/react'
 import { TinaMarkdown, TinaMarkdownContent, Components } from "tinacms/dist/rich-text"
 import type { PostQuery, PostQueryVariables } from "../../tina/__generated__/types"
 import ThemeImage from "../ThemeImage"
-import styles from '../../styles/Blog.module.css'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
 
 interface PostClientProps {
   data: PostQuery
@@ -34,21 +35,32 @@ export default function PostClient(props: PostClientProps) {
   })
 
   return (
-    <article className={styles.blog}>
-      <figure className={styles.blog__hero}>
+    <article className="flex flex-col items-center gap-8">
+      {/* Hero image */}
+      <Card className="w-full overflow-hidden">
         <Image
           width={800}
           height={450}
           src={data.post?.hero_image || ""}
           alt={data.post?.title || "No Title"}
-          style={{ width: "100%", height: "auto" }}
+          className="w-full h-auto"
         />
-      </figure>
-      <div className={styles.blog__info}>
-        <h1>{data.post?.title || "Article Title Not found"}</h1>
-        <h3>{reformatDate(data.post?.date || "NO DATE")}</h3>
-      </div>
-      <div className={styles.blog__body}>
+      </Card>
+
+      {/* Post info */}
+      <CardHeader className="w-full text-center px-0">
+        <CardTitle className="text-3xl font-bold">
+          {data.post?.title || "Article Title Not found"}
+        </CardTitle>
+        <CardDescription className="text-base">
+          {reformatDate(data.post?.date || "NO DATE")}
+        </CardDescription>
+      </CardHeader>
+
+      <Separator />
+
+      {/* Post body */}
+      <div className="prose prose-invert max-w-none w-full">
         <TinaMarkdown content={data.post?.body as TinaMarkdownContent} components={components} />
       </div>
     </article>

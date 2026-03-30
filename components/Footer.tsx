@@ -1,13 +1,16 @@
 import Link from "next/link";
 import { Github, Linkedin, Mail } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="relative border-t border-border bg-card/30">
+    <footer className="relative bg-card/30">
       {/* Gradient accent line at top */}
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+      <Separator />
 
       <div className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
         <div className="flex flex-col items-center justify-between gap-8 sm:flex-row">
@@ -34,6 +37,7 @@ export default function Footer() {
             >
               Home
             </Link>
+            <Separator orientation="vertical" className="h-4" />
             <Link
               href="/about"
               className="text-sm text-muted-foreground hover:text-primary transition-colors"
@@ -43,41 +47,36 @@ export default function Footer() {
           </nav>
 
           {/* Right: Social links */}
-          <div className="flex items-center gap-3">
-            <a
-              href="https://github.com/kaiobarb"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex size-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition-all hover:border-primary hover:text-primary hover:bg-primary/5"
-              title="GitHub"
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              render={<a href="https://github.com/kaiobarb" target="_blank" rel="noopener noreferrer" title="GitHub" />}
             >
               <Github className="size-4" />
-            </a>
-            <a
-              href="https://linkedin.com/in/kaio"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex size-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition-all hover:border-primary hover:text-primary hover:bg-primary/5"
-              title="LinkedIn"
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              render={<a href="https://linkedin.com/in/kaio" target="_blank" rel="noopener noreferrer" title="LinkedIn" />}
             >
               <Linkedin className="size-4" />
-            </a>
-            <a
-              href="mailto:contact@kaio.dev"
-              className="flex size-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition-all hover:border-primary hover:text-primary hover:bg-primary/5"
-              title="Email"
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              render={<a href="mailto:contact@kaio.dev" title="Email" />}
             >
               <Mail className="size-4" />
-            </a>
+            </Button>
           </div>
         </div>
 
         {/* Bottom attribution */}
-        <div className="mt-8 border-t border-border/50 pt-6 text-center">
-          <p className="text-xs text-muted-foreground/60">
-            Built with Next.js & Tailwind CSS
-          </p>
-        </div>
+        <Separator className="my-8" />
+        <p className="text-center text-xs text-muted-foreground/60">
+          Built with Next.js & Tailwind CSS
+        </p>
       </div>
     </footer>
   );

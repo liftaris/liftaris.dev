@@ -3,7 +3,10 @@
 import { useTina } from 'tinacms/dist/react'
 import { TinaMarkdown, TinaMarkdownContent } from "tinacms/dist/rich-text"
 import type { AboutQuery, AboutQueryVariables } from "../../tina/__generated__/types"
-import styles from '../../styles/About.module.css'
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
 
 interface AboutClientProps {
   data: AboutQuery
@@ -25,26 +28,42 @@ export default function AboutClient(props: AboutClientProps) {
   })
 
   return (
-    <article className={styles.about}>
+    <article className="flex flex-col items-center gap-8">
       {data?.about?.profile && (
-        <img src={data.about.profile} alt="profile" className={styles.about__profile} />
+        <Avatar className="size-32 border-4 border-primary/20">
+          <AvatarImage src={data.about.profile} alt="Kaio Barbosa-Chifan" />
+          <AvatarFallback className="text-2xl">KB</AvatarFallback>
+        </Avatar>
       )}
-      <div className={styles.about__body}>
+
+      <div className="prose prose-invert max-w-none w-full">
         <TinaMarkdown content={data?.about?.body as TinaMarkdownContent} />
       </div>
-      <ul>
+
+      <Separator className="my-4" />
+
+      <div className="flex w-full flex-col gap-4">
         {data?.about?.experience?.map((exp, i) => (
-          <li key={i} className={exp.hasPassed ? styles.hasPassed : ''}>
-            <h2>{exp.title}</h2>
-            <h3>
-              {exp.showStartDate && reformatDate(exp.dateStart)}
-              {exp.showEndDate && ` - ${reformatDate(exp.dateEnd)}`}
-            </h3>
-            <p style={{ whiteSpace: 'pre-line' }}>{exp?.description}</p>
-          </li>
+          <Card
+            key={i}
+            className={`transition-opacity ${exp.hasPassed ? 'opacity-70' : ''}`}
+          >
+            <CardContent className="flex flex-col gap-1">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-foreground">{exp.title}</h2>
+                <Badge variant={exp.hasPassed ? "secondary" : "default"}>
+                  {exp.showStartDate && reformatDate(exp.dateStart)}
+                  {exp.showEndDate && ` – ${reformatDate(exp.dateEnd)}`}
+                  {!exp.hasPassed && !exp.showEndDate && " – Present"}
+                </Badge>
+              </div>
+              <p className="text-sm text-muted-foreground" style={{ whiteSpace: 'pre-line' }}>
+                {exp?.description}
+              </p>
+            </CardContent>
+          </Card>
         ))}
-        <li className={styles.about__listEnd} />
-      </ul>
+      </div>
     </article>
   )
 }

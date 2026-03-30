@@ -3,6 +3,9 @@
 import { useState, useRef, useEffect } from "react";
 import { Send } from "lucide-react";
 import { Streamdown } from "streamdown";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function ChatWidget() {
   const [messages, setMessages] = useState<
@@ -80,13 +83,10 @@ export default function ChatWidget() {
 
   return (
     <div className="absolute inset-0 z-20 flex flex-col">
-      {/* Messages area — only visible once conversation starts */}
+      {/* Messages area */}
       {expanded && (
-        <div
-          ref={scrollRef}
-          className="flex-1 overflow-y-auto bg-background/80 p-4"
-        >
-          <div className="flex flex-col gap-3">
+        <ScrollArea className="flex-1 bg-background/80">
+          <div ref={scrollRef} className="flex flex-col gap-3 p-4">
             {messages.map((msg, i) => (
               <div
                 key={i}
@@ -110,13 +110,13 @@ export default function ChatWidget() {
               </div>
             ))}
           </div>
-        </div>
+        </ScrollArea>
       )}
 
       {/* Spacer pushes input to bottom when no messages */}
       {!expanded && <div className="flex-1" />}
 
-      {/* Input bar — always visible at the bottom */}
+      {/* Input bar */}
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -124,21 +124,21 @@ export default function ChatWidget() {
         }}
         className="flex shrink-0 items-center gap-2 bg-background/80 p-3"
       >
-        <input
+        <Input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask about me..."
           disabled={streaming}
-          className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+          className="flex-1 rounded-xl"
         />
-        <button
+        <Button
           type="submit"
+          size="icon"
           disabled={streaming || !input.trim()}
-          className="shrink-0 rounded-xl bg-primary p-2 text-primary-foreground transition-opacity disabled:opacity-30"
         >
           <Send className="size-4" />
-        </button>
+        </Button>
       </form>
     </div>
   );
