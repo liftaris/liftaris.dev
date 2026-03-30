@@ -1,15 +1,18 @@
 /**
- * Script to pre-generate content chunks from markdown files.
+ * Script to generate content chunks and push them to Supabase with embeddings.
  * Run with: npx tsx lib/rag/generate-chunks.ts
  *
- * Reads all content sources (about page, blog posts) and splits them
- * into chunks suitable for RAG context injection.
- * Output: lib/rag/chunks.json
+ * Reads all content sources (about page, blog posts), splits them into chunks,
+ * generates embeddings via the Supabase Edge Function, and upserts to the
+ * liftaris.chunks table.
+ *
+ * Also writes lib/rag/chunks.json as a local fallback.
  */
 
 import fs from "fs";
 import path from "path";
 import matter from "gray-matter";
+import { createClient } from "@supabase/supabase-js";
 
 interface Chunk {
   id: string;
@@ -20,6 +23,16 @@ interface Chunk {
 
 const CONTENT_DIR = path.join(process.cwd(), "content");
 const OUTPUT_PATH = path.join(process.cwd(), "lib/rag/chunks.json");
+
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error("Missing SUPABASE_URL or SUPABASE_ANON_KEY in environment");
+  process.exit(1);
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Split text into chunks at paragraph boundaries, respecting a max character limit.
 function chunkText(text: string, maxChars = 1500): string[] {
@@ -49,7 +62,6 @@ function parseAbout(): Chunk[] {
 
   const chunks: Chunk[] = [];
 
-  // Experience entries as a structured chunk
   if (data.experience) {
     const expText = (data.experience as Array<Record<string, unknown>>)
       .map((exp) => {
@@ -74,7 +86,6 @@ function parseAbout(): Chunk[] {
     });
   }
 
-  // About bio text
   const bioChunks = chunkText(content);
   bioChunks.forEach((chunk, i) => {
     chunks.push({
@@ -99,7 +110,6 @@ function parsePosts(): Chunk[] {
     const title = (data.title as string) || file.replace(".md", "");
     const slug = file.replace(".md", "");
 
-    // Strip image markdown syntax to keep chunks text-focused
     const cleaned = content.replace(/!\[.*?\]\(.*?\)/g, "").trim();
 
     const textChunks = chunkText(cleaned);
@@ -116,10 +126,76 @@ function parsePosts(): Chunk[] {
   return chunks;
 }
 
-function main() {
-  const chunks = [...parseAbout(), ...parsePosts()];
-  fs.writeFileSync(OUTPUT_PATH, JSON.stringify(chunks, null, 2));
-  console.log(`Generated ${chunks.length} chunks → ${OUTPUT_PATH}`);
+async function generateEmbedding(text: string): Promise<number[]> {
+  const { data, error } = await supabase.functions.invoke("embed", {
+    body: { input: text },
+  });
+
+  if (error) {
+    throw new Error(`Embedding error: ${error.message}`);
+  }
+
+  return data.embedding;
 }
 
-main();
+async function main() {
+  const chunks = [...parseAbout(), ...parsePosts()];
+
+  // Write local fallback
+  fs.writeFileSync(OUTPUT_PATH, JSON.stringify(chunks, null, 2));
+  console.log(`Wrote ${chunks.length} chunks to ${OUTPUT_PATH}`);
+
+  // Generate embeddings one at a time (edge function processes sequentially)
+  console.log("Generating embeddings...");
+  const batchSize = 10;
+  const allEmbeddings: number[][] = [];
+
+  for (let i = 0; i < chunks.length; i++) {
+    const text = `${chunks[i].title}: ${chunks[i].content}`;
+    const embedding = await generateEmbedding(text);
+    allEmbeddings.push(embedding);
+    if ((i + 1) % 5 === 0 || i === chunks.length - 1) {
+      console.log(`  Embedded ${i + 1}/${chunks.length}`);
+    }
+  }
+
+  // Upsert to Supabase
+  console.log("Upserting to Supabase...");
+  const rows = chunks.map((chunk, i) => ({
+    id: chunk.id,
+    source: chunk.source,
+    title: chunk.title,
+    content: chunk.content,
+    embedding: JSON.stringify(allEmbeddings[i]),
+    updated_at: new Date().toISOString(),
+  }));
+
+  // Upsert in batches
+  for (let i = 0; i < rows.length; i += batchSize) {
+    const batch = rows.slice(i, i + batchSize);
+    const { error } = await supabase
+      .schema("liftaris")
+      .from("chunks")
+      .upsert(batch, { onConflict: "id" });
+
+    if (error) {
+      console.error(`Upsert error at batch ${i}:`, error);
+    }
+  }
+
+  // Clean up stale chunks
+  const currentIds = chunks.map((c) => c.id);
+  const { error: deleteError } = await supabase
+    .schema("liftaris")
+    .from("chunks")
+    .delete()
+    .not("id", "in", `(${currentIds.map((id) => `"${id}"`).join(",")})`);
+
+  if (deleteError) {
+    console.error("Cleanup error:", deleteError);
+  }
+
+  console.log("Done!");
+}
+
+main().catch(console.error);
