@@ -34,17 +34,15 @@ async function getRelevantChunks(query: string): Promise<string> {
   }
 
   // Vector search via the match function
-  const { data: matches, error: matchError } = await supabase.rpc(
-    "match_chunks",
-    {
+  const { data: matches, error: matchError } = await supabase
+    .schema("liftaris")
+    .rpc("match_chunks", {
       query_embedding: JSON.stringify(embedData.embedding),
       match_threshold: 0.3,
       match_count: 8,
       filter_type: null,
       filter_tags: null,
-    },
-    { schema: "liftaris" }
-  );
+    });
 
   if (matchError || !matches?.length) {
     console.error("Match error:", matchError);

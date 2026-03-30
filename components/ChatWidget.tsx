@@ -52,7 +52,7 @@ export default function ChatWidget() {
                   )}
                 >
                   {msg.role === "user" ? (
-                    <div className="rounded-2xl border border-white/10 bg-indigo-500/55 px-4 py-2.5 text-sm text-primary-foreground shadow-lg backdrop-blur-xl backdrop-saturate-150">
+                    <div className="rounded-2xl border border-white/10 bg-indigo-500/80 px-4 py-2.5 text-sm text-primary-foreground shadow-lg">
                       {msg.parts.map((part, j) =>
                         part.type === "text" ? (
                           <span key={j}>{part.text}</span>
@@ -60,7 +60,7 @@ export default function ChatWidget() {
                       )}
                     </div>
                   ) : (
-                    <div className="rounded-2xl border border-white/10 bg-blue-200/20 px-4 py-2.5 text-sm text-card-foreground shadow-lg backdrop-blur-xl backdrop-saturate-150">
+                    <div className="rounded-2xl border border-white/10 bg-card/80 px-4 py-2.5 text-sm text-card-foreground shadow-lg">
                       <Streamdown
                         isAnimating={
                           isStreaming && i === messages.length - 1

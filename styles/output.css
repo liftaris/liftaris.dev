@@ -235,6 +235,9 @@
   .pointer-events-none {
     pointer-events: none;
   }
+  .visible {
+    visibility: visible;
+  }
   .absolute {
     position: absolute;
   }
@@ -959,12 +962,6 @@
       background-color: color-mix(in oklab, var(--color-black) 10%, transparent);
     }
   }
-  .bg-blue-200\/20 {
-    background-color: color-mix(in srgb, oklch(88.2% 0.059 254.128) 20%, transparent);
-    @supports (color: color-mix(in lab, red, red)) {
-      background-color: color-mix(in oklab, var(--color-blue-200) 20%, transparent);
-    }
-  }
   .bg-border {
     background-color: var(--border);
   }
@@ -977,16 +974,22 @@
       background-color: color-mix(in oklab, var(--card) 30%, transparent);
     }
   }
+  .bg-card\/80 {
+    background-color: var(--card);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--card) 80%, transparent);
+    }
+  }
   .bg-destructive\/10 {
     background-color: var(--destructive);
     @supports (color: color-mix(in lab, red, red)) {
       background-color: color-mix(in oklab, var(--destructive) 10%, transparent);
     }
   }
-  .bg-indigo-500\/55 {
-    background-color: color-mix(in srgb, oklch(58.5% 0.233 277.117) 55%, transparent);
+  .bg-indigo-500\/80 {
+    background-color: color-mix(in srgb, oklch(58.5% 0.233 277.117) 80%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
-      background-color: color-mix(in oklab, var(--color-indigo-500) 55%, transparent);
+      background-color: color-mix(in oklab, var(--color-indigo-500) 80%, transparent);
     }
   }
   .bg-muted {
