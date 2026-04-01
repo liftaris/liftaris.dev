@@ -1,5 +1,6 @@
 import { streamText, convertToModelMessages, type UIMessage } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
+import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -13,7 +14,9 @@ You will be given relevant context chunks from the site's content. Use ONLY the 
 
 Keep answers concise and conversational. You're representing Kaio's portfolio, so be professional but approachable — match the tone of his writing.
 
-If asked about something completely unrelated to Kaio or his work, politely redirect: "I'm here to help with questions about Kaio's background and projects. Is there something about his work I can help with?"`;
+If asked about something completely unrelated to Kaio or his work, politely redirect: "I'm here to help with questions about Kaio's background and projects. Is there something about his work I can help with?"
+
+You have a "navigate" tool that can take the user to specific pages on the site. When the user asks about a topic that has a dedicated page (e.g., "tell me about your projects", "what's your background?", "show me your blog posts"), use the navigate tool to take them there while also providing a conversational response. Available pages: /about, /projects, /projects/bazaarghost, /posts.`;
 
 async function getRelevantChunks(query: string): Promise<string> {
   // Generate embedding for the query via Edge Function
@@ -82,6 +85,21 @@ export async function POST(req: Request) {
     system: `${SYSTEM_PROMPT}\n\nHere is relevant context from Kaio's portfolio site:\n\n${context}`,
     messages: await convertToModelMessages(messages),
     maxOutputTokens: 1024,
+    tools: {
+      navigate: {
+        description:
+          "Navigate the user to a specific page on the portfolio site. Use this when the user asks about a topic that has a dedicated page.",
+        inputSchema: z.object({
+          path: z.enum([
+            "/about",
+            "/projects",
+            "/projects/bazaarghost",
+            "/posts",
+          ]),
+        }),
+        execute: async ({ path }) => ({ navigatedTo: path }),
+      },
+    },
   });
 
   return result.toUIMessageStreamResponse();

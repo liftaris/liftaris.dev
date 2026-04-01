@@ -1,81 +1,51 @@
-import client from "@/tina/__generated__/client";
-import type {
-  AboutQuery,
-  AboutQueryVariables,
-} from "@/tina/__generated__/types";
-import AboutClient from "@/components/tina/AboutClient";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import { GridPattern } from "@/components/ui/grid-pattern";
+import { SideColumn } from "@/components/SideColumn";
+import { ImageTile } from "@/components/ImageTile";
+import { EmptyTile } from "@/components/EmptyTile";
+import { Card } from "@/components/ui/card";
 import type { Metadata } from "next";
 
-async function getSiteConfig() {
-  const config = await import("@/data/config.json");
-  return { title: config.title };
-}
+export const metadata: Metadata = {
+  title: "About | KAIO",
+};
 
-async function getAboutData() {
-  const variables: AboutQueryVariables = { relativePath: "about.md" };
-
-  try {
-    const res = await client.queries.about(variables);
-    return {
-      data: res.data,
-      query: res.query,
-      variables,
-    };
-  } catch {
-    return {
-      data: {} as AboutQuery,
-      query: "",
-      variables,
-    };
-  }
-}
-
-export async function generateMetadata(): Promise<Metadata> {
-  const config = await getSiteConfig();
-  return {
-    title: `About | ${config.title}`,
-  };
-}
-
-export default async function AboutPage() {
-  const [aboutData, config] = await Promise.all([
-    getAboutData(),
-    getSiteConfig(),
-  ]);
-
+export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-background">
-      <Header siteTitle={config.title} />
-      <main className="pt-[73px]">
-        {/* Hero section for About page */}
-        <section className="relative border-b border-border py-20 overflow-hidden">
-          <GridPattern
-            width={50}
-            height={50}
-            strokeDasharray="3 3"
-            className="opacity-20"
-          />
-          <div className="relative z-10 mx-auto max-w-4xl px-6 text-center">
-            <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-              About
-            </h1>
-            <p className="mt-4 text-lg text-muted-foreground">
-              A little bit about me and what I do
-            </p>
-          </div>
-        </section>
+    <>
+      <SideColumn side="left">
+        {/* Timeline tabs placeholder */}
+        <div className="flex gap-2">
+          <EmptyTile className="flex-1 py-3 text-center text-sm text-muted-foreground">1</EmptyTile>
+          <EmptyTile className="flex-1 py-3 text-center text-sm text-muted-foreground">2</EmptyTile>
+          <EmptyTile className="flex-1 py-3 text-center text-sm text-muted-foreground">3</EmptyTile>
+        </div>
 
-        {/* Content */}
-        <section className="py-16">
-          <div className="mx-auto max-w-3xl px-6">
-            <AboutClient {...aboutData} />
-          </div>
-        </section>
-      </main>
-      <Footer />
-    </div>
+        {/* Bio card */}
+        <Card className="p-4">
+          <p className="text-sm text-muted-foreground">
+            Born in the Bay Area. My family moved to Natal, Brazil when I was two.
+          </p>
+          <p className="mt-2 text-xs text-primary">1999</p>
+        </Card>
+
+        {/* Map tile */}
+        <ImageTile src="/images/natal-map.jpg" alt="Natal, Brazil" className="aspect-[3/4]" />
+      </SideColumn>
+
+      <SideColumn side="right">
+        {/* Portrait photo */}
+        <ImageTile src="/images/portrait.jpg" alt="Kaio Barbosa-Chifan" className="aspect-square" priority />
+
+        {/* Hobbies grid */}
+        <div className="grid grid-cols-2 gap-4">
+          <EmptyTile className="aspect-square" />
+          <EmptyTile className="aspect-square" />
+          <EmptyTile className="aspect-square" />
+          <EmptyTile className="aspect-square" />
+        </div>
+
+        {/* Placeholder */}
+        <EmptyTile className="flex-1" />
+      </SideColumn>
+    </>
   );
 }

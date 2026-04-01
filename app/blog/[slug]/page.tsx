@@ -1,96 +1,62 @@
 import fs from "fs";
 import path from "path";
 import client from "@/tina/__generated__/client";
-import type {
-  PostQuery,
-  PostQueryVariables,
-} from "@/tina/__generated__/types";
+import type { PostQuery, PostQueryVariables } from "@/tina/__generated__/types";
 import PostClient from "@/components/tina/PostClient";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
+import { SideColumn } from "@/components/SideColumn";
+import { EmptyTile } from "@/components/EmptyTile";
 import type { Metadata } from "next";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-async function getSiteConfig() {
-  const config = await import("@/data/config.json");
-  return { title: config.title };
-}
-
 async function getPostData(slug: string) {
   const variables: PostQueryVariables = { relativePath: `${slug}.md` };
-
   try {
     const res = await client.queries.post(variables);
-    return {
-      data: res.data,
-      query: res.query,
-      variables,
-    };
+    return { data: res.data, query: res.query, variables };
   } catch {
-    return {
-      data: {} as PostQuery,
-      query: "",
-      variables,
-    };
+    return { data: {} as PostQuery, query: "", variables };
   }
 }
 
 export async function generateStaticParams() {
   const postsDirectory = path.join(process.cwd(), "content/posts");
-  const filenames = fs
+  return fs
     .readdirSync(postsDirectory)
-    .filter((f) => f.endsWith(".md"));
-
-  return filenames.map((file) => ({
-    slug: file.replace(/\.md$/, ""),
-  }));
+    .filter((f) => f.endsWith(".md"))
+    .map((file) => ({ slug: file.replace(/\.md$/, "") }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const postData = await getPostData(slug);
-  const config = await getSiteConfig();
-
-  return {
-    title: `${postData.data.post?.title || "Post"} | ${config.title}`,
-  };
+  return { title: `${postData.data.post?.title || "Post"} | KAIO` };
 }
 
 export default async function BlogPost({ params }: PageProps) {
   const { slug } = await params;
-  const [postData, config] = await Promise.all([
-    getPostData(slug),
-    getSiteConfig(),
-  ]);
+  const postData = await getPostData(slug);
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header siteTitle={config.title} />
-      <main className="pt-[73px]">
-        {/* Back link */}
-        <div className="mx-auto max-w-3xl px-6 py-4">
-          <Button variant="ghost" size="sm" render={<Link href="/" />} className="gap-2 text-muted-foreground">
-            <ArrowLeft className="size-4" />
-            Back to home
-          </Button>
+    <>
+      {/* Article content — center column */}
+      <article className="col-start-2 row-start-1 overflow-y-auto p-6">
+        <div className="mx-auto max-w-2xl">
+          <PostClient {...postData} />
         </div>
-        <Separator />
+      </article>
 
-        {/* Article content */}
-        <article className="py-12">
-          <div className="mx-auto max-w-3xl px-6">
-            <PostClient {...postData} />
-          </div>
-        </article>
-      </main>
-      <Footer />
-    </div>
+      {/* Right column tiles */}
+      <SideColumn side="right">
+        <EmptyTile className="aspect-square" />
+        <div className="flex gap-4">
+          <EmptyTile className="aspect-square flex-1" />
+          <EmptyTile className="aspect-square flex-1" />
+        </div>
+        <EmptyTile className="flex-1" />
+      </SideColumn>
+    </>
   );
 }
