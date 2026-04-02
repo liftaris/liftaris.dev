@@ -17,7 +17,7 @@ html {
 
 body {
   margin: 0;
-  padding: 40px;
+  padding: 0;
   font-family: var(--font-spectral), "Spectral", Georgia, serif;
   overflow-x: hidden;
   font-size: 16px;
@@ -29,65 +29,47 @@ body {
 a {
   text-decoration: none;
   color: inherit;
-  transition: opacity 0.2s ease;
-}
-
-a:hover {
-  transition: opacity 0.2s ease;
-  opacity: 0.5;
-  text-decoration-color: inherit;
-}
-
-ul {
-  list-style: none;
-  margin: 0;
-  padding-bottom: 0;
-  padding-left: 0;
-  padding-right: 0;
-  padding-top: 0;
-  list-style-position: outside;
-  list-style-image: none;
-}
-
-ol {
-  margin: 0;
-  padding-bottom: 0;
-  padding-left: 0;
-  padding-right: 0;
-  padding-top: 0;
-  list-style-position: outside;
-  list-style-image: none;
-}
-
-ul,
-ol,
-p {
-  margin-bottom: 1.45rem;
 }
 
 img {
   max-width: 100%;
 }
 
-img,
-figure,
-table,
-fieldset {
-  margin-left: 0;
-  margin-right: 0;
-  margin-top: 0;
-  padding-bottom: 0;
-  padding-left: 0;
-  padding-right: 0;
-  padding-top: 0;
+/* Article/blog content typography — apply via className="article-content" */
+.article-content ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  list-style-position: outside;
+  list-style-image: none;
+}
+
+.article-content ol {
+  margin: 0;
+  padding: 0;
+  list-style-position: outside;
+  list-style-image: none;
+}
+
+.article-content ul,
+.article-content ol,
+.article-content p {
   margin-bottom: 1.45rem;
 }
 
-pre {
+.article-content img,
+.article-content figure,
+.article-content table,
+.article-content fieldset {
   margin-left: 0;
   margin-right: 0;
   margin-top: 0;
+  padding: 0;
   margin-bottom: 1.45rem;
+}
+
+.article-content pre {
+  margin: 0 0 1.45rem;
   font-size: 0.85rem;
   line-height: 1.42;
   background: var(--card);
@@ -98,111 +80,76 @@ pre {
   padding: 1.45rem;
 }
 
-table {
+.article-content table {
   font-size: 1rem;
   line-height: 1.45rem;
   border-collapse: collapse;
   width: 100%;
 }
 
-blockquote {
-  margin-left: 1.45rem;
-  margin-right: 1.45rem;
-  margin-top: 0;
-  padding-bottom: 0;
-  padding-left: 0;
-  padding-right: 0;
-  padding-top: 0;
-  margin-bottom: 1.45rem;
+.article-content blockquote {
+  margin: 0 1.45rem 1.45rem;
+  padding: 0;
 }
 
-strong {
-  font-weight: bold;
-}
-
-li {
+.article-content li {
   margin-bottom: calc(1.45rem / 2);
 }
 
-ol li {
-  padding-left: 0;
-}
-
-ul li {
-  padding-left: 0;
-}
-
-li > ol {
+.article-content li > ol,
+.article-content li > ul {
   margin-left: 1.45rem;
   margin-bottom: calc(1.45rem / 2);
   margin-top: calc(1.45rem / 2);
 }
 
-li > ul {
-  margin-left: 1.45rem;
-  margin-bottom: calc(1.45rem / 2);
-  margin-top: calc(1.45rem / 2);
-}
-
-blockquote *:last-child {
+.article-content blockquote *:last-child,
+.article-content li *:last-child,
+.article-content p *:last-child {
   margin-bottom: 0;
 }
 
-li *:last-child {
-  margin-bottom: 0;
-}
-
-p *:last-child {
-  margin-bottom: 0;
-}
-
-li > p {
+.article-content li > p {
   margin-bottom: calc(1.45rem / 2);
 }
 
-code {
+.article-content code {
   font-size: 0.85rem;
   line-height: 1.45rem;
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-p {
+.article-content h1,
+.article-content h2,
+.article-content h3,
+.article-content h4,
+.article-content h5,
+.article-content h6,
+.article-content p {
   font-family: var(--font-spectral), "Spectral", Georgia, serif;
-  margin-left: 0;
-  margin-right: 0;
-  margin-top: 0;
-  padding-bottom: 0;
-  padding-left: 0;
-  padding-right: 0;
-  padding-top: 0;
-  margin-bottom: 1.45rem;
+  margin: 0 0 1.45rem;
+  padding: 0;
   color: inherit;
   text-rendering: optimizeLegibility;
 }
 
-h1,
-h2 {
+.article-content h1,
+.article-content h2 {
   font-weight: 500;
 }
 
-h1 {
+.article-content h1 {
   font-size: 2rem;
   letter-spacing: -1px;
   line-height: 1.1875;
 }
 
-h2 {
+.article-content h2 {
   font-size: 1.7rem;
   letter-spacing: -0.75px;
   line-height: 1.2;
 }
 
-h3 {
+.article-content h3 {
   font-size: 1.2rem;
   letter-spacing: -0.5px;
   line-height: 1.1875;
@@ -210,7 +157,7 @@ h3 {
   font-weight: normal;
 }
 
-p {
+.article-content p {
   font-size: 1.2rem;
   letter-spacing: -0.5px;
   line-height: 1.5;
@@ -218,7 +165,7 @@ p {
   opacity: 0.85;
 }
 
-.mark {
+.article-content .mark {
   padding: 0.1em 5px;
   margin-right: -5px;
   margin-left: -5px;
@@ -243,19 +190,19 @@ p {
 }
 
 @media (min-width: 1280px) {
-  h1 {
+  .article-content h1 {
     font-size: 2rem;
     letter-spacing: -1px;
     line-height: 1.1875;
   }
 
-  h2 {
+  .article-content h2 {
     font-size: 1.5rem;
     letter-spacing: -0.75px;
     line-height: 1.1667;
   }
 
-  h3 {
+  .article-content h3 {
     font-size: 1rem;
     letter-spacing: -0.5px;
     line-height: 1.1875;
@@ -263,25 +210,25 @@ p {
     font-weight: normal;
   }
 
-  p {
+  .article-content p {
     line-height: 1.4375;
   }
 }
 
 @media (min-width: 1440px) {
-  h1 {
+  .article-content h1 {
     font-size: 2.5rem;
     letter-spacing: -1px;
     line-height: 1.1875;
   }
 
-  h2 {
+  .article-content h2 {
     font-size: 1.7rem;
     letter-spacing: -0.75px;
     line-height: 1.2;
   }
 
-  h3 {
+  .article-content h3 {
     font-size: 1.2rem;
     letter-spacing: -0.5px;
     line-height: 1.1875;
@@ -289,7 +236,7 @@ p {
     font-weight: normal;
   }
 
-  p {
+  .article-content p {
     line-height: 1.45;
   }
 }
