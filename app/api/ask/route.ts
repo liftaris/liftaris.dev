@@ -1,6 +1,10 @@
-import { streamText, convertToModelMessages, type UIMessage } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
-import { google } from "@ai-sdk/google";
+import {
+  streamText,
+  convertToModelMessages,
+  gateway,
+  type UIMessage,
+} from "ai";
+import type { GatewayProviderOptions } from "@ai-sdk/gateway";
 import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
 
@@ -118,19 +122,19 @@ export async function POST(req: Request) {
     tools: toolsDef,
   } as const;
 
-  try {
-    const result = streamText({
-      model: anthropic("claude-haiku-4-5"),
-      maxRetries: 0,
-      ...streamOpts,
-    });
-    return result.toUIMessageStreamResponse();
-  } catch {
-    console.error("Anthropic failed, falling back to Gemini");
-    const result = streamText({
-      model: google("gemini-2.5-flash"),
-      ...streamOpts,
-    });
-    return result.toUIMessageStreamResponse();
-  }
+  const result = streamText({
+    model: gateway("anthropic/claude-haiku-4-5-x"),
+    providerOptions: {
+      gateway: {
+        models: ["anthropic/claude-haiku-4-5", "google/gemini-2.5-flash"],
+        byok: {
+          anthropic: [{ apiKey: process.env.ANTHROPIC_API_KEY! }],
+          google: [{ apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY! }],
+        },
+      } satisfies GatewayProviderOptions,
+    },
+    ...streamOpts,
+  });
+
+  return result.toUIMessageStreamResponse();
 }

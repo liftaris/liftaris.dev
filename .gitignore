@@ -41,5 +41,5 @@ tina/__generated__/.cache
 # IntelliJ IDEA
 .idea
 
-node_modulesstyles/output.css
-docs/
+styles/output.css
+tsconfig.tsbuildinfo
