@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useWebHaptics } from "web-haptics/react";
 import { PanelLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -18,6 +19,7 @@ interface NavbarProps {
 
 export function Navbar({ onToggleSidebar }: NavbarProps) {
   const pathname = usePathname();
+  const haptic = useWebHaptics();
 
   return (
     <header className="flex items-center justify-between px-6 py-3">
@@ -42,7 +44,7 @@ export function Navbar({ onToggleSidebar }: NavbarProps) {
         ))}
       </nav>
 
-      <Button variant="ghost" size="icon" onClick={onToggleSidebar}>
+      <Button variant="ghost" size="icon" onClick={() => { haptic.trigger("light"); onToggleSidebar(); }}>
         <PanelLeft className="size-5" />
       </Button>
     </header>

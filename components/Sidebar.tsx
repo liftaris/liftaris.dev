@@ -1,5 +1,6 @@
 "use client";
 
+import { useWebHaptics } from "web-haptics/react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -13,6 +14,7 @@ interface SidebarProps {
 
 export function Sidebar({ open }: SidebarProps) {
   const { sessions, currentSessionId, startNewSession, loadSession } = useChatContext();
+  const haptic = useWebHaptics();
 
   return (
     <aside
@@ -26,7 +28,7 @@ export function Sidebar({ open }: SidebarProps) {
           <p className="text-sm font-bold tracking-tight">KAIO</p>
           <p className="text-xs text-muted-foreground">Barbosa-Chifan</p>
         </div>
-        <Button variant="outline" size="icon" onClick={startNewSession}>
+        <Button variant="outline" size="icon" onClick={() => { haptic.trigger("medium"); startNewSession(); }}>
           <Plus className="size-4" />
         </Button>
       </div>
@@ -45,7 +47,7 @@ export function Sidebar({ open }: SidebarProps) {
             .map((session) => (
               <button
                 key={session.id}
-                onClick={() => loadSession(session.id)}
+                onClick={() => { haptic.trigger("selection"); loadSession(session.id); }}
                 className={cn(
                   "w-full rounded-lg px-3 py-2 text-left text-sm transition-colors",
                   session.id === currentSessionId

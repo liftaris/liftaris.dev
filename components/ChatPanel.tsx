@@ -1,8 +1,9 @@
 // components/ChatPanel.tsx
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useWebHaptics } from "web-haptics/react";
 import { Send, Square } from "lucide-react";
 import { Streamdown } from "streamdown";
 import { Input } from "@/components/ui/input";
@@ -19,7 +20,9 @@ interface ChatPanelProps {
 export function ChatPanel({ compact, className }: ChatPanelProps) {
   const { messages, input, setInput, sendMessage, stop, status } = useChatContext();
   const router = useRouter();
+  const haptic = useWebHaptics();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const prevStatusRef = useRef(status);
   const isStreaming = status === "streaming" || status === "submitted";
   const hasMessages = messages.length > 0;
 
@@ -28,6 +31,14 @@ export function ChatPanel({ compact, className }: ChatPanelProps) {
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages]);
 
+  // Haptic on response complete
+  useEffect(() => {
+    if (prevStatusRef.current === "streaming" && status === "ready") {
+      haptic.trigger("success");
+    }
+    prevStatusRef.current = status;
+  }, [status, haptic]);
+
   // Handle navigate tool calls
   useEffect(() => {
     const lastMessage = messages[messages.length - 1];
@@ -35,6 +46,7 @@ export function ChatPanel({ compact, className }: ChatPanelProps) {
 
     for (const part of lastMessage.parts) {
       if (part.type === "tool-navigate" && (part.state === "input-available" || part.state === "output-available")) {
+        haptic.trigger("medium");
         router.push((part.input as { path: string }).path);
       }
     }
@@ -44,9 +56,15 @@ export function ChatPanel({ compact, className }: ChatPanelProps) {
     e.preventDefault();
     const text = input.trim();
     if (!text || isStreaming) return;
+    haptic.trigger("medium");
     setInput("");
     sendMessage({ text });
   }
+
+  const handleStop = useCallback(() => {
+    haptic.trigger("light");
+    stop();
+  }, [haptic, stop]);
 
   return (
     <div
@@ -111,7 +129,7 @@ export function ChatPanel({ compact, className }: ChatPanelProps) {
           className="h-9 flex-1 border-white/10 bg-white/10 text-sm backdrop-blur-xl backdrop-saturate-150"
         />
         {isStreaming ? (
-          <Button type="button" size="icon" variant="outline" onClick={stop}>
+          <Button type="button" size="icon" variant="outline" onClick={handleStop}>
             <Square className="size-3.5" />
           </Button>
         ) : (

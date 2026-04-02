@@ -1,11 +1,12 @@
 import { streamText, convertToModelMessages, type UIMessage } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
+import { google } from "@ai-sdk/google";
 import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
-  process.env.SUPABASE_ANON_KEY!
+  process.env.SUPABASE_ANON_KEY!,
 );
 
 const SYSTEM_PROMPT = `You are an AI assistant embedded on Kaio Barbosa-Chifan's personal portfolio website (liftaris.dev). Your job is to answer questions from visitors about Kaio's background, projects, experience, and blog posts.
@@ -30,8 +31,9 @@ async function getRelevantChunks(query: string): Promise<string> {
     // Fallback: return all chunks from local JSON
     const chunks = await import("@/lib/rag/chunks.json");
     return chunks.default
-      .map((c: { title: string; source: string; content: string }) =>
-        `[${c.title}] (source: ${c.source})\n${c.content}`
+      .map(
+        (c: { title: string; source: string; content: string }) =>
+          `[${c.title}] (source: ${c.source})\n${c.content}`,
       )
       .join("\n\n---\n\n");
   }
@@ -52,16 +54,26 @@ async function getRelevantChunks(query: string): Promise<string> {
     // Fallback to local chunks
     const chunks = await import("@/lib/rag/chunks.json");
     return chunks.default
-      .map((c: { title: string; source: string; content: string }) =>
-        `[${c.title}] (source: ${c.source})\n${c.content}`
+      .map(
+        (c: { title: string; source: string; content: string }) =>
+          `[${c.title}] (source: ${c.source})\n${c.content}`,
       )
       .join("\n\n---\n\n");
   }
 
   return matches
     .map(
-      (m: { title: string; type: string; source: string; content: string; tags: string[]; similarity: number }) =>
-        `[${m.title}] (type: ${m.type}, source: ${m.source}, tags: ${m.tags?.join(", ") || "none"}, relevance: ${m.similarity.toFixed(2)})\n${m.content}`
+      (m: {
+        title: string;
+        type: string;
+        source: string;
+        content: string;
+        tags: string[];
+        similarity: number;
+      }) =>
+        `[${m.title}] (type: ${m.type}, source: ${m.source}, tags: ${
+          m.tags?.join(", ") || "none"
+        }, relevance: ${m.similarity.toFixed(2)})\n${m.content}`,
     )
     .join("\n\n---\n\n");
 }
@@ -73,34 +85,52 @@ export async function POST(req: Request) {
   const lastUserMessage = [...messages]
     .reverse()
     .find((m) => m.role === "user");
-  const query = lastUserMessage?.parts
-    ?.filter((p) => p.type === "text")
-    .map((p) => p.text)
-    .join(" ") ?? "";
+  const query =
+    lastUserMessage?.parts
+      ?.filter((p) => p.type === "text")
+      .map((p) => p.text)
+      .join(" ") ?? "";
 
   const context = await getRelevantChunks(query);
 
-  const result = streamText({
-    model: anthropic("claude-sonnet-4-20250514"),
-    system: `${SYSTEM_PROMPT}\n\nHere is relevant context from Kaio's portfolio site:\n\n${context}`,
-    messages: await convertToModelMessages(messages),
-    maxOutputTokens: 1024,
-    tools: {
-      navigate: {
-        description:
-          "Navigate the user to a specific page on the portfolio site. Use this when the user asks about a topic that has a dedicated page.",
-        inputSchema: z.object({
-          path: z.enum([
-            "/about",
-            "/projects",
-            "/projects/bazaarghost",
-            "/posts",
-          ]),
-        }),
-        execute: async ({ path }) => ({ navigatedTo: path }),
-      },
+  const systemPrompt = `${SYSTEM_PROMPT}\n\nHere is relevant context from Kaio's portfolio site:\n\n${context}`;
+  const convertedMessages = await convertToModelMessages(messages);
+  const toolsDef = {
+    navigate: {
+      description:
+        "Navigate the user to a specific page on the portfolio site. Use this when the user asks about a topic that has a dedicated page.",
+      inputSchema: z.object({
+        path: z.enum([
+          "/about",
+          "/projects",
+          "/projects/bazaarghost",
+          "/posts",
+        ]),
+      }),
+      execute: async ({ path }: { path: string }) => ({ navigatedTo: path }),
     },
-  });
+  };
 
-  return result.toUIMessageStreamResponse();
+  const streamOpts = {
+    system: systemPrompt,
+    messages: convertedMessages,
+    maxOutputTokens: 1024,
+    tools: toolsDef,
+  } as const;
+
+  try {
+    const result = streamText({
+      model: anthropic("claude-haiku-4-5"),
+      maxRetries: 0,
+      ...streamOpts,
+    });
+    return result.toUIMessageStreamResponse();
+  } catch {
+    console.error("Anthropic failed, falling back to Gemini");
+    const result = streamText({
+      model: google("gemini-2.5-flash"),
+      ...streamOpts,
+    });
+    return result.toUIMessageStreamResponse();
+  }
 }
