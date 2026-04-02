@@ -43,3 +43,5 @@ tina/__generated__/.cache
 
 styles/output.css
 tsconfig.tsbuildinfo
+
+.playwright-mcp/

@@ -13,9 +13,12 @@ function MainGrid({ children }: { children: React.ReactNode }) {
   return (
     <main
       style={{ viewTransitionName: "bento-grid" }}
-      className="grid flex-1 grid-cols-[1fr_2fr_1fr] gap-4 overflow-hidden p-4"
+      className="flex flex-1 flex-col gap-4 overflow-hidden p-4 lg:grid lg:grid-cols-[1fr_2fr_1fr]"
     >
-      {children}
+      {/* Mobile: children (SideColumns) sit side-by-side in top 50% */}
+      <div className="flex min-h-0 basis-1/2 gap-4 lg:contents">
+        {children}
+      </div>
       {showDefaultChat && <ChatPanel />}
     </main>
   );

@@ -70,8 +70,11 @@ export function ChatPanel({ compact, className }: ChatPanelProps) {
     <div
       style={{ viewTransitionName: "chat-panel" }}
       className={cn(
-        "col-start-2 row-start-1 flex flex-col overflow-hidden rounded-3xl border border-border bg-card/50",
-        compact && "col-start-auto row-start-auto",
+        // mobile: bottom 50%
+        "flex min-h-0 basis-1/2 flex-col overflow-hidden rounded-3xl border border-border bg-card/50",
+        // desktop: grid-positioned center column
+        "lg:col-start-2 lg:row-start-1 lg:basis-auto",
+        compact && "lg:col-start-auto lg:row-start-auto",
         className
       )}
     >

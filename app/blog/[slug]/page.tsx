@@ -42,7 +42,7 @@ export default async function BlogPost({ params }: PageProps) {
   return (
     <>
       {/* Article content — center column */}
-      <article className="article-content col-start-2 row-start-1 overflow-y-auto p-6">
+      <article className="article-content overflow-y-auto p-6 lg:col-start-2 lg:row-start-1">
         <div className="mx-auto max-w-2xl">
           <PostClient {...postData} />
         </div>

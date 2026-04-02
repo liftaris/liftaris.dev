@@ -16,7 +16,7 @@ export default function ArticleLayout({ children }: { children: React.ReactNode 
   return (
     <>
       {/* Left column: branding + compact chat */}
-      <div className="col-start-1 row-start-1 flex flex-col gap-4 overflow-hidden">
+      <div className="order-last flex flex-col gap-4 overflow-hidden lg:order-none lg:col-start-1 lg:row-start-1">
         <div className="px-2 py-4">
           <p className="text-sm font-bold tracking-tight">KAIO</p>
           <p className="text-xs text-muted-foreground">BARBOSA-CHIFAN</p>
