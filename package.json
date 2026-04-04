@@ -2,9 +2,8 @@
   "name": "nextjs-starter-blog",
   "private": true,
   "scripts": {
-    "dev": "npm run dev:css & tinacms dev -c \"next dev\"",
-    "dev:css": "npx @tailwindcss/cli -i ./styles/globals.css -o ./styles/output.css --watch",
-    "build": "tinacms build && npx @tailwindcss/cli -i ./styles/globals.css -o ./styles/output.css && next build",
+    "dev": "tinacms dev -c \"next dev\"",
+    "build": "tinacms build && next build",
     "start": "tinacms build && next start",
     "lint": "next lint"
   },
@@ -14,6 +13,7 @@
     "@ai-sdk/react": "^3.0.143",
     "@base-ui/react": "^1.3.0",
     "@supabase/supabase-js": "^2.100.1",
+    "@tailwindcss/postcss": "^4.2.2",
     "@tinacms/cli": "^2.0.1",
     "@vercel/analytics": "^1.6.1",
     "ai": "^6.0.141",
@@ -24,6 +24,7 @@
     "lucide-react": "^0.577.0",
     "next": "^16.2.1",
     "next-devtools-mcp": "^0.3.10",
+    "postcss": "^8.5.8",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "react-markdown": "^10.1.0",
@@ -36,13 +37,12 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.3",
-    "@tailwindcss/cli": "^4.1.18",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "eslint": "^9.39.1",
     "eslint-config-next": "^16.0.6",
-    "tailwindcss": "^4.0.0",
+    "tailwindcss": "^4.2.2",
     "typescript": "^5.9.3"
   }
 }

@@ -1,14 +1,27 @@
-import { Spectral, Geist } from "next/font/google";
+import { Spectral, Geist_Mono, Lora, Poppins } from "next/font/google";
 import { ViewTransition } from "react";
-import "../styles/output.css";
+import "./globals.css";
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
-import { cn } from "@/lib/utils";
 import { Shell } from "@/components/Shell";
 
-const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
+const fontSans = Poppins({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  weight: "200",
+});
 
-const spectral = Spectral({
+const fontSerif = Lora({
+  subsets: ["latin"],
+  variable: "--font-serif",
+});
+
+const fontMono = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+});
+
+const fontSpectral = Spectral({
   weight: ["400", "700"],
   style: ["normal", "italic"],
   subsets: ["latin"],
@@ -18,13 +31,21 @@ const spectral = Spectral({
 
 export const metadata: Metadata = {
   title: "KAIO",
-  description: "Kaio Barbosa-Chifan — Software Engineer & Creative Technologist",
+  description:
+    "Kaio Barbosa-Chifan — Software Engineer & Creative Technologist",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="en" className={cn("dark font-sans", geist.variable, spectral.variable)}>
-      <body className={spectral.className}>
+    <html
+      lang="en"
+      className={`dark ${fontSans.variable} ${fontSerif.variable} ${fontMono.variable} ${fontSpectral.variable}`}
+    >
+      <body className="font-sans antialiased">
         <ViewTransition>
           <Shell>{children}</Shell>
         </ViewTransition>

@@ -1,51 +1,34 @@
-import { SideColumn } from "@/components/SideColumn";
-import { ImageTile } from "@/components/ImageTile";
-import { EmptyTile } from "@/components/EmptyTile";
-import { Card } from "@/components/ui/card";
+import { AboutContent } from "@/components/AboutContent";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "About | KAIO",
 };
 
+const MAPS_KEY = process.env.GOOGLE_MAPS_API_KEY!;
+
+function mapUrl(lat: number, lng: number, zoom: number) {
+  return `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=${zoom}&size=600x400&scale=2&maptype=satellite&key=${MAPS_KEY}`;
+}
+
+function mapUrlSquare(lat: number, lng: number, zoom: number) {
+  return `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=${zoom}&size=400x400&scale=2&maptype=satellite&key=${MAPS_KEY}`;
+}
+
+const mapUrls = {
+  brasil: mapUrl(-5.9793, -35.1238, 14),
+  bayArea: mapUrl(37.9735, -122.5311, 12),
+  seattle: mapUrl(47.6062, -122.3353, 13),
+  // Minor locations — city level
+  mexico: mapUrlSquare(19.4326, -99.1332, 12),
+  india: mapUrlSquare(12.0073, 79.8103, 13),
+  france: mapUrlSquare(44.8378, -0.5792, 12),
+  // Minor locations — country level (zoomed out, shown by default)
+  mexicoZoomed: mapUrlSquare(23.6345, -102.5528, 4),
+  indiaZoomed: mapUrlSquare(20.5937, 78.9629, 4),
+  franceZoomed: mapUrlSquare(46.6034, 1.8883, 4),
+};
+
 export default function AboutPage() {
-  return (
-    <>
-      <SideColumn side="left">
-        {/* Timeline tabs placeholder */}
-        <div className="flex gap-2">
-          <EmptyTile className="flex-1 py-3 text-center text-sm text-muted-foreground">1</EmptyTile>
-          <EmptyTile className="flex-1 py-3 text-center text-sm text-muted-foreground">2</EmptyTile>
-          <EmptyTile className="flex-1 py-3 text-center text-sm text-muted-foreground">3</EmptyTile>
-        </div>
-
-        {/* Bio card */}
-        <Card className="p-4">
-          <p className="text-sm text-muted-foreground">
-            Born in the Bay Area. My family moved to Natal, Brazil when I was two.
-          </p>
-          <p className="mt-2 text-xs text-primary">1999</p>
-        </Card>
-
-        {/* Map tile */}
-        <ImageTile src="/images/natal-map.jpg" alt="Natal, Brazil" className="aspect-[3/4]" />
-      </SideColumn>
-
-      <SideColumn side="right">
-        {/* Portrait photo */}
-        <ImageTile src="/images/portrait.jpg" alt="Kaio Barbosa-Chifan" className="aspect-square" priority />
-
-        {/* Hobbies grid */}
-        <div className="grid grid-cols-2 gap-4">
-          <EmptyTile className="aspect-square" />
-          <EmptyTile className="aspect-square" />
-          <EmptyTile className="aspect-square" />
-          <EmptyTile className="aspect-square" />
-        </div>
-
-        {/* Placeholder */}
-        <EmptyTile className="flex-1" />
-      </SideColumn>
-    </>
-  );
+  return <AboutContent mapUrls={mapUrls} />;
 }
