@@ -45,3 +45,5 @@ styles/output.css
 tsconfig.tsbuildinfo
 
 .playwright-mcp/
+
+supabase/
