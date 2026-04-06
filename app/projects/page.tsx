@@ -83,7 +83,7 @@ export default function ProjectsPage() {
                   <p className="text-sm text-muted-foreground">{project.description}</p>
                   <div className="flex flex-wrap gap-2">
                     {project.tags.map((tag) => (
-                      <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
+                      <Badge key={tag} variant="accent" className="text-xs rounded-full px-3">{tag}</Badge>
                     ))}
                   </div>
                 </div>
@@ -111,7 +111,7 @@ export default function ProjectsPage() {
                   <p className="text-sm text-muted-foreground">{project.description}</p>
                   <div className="flex flex-wrap gap-2">
                     {project.tags.map((tag) => (
-                      <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
+                      <Badge key={tag} variant="accent" className="text-xs rounded-full px-3">{tag}</Badge>
                     ))}
                   </div>
                 </div>

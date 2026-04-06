@@ -10,7 +10,7 @@ interface ImageTileProps {
 
 export function ImageTile({ src, alt, className, priority }: ImageTileProps) {
   return (
-    <div className={cn("relative overflow-hidden rounded-2xl border border-border", className)}>
+    <div className={cn("relative overflow-hidden rounded-xl border border-border", className)}>
       <Image src={src} alt={alt} fill className="object-cover" priority={priority} />
     </div>
   );

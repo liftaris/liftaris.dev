@@ -56,8 +56,12 @@ const PROJECTS: Record<string, ProjectData> = {
         "Python",
         "Docker", 
         "GitHub Actions",
-        "Supabase (PostgreSQL + Edge Functions)",
-        "Twitch APIs (Helix + GraphQL + EventSub)"
+        "Supabase",
+        "PostgreSQL",
+        "Edge Functions",
+        "Twitch Helix API",
+        "Twitch GraphQL", 
+        "Twitch EventSub"
       ],
       frontend: [
         "Next.js",
@@ -68,18 +72,18 @@ const PROJECTS: Record<string, ProjectData> = {
         "MDX"
       ],
       infrastructure: [
-        "GitHub Actions (free compute)",
-        "Supabase (control plane)",
-        "PostgreSQL (data storage)",
-        "Docker (processing containers)",
-        "Twitch EventSub (webhooks)"
+        "GitHub Actions",
+        "Supabase",
+        "PostgreSQL",
+        "Docker",
+        "Twitch EventSub"
       ],
       cv: [
-        "OpenCV (template matching)",
-        "PaddleOCR (PP-OCRv5)",
-        "FFmpeg (video processing)",
-        "Streamlink (VOD downloading)",
-        "Multi-threaded pipeline"
+        "OpenCV",
+        "PaddleOCR",
+        "FFmpeg",
+        "Streamlink",
+        "Multi-threaded Pipeline"
       ]
     },
     tags: ["Computer Vision", "OCR", "Next.js", "Python", "TypeScript", "Supabase", "Docker", "GitHub Actions"],
@@ -193,7 +197,7 @@ export default async function ProjectPage({ params }: PageProps) {
               <h4 className="text-xs text-muted-foreground mb-2">Backend</h4>
               <div className="flex flex-wrap gap-2">
                 {project.techStack.backend.map((tech) => (
-                  <Badge key={tech} variant="outline" className="text-xs">{tech}</Badge>
+                  <Badge key={tech} variant="accent" className="text-xs rounded-full px-3">{tech}</Badge>
                 ))}
               </div>
             </div>
@@ -204,7 +208,7 @@ export default async function ProjectPage({ params }: PageProps) {
               <h4 className="text-xs text-muted-foreground mb-2">Frontend</h4>
               <div className="flex flex-wrap gap-2">
                 {project.techStack.frontend.map((tech) => (
-                  <Badge key={tech} variant="outline" className="text-xs">{tech}</Badge>
+                  <Badge key={tech} variant="accent" className="text-xs rounded-full px-3">{tech}</Badge>
                 ))}
               </div>
             </div>
@@ -215,7 +219,7 @@ export default async function ProjectPage({ params }: PageProps) {
               <h4 className="text-xs text-muted-foreground mb-2">Computer Vision</h4>
               <div className="flex flex-wrap gap-2">
                 {project.techStack.cv.map((tech) => (
-                  <Badge key={tech} variant="outline" className="text-xs">{tech}</Badge>
+                  <Badge key={tech} variant="accent" className="text-xs rounded-full px-3">{tech}</Badge>
                 ))}
               </div>
             </div>
@@ -226,7 +230,7 @@ export default async function ProjectPage({ params }: PageProps) {
               <h4 className="text-xs text-muted-foreground mb-2">Infrastructure</h4>
               <div className="flex flex-wrap gap-2">
                 {project.techStack.infrastructure.map((tech) => (
-                  <Badge key={tech} variant="outline" className="text-xs">{tech}</Badge>
+                  <Badge key={tech} variant="accent" className="text-xs rounded-full px-3">{tech}</Badge>
                 ))}
               </div>
             </div>
