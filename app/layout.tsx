@@ -8,7 +8,7 @@ import { Shell } from "@/components/Shell";
 const fontSans = Poppins({
   subsets: ["latin"],
   variable: "--font-sans",
-  weight: "200",
+  weight: "400",
 });
 
 const fontSerif = Lora({

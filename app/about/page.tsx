@@ -1,4 +1,8 @@
-import { AboutContent } from "@/components/AboutContent";
+import { SideColumn } from "@/components/SideColumn";
+import { ImageTile } from "@/components/ImageTile";
+import { Card } from "@/components/ui/card";
+import { EmptyTile } from "@/components/EmptyTile";
+import { Badge } from "@/components/ui/badge";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -6,29 +10,67 @@ export const metadata: Metadata = {
 };
 
 const MAPS_KEY = process.env.GOOGLE_MAPS_API_KEY!;
+const SEATTLE_MAP = `https://maps.googleapis.com/maps/api/staticmap?center=47.6062,-122.3353&zoom=13&size=600x400&scale=2&maptype=satellite&key=${MAPS_KEY}`;
 
-function mapUrl(lat: number, lng: number, zoom: number) {
-  return `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=${zoom}&size=600x400&scale=2&maptype=satellite&key=${MAPS_KEY}`;
-}
-
-function mapUrlSquare(lat: number, lng: number, zoom: number) {
-  return `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=${zoom}&size=400x400&scale=2&maptype=satellite&key=${MAPS_KEY}`;
-}
-
-const mapUrls = {
-  brasil: mapUrl(-5.9793, -35.1238, 14),
-  bayArea: mapUrl(37.9735, -122.5311, 12),
-  seattle: mapUrl(47.6062, -122.3353, 13),
-  // Minor locations — city level
-  mexico: mapUrlSquare(19.4326, -99.1332, 12),
-  india: mapUrlSquare(12.0073, 79.8103, 13),
-  france: mapUrlSquare(44.8378, -0.5792, 12),
-  // Minor locations — country level (zoomed out, shown by default)
-  mexicoZoomed: mapUrlSquare(23.6345, -102.5528, 4),
-  indiaZoomed: mapUrlSquare(20.5937, 78.9629, 4),
-  franceZoomed: mapUrlSquare(46.6034, 1.8883, 4),
-};
+const INTERESTS = [
+  "Web Development",
+  "AI Engineering",
+  "Interactive Media",
+  "Graphics Programming",
+  "Game Development Tools",
+];
 
 export default function AboutPage() {
-  return <AboutContent mapUrls={mapUrls} />;
+  return (
+    <>
+      <SideColumn side="left">
+        {/* Profile Picture */}
+        <ImageTile
+          src="/profile.png"
+          alt="Kaio profile picture"
+          className="aspect-square"
+        />
+
+        <div className="text-center">Living in Seattle, WA</div>
+
+        {/* Seattle Map */}
+        <ImageTile
+          src={SEATTLE_MAP}
+          alt="Seattle, Washington"
+          className="aspect-video"
+        />
+      </SideColumn>
+
+      <SideColumn side="right">
+        {/* Interests */}
+        <Card className="p-6 space-y-4">
+          <h3 className="font-semibold">Interests</h3>
+          <div className="flex flex-wrap gap-2">
+            {INTERESTS.map((interest) => (
+              <Badge
+                key={interest}
+                variant="accent"
+                className="text-xs rounded-full px-3"
+              >
+                {interest}
+              </Badge>
+            ))}
+          </div>
+        </Card>
+
+        {/* Bio */}
+        <Card className="p-6">
+          <p className="text-sm text-foreground leading-relaxed">
+            Working at Moderna on the Marketing Technology team building global
+            web experiences and infrastructure.
+            <br />
+            <br /> Creator of bazaarghost.stream.
+            <br />
+            <br />
+            Learning how to make something AI (Actually Interesting)
+          </p>
+        </Card>
+      </SideColumn>
+    </>
+  );
 }

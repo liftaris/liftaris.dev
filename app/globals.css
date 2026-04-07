@@ -349,7 +349,7 @@
   --font-mono: Geist Mono, ui-monospace, monospace;
   --font-serif: Lora, ui-serif, serif;
 
-  --radius: 1.025rem;
+  --radius: 0.25rem;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
