@@ -1,30 +1,33 @@
-'use client'
+"use client";
 
-import Image from "next/image"
-import { useTina } from 'tinacms/dist/react'
-import { TinaMarkdown, TinaMarkdownContent, Components } from "tinacms/dist/rich-text"
-import type { PostQuery, PostQueryVariables } from "../../tina/__generated__/types"
-import ThemeImage from "../ThemeImage"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
+import Image from "next/image";
+import { useTina } from "tinacms/dist/react";
+import {
+  TinaMarkdown,
+  TinaMarkdownContent,
+  Components,
+} from "tinacms/dist/rich-text";
+import type {
+  PostQuery,
+  PostQueryVariables,
+} from "../../tina/__generated__/types";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 
 interface PostClientProps {
-  data: PostQuery
-  query: string
-  variables: PostQueryVariables
-}
-
-const components: Components<{
-  ThemeImage: { lightSrc: string; darkSrc: string; alt: string }
-}> = {
-  ThemeImage: (props) => (
-    <ThemeImage lightSrc={props.lightSrc} darkSrc={props.darkSrc} alt={props.alt} />
-  ),
+  data: PostQuery;
+  query: string;
+  variables: PostQueryVariables;
 }
 
 function reformatDate(fullDate: string): string {
-  const date = new Date(fullDate)
-  return date.toDateString().slice(4)
+  const date = new Date(fullDate);
+  return date.toDateString().slice(4);
 }
 
 export default function PostClient(props: PostClientProps) {
@@ -32,7 +35,7 @@ export default function PostClient(props: PostClientProps) {
     query: props.query,
     variables: props.variables,
     data: props.data,
-  })
+  });
 
   return (
     <article className="flex flex-col items-center gap-8">
@@ -61,8 +64,8 @@ export default function PostClient(props: PostClientProps) {
 
       {/* Post body */}
       <div className="prose prose-invert max-w-none w-full">
-        <TinaMarkdown content={data.post?.body as TinaMarkdownContent} components={components} />
+        <TinaMarkdown content={data.post?.body as TinaMarkdownContent} />
       </div>
     </article>
-  )
+  );
 }
