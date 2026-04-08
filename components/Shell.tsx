@@ -5,7 +5,10 @@ import { ChatProvider } from "@/components/ChatProvider";
 import { ChatPanel } from "@/components/ChatPanel";
 import { Navbar } from "@/components/Navbar";
 import { Sidebar } from "@/components/Sidebar";
-import { ChatVisibilityProvider, useChatVisibility } from "@/components/ChatVisibility";
+import {
+  ChatVisibilityProvider,
+  useChatVisibility,
+} from "@/components/ChatVisibility";
 
 function MainGrid({ children }: { children: React.ReactNode }) {
   const { showDefaultChat } = useChatVisibility();
@@ -16,9 +19,7 @@ function MainGrid({ children }: { children: React.ReactNode }) {
       className="flex flex-1 flex-col gap-4 overflow-hidden p-4 lg:grid lg:grid-cols-[1fr_2fr_1fr]"
     >
       {/* Mobile: children (SideColumns) sit side-by-side in top 50% */}
-      <div className="flex min-h-0 basis-1/2 gap-4 lg:contents">
-        {children}
-      </div>
+      <div className="flex min-h-0 basis-1/2 gap-4 lg:contents">{children}</div>
       {showDefaultChat && <ChatPanel />}
     </main>
   );

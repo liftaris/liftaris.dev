@@ -6,6 +6,11 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Font utility classes */
+.font-bluescreen {
+  font-family: var(--font-bluescreen);
+}
+
 /* Article/blog content typography — apply via className="article-content" */
 .article-content ul {
   list-style: none;
@@ -270,7 +275,7 @@
   --popover-foreground: oklch(0.8658 0.0664 257.5845);
   --primary: oklch(0.8658 0.0664 257.5845);
   --primary-foreground: oklch(0.2072 0.0949 267.3267);
-  --secondary: oklch(0.3411 0.1781 264.4345);
+  --secondary: oklch(0.4528 0.2457 264.31);
   --secondary-foreground: oklch(0.8658 0.0664 257.5845);
   --muted: oklch(0.2581 0.1327 264.915);
   --muted-foreground: oklch(0.6476 0.1552 257.342);

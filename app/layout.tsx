@@ -4,6 +4,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { Shell } from "@/components/Shell";
+import localFont from "next/font/local";
 
 const fontSans = Poppins({
   subsets: ["latin"],
@@ -29,6 +30,11 @@ const fontSpectral = Spectral({
   display: "swap",
 });
 
+const blueScreenFont = localFont({
+  src: "../public/fonts/BlueScreenPersonalUseRegular-0W1M9.ttf",
+  variable: "--font-bluescreen",
+});
+
 export const metadata: Metadata = {
   title: "KAIO",
   description:
@@ -43,7 +49,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`dark ${fontSans.variable} ${fontSerif.variable} ${fontMono.variable} ${fontSpectral.variable}`}
+      className={`dark ${fontSans.variable} ${fontSerif.variable} ${fontMono.variable} ${fontSpectral.variable} ${blueScreenFont.variable}`}
     >
       <body className="font-sans antialiased">
         <ViewTransition>

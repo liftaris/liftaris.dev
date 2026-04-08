@@ -4,7 +4,11 @@ import { useEffect } from "react";
 import { ChatPanel } from "@/components/ChatPanel";
 import { useChatVisibility } from "@/components/ChatVisibility";
 
-export default function ArticleLayout({ children }: { children: React.ReactNode }) {
+export default function ArticleLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const { setShowDefaultChat } = useChatVisibility();
 
   // Hide the default center ChatPanel when this layout is active

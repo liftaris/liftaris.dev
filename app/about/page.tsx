@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { EmptyTile } from "@/components/EmptyTile";
 import { Badge } from "@/components/ui/badge";
 import type { Metadata } from "next";
+import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
   title: "About | KAIO",
@@ -62,9 +63,12 @@ export default function AboutPage() {
         <Card className="p-6">
           <p className="text-sm text-foreground leading-relaxed">
             Working at Moderna on the Marketing Technology team building global
-            web experiences and infrastructure.
+            web experiences, tools, and infrastructure.
             <br />
-            <br /> Creator of bazaarghost.stream.
+            <br /> Creator of
+            <Button variant="link" className="font-bold">
+              bazaarghost.stream
+            </Button>
             <br />
             <br />
             Learning how to make something AI (Actually Interesting)
