@@ -1,10 +1,20 @@
-// components/ChatProvider.tsx
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import type { UIMessage } from "ai";
+import type { TileSpec, RetrievalHit, TurnSurface } from "@/lib/tiles";
+import type { RepoCard } from "@/lib/github";
+import { EMPTY_SURFACE } from "@/lib/tiles";
 
 interface ChatSession {
   id: string;
@@ -24,6 +34,7 @@ interface ChatContextValue {
   currentSessionId: string;
   startNewSession: () => void;
   loadSession: (id: string) => void;
+  surface: TurnSurface;
 }
 
 const ChatContext = createContext<ChatContextValue | null>(null);
@@ -34,31 +45,81 @@ export function useChatContext() {
   return ctx;
 }
 
+const STORAGE_KEY = "chat-sessions";
 const transport = new DefaultChatTransport({ api: "/api/ask" });
 
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
 
-function loadSessionsFromStorage(): ChatSession[] {
-  if (typeof window === "undefined") return [];
+function readStorage(): ChatSession[] {
   try {
-    const raw = localStorage.getItem("chat-sessions");
+    const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
   }
 }
 
-function saveSessionsToStorage(sessions: ChatSession[]) {
-  localStorage.setItem("chat-sessions", JSON.stringify(sessions));
+function writeStorage(sessions: ChatSession[]) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+  } catch {
+    // quota or disabled storage
+  }
+}
+
+function deriveSurface(messages: UIMessage[]): TurnSurface {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i];
+    if (m.role !== "assistant") continue;
+
+    let left: TileSpec[] = [];
+    let right: TileSpec[] = [];
+    let retrieval: RetrievalHit[] = [];
+    const repos: TileSpec[] = [];
+
+    for (const part of m.parts) {
+      if (part.type === "tool-showTiles") {
+        // Only trust fully-parsed tool input; partial streaming input yields
+        // half-built tile specs (e.g. stack without items).
+        const p = part as {
+          state?: string;
+          input?: { left?: TileSpec[]; right?: TileSpec[] };
+        };
+        if (p.state !== "input-available" && p.state !== "output-available") continue;
+        if (p.input?.left) left = p.input.left;
+        if (p.input?.right) right = p.input.right;
+      } else if (part.type === "data-retrieval") {
+        const data = (part as { data?: RetrievalHit[] }).data;
+        if (data) retrieval = data;
+      } else if (part.type === "data-ghrepo") {
+        const data = (part as { data?: RepoCard }).data;
+        if (data)
+          repos.push({ kind: "ghrepo", repo: `${data.owner}/${data.name}`, data });
+      }
+    }
+
+    // Streamed repo cards replace any ghrepo placeholders from showTiles,
+    // then prepend to the left column.
+    if (repos.length) {
+      left = [...repos, ...left.filter((t) => t.kind !== "ghrepo")];
+    }
+
+    if (left.length || right.length || retrieval.length) {
+      return { left, right, retrieval };
+    }
+  }
+  return EMPTY_SURFACE;
 }
 
 export function ChatProvider({ children }: { children: React.ReactNode }) {
-  const [sessions, setSessions] = useState<ChatSession[]>([]);
-  const [currentSessionId, setCurrentSessionId] = useState(() => generateId());
-  const [initialized, setInitialized] = useState(false);
+  // Session history is a write-through cache to localStorage. Held in a ref
+  // to avoid render cascades; the sidebar reads it lazily on open.
+  const sessionsRef = useRef<ChatSession[]>([]);
+  const [sessionsVersion, setSessionsVersion] = useState(0);
 
+  const [currentSessionId, setCurrentSessionId] = useState(() => generateId());
   const [input, setInput] = useState("");
 
   const { messages, sendMessage, stop, status, setMessages } = useChat({
@@ -66,63 +127,57 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     id: currentSessionId,
   });
 
-  // Load sessions from localStorage on mount
+  const surface = useMemo(() => deriveSurface(messages), [messages]);
+
+  // Hydrate history from localStorage post-mount (ref mutation only).
   useEffect(() => {
-    const stored = loadSessionsFromStorage();
-    if (stored.length > 0) {
-      const latest = stored[stored.length - 1];
-      setSessions(stored);
-      setCurrentSessionId(latest.id);
-      setMessages(latest.messages);
-    }
-    setInitialized(true);
-  }, [setMessages]);
+    sessionsRef.current = readStorage();
+    setSessionsVersion((v) => v + 1);
+  }, []);
 
-  // Persist current messages to storage whenever they change
+  // Sync messages → localStorage (external system).
   useEffect(() => {
-    if (!initialized || messages.length === 0) return;
+    if (messages.length === 0) return;
 
-    setSessions((prev) => {
-      const title =
-        messages[0]?.parts
-          ?.filter((p) => p.type === "text")
-          .map((p) => p.text)
-          .join(" ")
-          .slice(0, 50) || "New chat";
+    const title =
+      messages[0]?.parts
+        ?.filter((p) => p.type === "text")
+        .map((p) => (p as { text: string }).text)
+        .join(" ")
+        .slice(0, 50) || "New chat";
 
-      const existing = prev.findIndex((s) => s.id === currentSessionId);
-      const session: ChatSession = {
-        id: currentSessionId,
-        title,
-        createdAt: existing >= 0 ? prev[existing].createdAt : new Date().toISOString(),
-        messages,
-      };
-
-      const next =
-        existing >= 0
-          ? prev.map((s) => (s.id === currentSessionId ? session : s))
-          : [...prev, session];
-
-      saveSessionsToStorage(next);
-      return next;
-    });
-  }, [messages, currentSessionId, initialized]);
+    const list = sessionsRef.current;
+    const idx = list.findIndex((s) => s.id === currentSessionId);
+    const session: ChatSession = {
+      id: currentSessionId,
+      title,
+      createdAt: idx >= 0 ? list[idx].createdAt : new Date().toISOString(),
+      messages,
+    };
+    sessionsRef.current =
+      idx >= 0 ? list.map((s) => (s.id === currentSessionId ? session : s)) : [...list, session];
+    writeStorage(sessionsRef.current);
+  }, [messages, currentSessionId]);
 
   const startNewSession = useCallback(() => {
-    const newId = generateId();
-    setCurrentSessionId(newId);
+    setCurrentSessionId(generateId());
     setMessages([]);
   }, [setMessages]);
 
   const loadSession = useCallback(
     (id: string) => {
-      const session = sessions.find((s) => s.id === id);
-      if (session) {
-        setCurrentSessionId(id);
-        setMessages(session.messages);
-      }
+      const session = sessionsRef.current.find((s) => s.id === id);
+      if (!session) return;
+      setCurrentSessionId(id);
+      setMessages(session.messages);
     },
-    [sessions, setMessages]
+    [setMessages],
+  );
+
+  const sessions = useMemo(
+    () => sessionsRef.current,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sessionsVersion, messages.length],
   );
 
   return (
@@ -138,6 +193,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         currentSessionId,
         startNewSession,
         loadSession,
+        surface,
       }}
     >
       {children}

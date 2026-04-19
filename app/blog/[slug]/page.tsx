@@ -4,7 +4,7 @@ import client from "@/tina/__generated__/client";
 import type { PostQuery, PostQueryVariables } from "@/tina/__generated__/types";
 import PostClient from "@/components/tina/PostClient";
 import { SideColumn } from "@/components/SideColumn";
-import { EmptyTile } from "@/components/EmptyTile";
+import type { TileSpec } from "@/lib/tiles";
 import type { Metadata } from "next";
 
 interface PageProps {
@@ -22,9 +22,9 @@ async function getPostData(slug: string) {
 }
 
 export async function generateStaticParams() {
-  const postsDirectory = path.join(process.cwd(), "content/posts");
+  const dir = path.join(process.cwd(), "content/posts");
   return fs
-    .readdirSync(postsDirectory)
+    .readdirSync(dir)
     .filter((f) => f.endsWith(".md"))
     .map((file) => ({ slug: file.replace(/\.md$/, "") }));
 }
@@ -35,28 +35,35 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return { title: `${postData.data.post?.title || "Post"} | KAIO` };
 }
 
+function relatedTiles(slug: string): TileSpec[] {
+  const lower = slug.toLowerCase();
+  if (lower.includes("bazaar"))
+    return [
+      { kind: "project", slug: "bazaarghost" },
+      { kind: "image", src: "bazaarghost-diagram", alt: "VOD processing pipeline", aspect: "video" },
+      { kind: "link", href: "https://bazaarghost.stream", title: "bazaarghost.stream", subtitle: "Try it" },
+    ];
+  if (lower.includes("l-system") || lower.includes("lsystem"))
+    return [
+      { kind: "project", slug: "lsystems" },
+      { kind: "image", src: "lsystems-n3", alt: "L-System n=3", aspect: "square" },
+    ];
+  return [{ kind: "contact" }];
+}
+
 export default async function BlogPost({ params }: PageProps) {
   const { slug } = await params;
   const postData = await getPostData(slug);
 
   return (
     <>
-      {/* Article content — center column */}
       <article className="article-content overflow-y-auto p-6 lg:col-start-2 lg:row-start-1">
         <div className="mx-auto max-w-2xl">
           <PostClient {...postData} />
         </div>
       </article>
 
-      {/* Right column tiles */}
-      <SideColumn side="right">
-        <EmptyTile className="aspect-square" />
-        <div className="flex gap-4">
-          <EmptyTile className="aspect-square flex-1" />
-          <EmptyTile className="aspect-square flex-1" />
-        </div>
-        <EmptyTile className="flex-1" />
-      </SideColumn>
+      <SideColumn side="right" fallback={relatedTiles(slug)} />
     </>
   );
 }

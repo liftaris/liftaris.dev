@@ -5,7 +5,6 @@ import { useTina } from "tinacms/dist/react";
 import {
   TinaMarkdown,
   TinaMarkdownContent,
-  Components,
 } from "tinacms/dist/rich-text";
 import type {
   PostQuery,
