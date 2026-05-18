@@ -89,6 +89,7 @@ export function GhRepoTile({
     <Link
       href={card.url}
       target="_blank"
+      rel="noreferrer"
       className="group relative flex flex-col gap-2 overflow-hidden rounded-xl border border-border/20 bg-card/40 p-4 transition-all hover:border-border/60 hover:bg-card/60"
     >
       <span className="pointer-events-none absolute right-3 top-2.5 font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground/50">
@@ -196,6 +197,7 @@ export function GhGridTile() {
         <Link
           href={snap.contributedTo[0].url}
           target="_blank"
+          rel="noreferrer"
           className="flex items-center justify-between border-t border-border/10 pt-2 text-[10px] transition-colors hover:text-foreground"
         >
           <span className="inline-flex items-center gap-1.5 truncate">
@@ -230,6 +232,7 @@ export function GhActivityTile() {
           key={i}
           href={it.url}
           target="_blank"
+          rel="noreferrer"
           className="group flex items-baseline gap-2 text-[11px] transition-colors hover:text-foreground"
         >
           <span className="w-12 shrink-0 font-mono text-[9px] text-muted-foreground">

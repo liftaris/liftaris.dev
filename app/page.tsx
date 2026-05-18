@@ -1,5 +1,5 @@
-import { LandingContent } from "@/components/LandingContent";
+import { Stage } from "@/components/Stage";
 
 export default function HomePage() {
-  return <LandingContent />;
+  return <Stage />;
 }

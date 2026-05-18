@@ -1,15 +1,17 @@
 export interface Project {
   slug: string;
   name: string;
+  tag: string;
   tagline: string;
   year: string;
-  status: "active" | "maintained" | "archived";
   stat?: { value: string; label: string };
   stack: string[];
-  logo?: string;
-  image?: string;
-  links: { site?: string; github?: string; blog?: string; npm?: string };
+  links: { site?: string; github?: string; npm?: string; blog?: string };
+  body: string;
   blurb: string;
+  logo?: string;
+  proof: string[];
+  image?: string;
   featured?: boolean;
 }
 
@@ -17,73 +19,45 @@ export const PROJECTS: Record<string, Project> = {
   bazaarghost: {
     slug: "bazaarghost",
     name: "BazaarGhost",
-    tagline: "See your ghost go up against Twitch streamers in The Bazaar",
+    tag: "Computer vision for Twitch VODs.",
+    tagline: "Computer vision for Twitch VODs.",
     year: "2025",
-    status: "active",
-    stat: { value: "18,000+", label: "unique visitors · month one" },
-    stack: ["Python", "OpenCV", "PaddleOCR", "FFmpeg", "Next.js", "Supabase", "GitHub Actions"],
-    logo: "/icons/bazaarghost-logo.svg",
-    image: "/BazaarGhost/web-app-manifest-512x512.png",
+    stat: { value: "18,000+", label: "unique visitors in month one" },
+    stack: ["Python", "OpenCV", "PaddleOCR", "FFmpeg", "Twitch EventSub", "Supabase", "GitHub Actions", "Next.js"],
     links: {
       site: "https://bazaarghost.stream",
       github: "https://github.com/liftaris/bazaar-ghost",
       blog: "/blog/bazaar-ghost",
     },
-    blurb:
-      "Computer-vision pipeline that indexes Twitch VODs, detects matchup screens, OCRs usernames, and links players to the exact moment a streamer fought their ghost. Zero hosting cost — compute runs entirely on GitHub Actions.",
+    body: "Indexes Twitch VODs for The Bazaar, detects matchup screens, extracts opponent usernames, and makes appearances searchable at bazaarghost.stream.",
+    blurb: "Indexes Twitch VODs for The Bazaar, detects matchup screens, extracts opponent usernames, and makes appearances searchable at bazaarghost.stream.",
+    proof: [
+      "Discovers Bazaar streamers from Twitch chapter metadata.",
+      "Splits VODs into parallel 30-minute processing chunks.",
+      "Runs Streamlink, FFmpeg, OpenCV template matching, and PaddleOCR in a containerized SFDE pipeline.",
+      "Stores detections, screenshots, and notifications in Supabase.",
+    ],
+    image: "/BazaarGhost/BG-Vod_Processing_Diagram-Dark.png",
     featured: true,
   },
-  shaderweb: {
-    slug: "shaderweb",
-    name: "ShaderWeb",
-    tagline: "GLSL learning platform with AI-validated practice problems",
-    year: "2024",
-    status: "maintained",
-    stack: ["React", "WebGL", "GLSL", "D3.js", "Claude API", "Supabase"],
-    image: "/images/shaderweb-preview.svg",
-    links: {},
-    blurb:
-      "Live shader editor paired with a WebGL-heatmap knowledge graph. Claude validates user solutions and generates practice problems on demand.",
-    featured: true,
-  },
-  "hnswlib-wasm": {
-    slug: "hnswlib-wasm",
-    name: "hnswlib-wasm",
-    tagline: "Approximate nearest-neighbor search in the browser",
-    year: "2024",
-    status: "maintained",
-    stack: ["C++", "Emscripten", "WASM", "TypeScript"],
-    links: {
-      github: "https://github.com/liftaris/hnswlib-wasm",
-    },
-    blurb:
-      "WebAssembly bindings for hnswlib. HNSW index build + query with L2 / IP / cosine, fully client-side. Built for browser-native RAG.",
-  },
-  lsystems: {
-    slug: "lsystems",
-    name: "LSystems",
-    tagline: "Fractal turtle graphics in C + SDL2",
-    year: "2023",
-    status: "archived",
-    stack: ["C", "SDL2"],
-    image: "/LSystemN3.gif",
-    links: {
-      github: "https://github.com/liftaris/LSystems",
-      blog: "/blog/Understanding-L-Systems",
-    },
-    blurb:
-      "Lindenmayer-system renderer written while working through The Algorithmic Beauty of Plants. Pure recursion, no dependencies beyond SDL.",
-  },
-  "liftaris-dev": {
-    slug: "liftaris-dev",
-    name: "liftaris.dev",
-    tagline: "This site — chat-driven portfolio with generative UI",
+  herm: {
+    slug: "herm",
+    name: "Herm TUI",
+    tag: "A terminal interface for Hermes Agent.",
+    tagline: "A terminal interface for Hermes Agent.",
     year: "2026",
-    status: "active",
-    stack: ["Next.js 16", "AI SDK", "pgvector", "Tailwind 4", "Supabase"],
-    links: { github: "https://github.com/liftaris/liftaris.dev" },
-    blurb:
-      "Portfolio where the chatbot *is* the navigation. Tool calls drive route changes and compose the surrounding tiles from a structured corpus.",
+    stack: ["TypeScript", "Bun", "OpenTUI React", "SQLite", "JSON-RPC", "Hermes Agent"],
+    links: {
+      github: "https://github.com/liftaris/herm",
+      npm: "https://www.npmjs.com/package/herm-tui",
+    },
+    body: "A tabbed, mouse-aware TUI that brings Hermes Agent into an OpenCode-style terminal workspace with chat, sessions, memory, skills, cron, config, analytics, and kanban tabs.",
+    blurb: "A tabbed, mouse-aware TUI that brings Hermes Agent into an OpenCode-style terminal workspace with chat, sessions, memory, skills, cron, config, analytics, and kanban tabs.",
+    proof: [
+      "Streams chat with markdown, images, diff chips, tool-call expansion, and an animated ASCII avatar.",
+      "Talks to the same Hermes gateway as the CLI over stdio JSON-RPC.",
+      "Supports profile switching, command palette, slash commands, @-refs, rebindable keys, and theme picker.",
+    ],
     featured: true,
   },
 };
@@ -92,76 +66,55 @@ export interface Experience {
   company: string;
   role: string;
   period: string;
-  location: string;
   stack: string[];
+  body: string;
   summary: string;
-  highlights: string[];
+  proof: string[];
 }
 
 export const EXPERIENCE: Record<string, Experience> = {
   moderna: {
     company: "Moderna",
-    role: "Software Development Engineer II",
+    role: "Full Stack",
     period: "2023 — Present",
-    location: "Seattle, WA",
-    stack: ["TypeScript", "Next.js", "Angular", "NestJS", "Terraform", "AWS", "Contentful"],
-    summary:
-      "Full-stack engineer on Commercial Digital Innovation & Engagement. Owns marketing web platform, Vaccine Finder, FMV compliance tooling, and supporting AWS infrastructure.",
-    highlights: [
-      "82 merged PRs across 13 repositories",
-      "Built Vaccine Finder 'Search This Area' + Walgreens partner-API integration",
-      "Designed phased AWS WAF hardening for marketing CDN",
-      "32 PRs on FMV compliance platform (Angular + NestJS + SQL Server)",
+    stack: ["TypeScript", "Next.js", "Angular", "NestJS", "Terraform", "AWS", "GitHub Actions", "AI tooling"],
+    body: "Full-stack engineering on internal AI tooling, commercial web platforms, compliance systems, and AWS infrastructure.",
+    summary: "Full-stack engineering on internal AI tooling, commercial web platforms, compliance systems, and AWS infrastructure.",
+    proof: [
+      "Lead developer on an internal AI translation platform.",
+      "Built regulatory compliance tooling for Moderna Legal.",
+      "Core contributor to the React component system and GitHub Actions CI/CD gating system.",
+      "Currently building a multi-tenant microfrontend platform.",
     ],
   },
   freelance: {
     company: "Freelance",
-    role: "Full-Stack Developer",
+    role: "Full Stack",
     period: "2022 — 2023",
-    location: "Remote",
     stack: ["React", "Node.js", "Python"],
-    summary:
-      "Contract work: full-stack web builds and early-stage AI prototypes for small clients.",
-    highlights: ["Shipped 4 client projects end-to-end", "Prototyped LLM-backed tooling pre-ChatGPT-boom"],
+    body: "Full-stack web builds and early AI prototypes for small clients.",
+    summary: "Full-stack web builds and early AI prototypes for small clients.",
+    proof: ["Shipped client projects end to end.", "Built LLM-backed prototypes before the post-ChatGPT tooling wave."],
   },
   healthnote: {
     company: "Health Note",
-    role: "Full-Stack Engineer",
+    role: "Full Stack",
     period: "2022",
-    location: "San Diego, CA",
     stack: ["React", "Node.js", "PostgreSQL"],
-    summary:
-      "Built patient-intake features for a digital-health startup automating clinical note-taking.",
-    highlights: ["Shipped patient-facing intake flows", "Worked directly with clinical staff on UX"],
+    body: "Patient-intake product work for a digital-health startup automating clinical note-taking.",
+    summary: "Patient-intake product work for a digital-health startup automating clinical note-taking.",
+    proof: ["Shipped patient-facing intake flows.", "Worked directly with clinical staff on UX."],
   },
   parsons: {
     company: "Parsons",
-    role: "Front-End Engineer",
+    role: "Front-End",
     period: "2021 — 2022",
-    location: "Remote",
     stack: ["Angular", "TypeScript", "D3.js"],
-    summary:
-      "Front-end work on geospatial analysis tooling for a defense & infrastructure contractor.",
-    highlights: ["Data-viz dashboards for geospatial analysts", "Angular component library contributions"],
+    body: "Front-end work on geospatial analysis tooling for a defense and infrastructure contractor.",
+    summary: "Front-end work on geospatial analysis tooling for a defense and infrastructure contractor.",
+    proof: ["Built data-viz dashboards for geospatial analysts.", "Contributed to Angular component systems."],
   },
 };
-
-export interface Place {
-  key: string;
-  label: string;
-  coords: [number, number];
-  zoom: number;
-  prompt: string;
-}
-
-export const PLACES: Place[] = [
-  { key: "seattle", label: "Seattle, WA", coords: [47.6062, -122.3353], zoom: 11, prompt: "Tell me about Kaio's time in Seattle" },
-  { key: "natal", label: "Pirangi, Brasil", coords: [-5.9760, -35.1208], zoom: 12, prompt: "Tell me about Kaio growing up in Brazil" },
-  { key: "bayarea", label: "Bay Area, CA", coords: [37.9735, -122.5311], zoom: 10, prompt: "Tell me about Kaio's time in the Bay Area" },
-  { key: "cdmx", label: "Mexico City", coords: [19.4326, -99.1332], zoom: 11, prompt: "Tell me about Kaio's time in Mexico City" },
-  { key: "auroville", label: "Auroville, India", coords: [12.0052, 79.8069], zoom: 13, prompt: "Tell me about Kaio's time in Auroville" },
-  { key: "bordeaux", label: "Bordeaux, France", coords: [44.8378, -0.5792], zoom: 11, prompt: "Tell me about Kaio's time in Bordeaux" },
-];
 
 export const SOCIAL = {
   github: "https://github.com/liftaris",
@@ -169,18 +122,12 @@ export const SOCIAL = {
   email: "mailto:kaio@liftaris.dev",
 };
 
-// Flatten for prompt injection
 export const PROJECT_SLUGS = Object.keys(PROJECTS);
 export const EXPERIENCE_KEYS = Object.keys(EXPERIENCE);
-export const PLACE_KEYS = PLACES.map((p) => p.key);
 
-// Known-safe images the model may reference in image tiles
+export const PLACES = [];
+export const PLACE_KEYS = [];
 export const IMAGE_CATALOG: Record<string, string> = {
   profile: "/profile.png",
   "bazaarghost-diagram": "/BazaarGhost/BG-Vod_Processing_Diagram-Dark.png",
-  "bazaarghost-analytics": "/BazaarGhost/vercel_analytics.png",
-  "bazaarghost-reddit": "/BazaarGhost/reddit_ghost_interest.png",
-  "lsystems-n2": "/LSystemN2.gif",
-  "lsystems-n3": "/LSystemN3.gif",
-  "lsystems-concept": "/LSystemConcept.jpeg",
 };

@@ -275,6 +275,7 @@ function LinkTile({
     <Link
       href={href}
       target={external ? "_blank" : undefined}
+      rel={external ? "noreferrer" : undefined}
       className="group flex items-center gap-3 rounded-xl border border-border/20 bg-card/40 p-3 transition-all hover:border-border/60 hover:bg-card/60"
     >
       <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border/20 bg-background/50">
@@ -305,6 +306,7 @@ function ContactTile() {
         <a
           href={SOCIAL.github}
           target="_blank"
+          rel="noreferrer"
           className="flex size-9 items-center justify-center rounded-lg border border-border/20 bg-background/50 transition-colors hover:border-border/60 hover:text-foreground"
         >
           <Github className="size-4" />
@@ -312,6 +314,7 @@ function ContactTile() {
         <a
           href={SOCIAL.linkedin}
           target="_blank"
+          rel="noreferrer"
           className="flex size-9 items-center justify-center rounded-lg border border-border/20 bg-background/50 transition-colors hover:border-border/60 hover:text-foreground"
         >
           <Linkedin className="size-4" />

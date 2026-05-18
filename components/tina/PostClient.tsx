@@ -1,22 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import { useTina } from "tinacms/dist/react";
-import {
-  TinaMarkdown,
-  TinaMarkdownContent,
-} from "tinacms/dist/rich-text";
-import type {
-  PostQuery,
-  PostQueryVariables,
-} from "../../tina/__generated__/types";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { TinaMarkdown, TinaMarkdownContent } from "tinacms/dist/rich-text";
+import type { PostQuery, PostQueryVariables } from "../../tina/__generated__/types";
 
 interface PostClientProps {
   data: PostQuery;
@@ -24,47 +10,18 @@ interface PostClientProps {
   variables: PostQueryVariables;
 }
 
-function reformatDate(fullDate: string): string {
-  const date = new Date(fullDate);
-  return date.toDateString().slice(4);
+function fmt(input: string) {
+  return new Date(input).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 }
 
 export default function PostClient(props: PostClientProps) {
-  const { data } = useTina({
-    query: props.query,
-    variables: props.variables,
-    data: props.data,
-  });
-
+  const res = useTina({ query: props.query, variables: props.variables, data: props.data });
+  const post = res.data.post;
   return (
-    <article className="flex flex-col items-center gap-8">
-      {/* Hero image */}
-      <Card className="w-full overflow-hidden">
-        <Image
-          width={800}
-          height={450}
-          src={data.post?.hero_image || ""}
-          alt={data.post?.title || "No Title"}
-          className="w-full h-auto"
-        />
-      </Card>
-
-      {/* Post info */}
-      <CardHeader className="w-full text-center px-0">
-        <CardTitle className="text-3xl font-bold">
-          {data.post?.title || "Article Title Not found"}
-        </CardTitle>
-        <CardDescription className="text-base">
-          {reformatDate(data.post?.date || "NO DATE")}
-        </CardDescription>
-      </CardHeader>
-
-      <Separator />
-
-      {/* Post body */}
-      <div className="prose prose-invert max-w-none w-full">
-        <TinaMarkdown content={data.post?.body as TinaMarkdownContent} />
-      </div>
-    </article>
+    <>
+      <p className="meta">{fmt(post?.date || "")}</p>
+      <h1>{post?.title || "Post"}</h1>
+      <TinaMarkdown content={post?.body as TinaMarkdownContent} />
+    </>
   );
 }

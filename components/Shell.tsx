@@ -1,52 +1,64 @@
 "use client";
 
-import { useState } from "react";
-import { ChatProvider } from "@/components/ChatProvider";
-import { ChatPanel } from "@/components/ChatPanel";
-import { Navbar } from "@/components/Navbar";
-import { Sidebar } from "@/components/Sidebar";
-import {
-  ChatVisibilityProvider,
-  useChatVisibility,
-} from "@/components/ChatVisibility";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useTransition } from "react";
+import { SOCIAL } from "@/data/portfolio";
 
-function MainGrid({ children }: { children: React.ReactNode }) {
-  const { showDefaultChat } = useChatVisibility();
-
-  return (
-    <main
-      style={{ viewTransitionName: "bento-grid" }}
-      className="relative flex flex-1 flex-col gap-3 overflow-hidden p-3 lg:grid lg:grid-cols-[minmax(260px,1fr)_minmax(420px,2fr)_minmax(260px,1fr)] lg:gap-4 lg:p-4"
-    >
-      <div className="flex min-h-0 basis-1/2 gap-3 lg:contents">{children}</div>
-      {showDefaultChat && <ChatPanel className="relative z-10" />}
-    </main>
-  );
+export interface ShellPost {
+  slug: string;
+  title: string;
+  date: string;
 }
 
-export function Shell({ children }: { children: React.ReactNode }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+interface ShellProps {
+  posts: ShellPost[];
+  children: React.ReactNode;
+}
+
+export function Shell({ posts, children }: ShellProps) {
+  const router = useRouter();
+  const pathname = usePathname() || "/";
+  const [, startTransition] = useTransition();
+  const onBlog = pathname.startsWith("/blog/");
+  const activeSlug = onBlog ? pathname.replace("/blog/", "").replace(/\/$/, "") : "";
+
+  const go = (href: string) => {
+    startTransition(() => router.push(href));
+  };
 
   return (
-    <ChatProvider>
-      <ChatVisibilityProvider>
-        <div className="relative flex h-dvh flex-col overflow-hidden">
-          {/* ambient backdrop */}
-          <div
-            aria-hidden
-            className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,oklch(0.34_0.18_264/0.35),transparent_60%)]"
-          />
-          <Navbar onToggleSidebar={() => setSidebarOpen((o) => !o)} />
-          <div className="flex flex-1 overflow-hidden">
-            <Sidebar open={sidebarOpen} />
-            <MainGrid>{children}</MainGrid>
-          </div>
-          <footer className="flex items-center justify-between px-5 py-2 font-mono text-[10px] uppercase tracking-[0.3em] text-muted-foreground/40">
-            <span>liftaris.dev</span>
-            <span>Barbosa-Chifan · {new Date().getFullYear()}</span>
-          </footer>
+    <div className={onBlog ? "shell onBlog" : "shell"}>
+      <nav className="stageNav" aria-label="Primary">
+        <Link className={pathname === "/projects" ? "active" : ""} href="/projects">projects</Link>
+        <Link className={pathname === "/experience" ? "active" : ""} href="/experience">experience</Link>
+        <a href={SOCIAL.github} target="_blank" rel="noreferrer">github</a>
+      </nav>
+
+      <button className="name" onClick={() => go("/")} aria-label="Home">
+        <h1><span>Kaio</span><span>Barbosa</span><span>-</span><span>Chifan</span></h1>
+      </button>
+
+      <aside className="writing" aria-label="Writing">
+        <h2>Writing</h2>
+        <div className="postlist">
+          {posts.map((post) => (
+            <Link
+              key={post.slug}
+              className={activeSlug === post.slug ? "active" : ""}
+              href={`/blog/${post.slug}`}
+              transitionTypes={!onBlog ? ["blog-enter"] : undefined}
+            >
+              <time>{new Date(post.date).toLocaleDateString("en-US", { month: "short", year: "numeric" })}</time>
+              <span>{post.title}</span>
+            </Link>
+          ))}
         </div>
-      </ChatVisibilityProvider>
-    </ChatProvider>
+      </aside>
+
+      <section className="stageContent" aria-live="polite">
+        {children}
+      </section>
+    </div>
   );
 }

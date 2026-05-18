@@ -1,60 +1,47 @@
-import { Spectral, Geist_Mono, Lora, Poppins } from "next/font/google";
-import { ViewTransition } from "react";
+import { Geist_Mono, Instrument_Serif, Manrope } from "next/font/google";
+import fs from "fs";
+import path from "path";
+import matter from "gray-matter";
 import "./globals.css";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { Shell } from "@/components/Shell";
-import localFont from "next/font/local";
 
-const fontSans = Poppins({
-  subsets: ["latin"],
-  variable: "--font-sans",
-  weight: "400",
-});
-
-const fontSerif = Lora({
-  subsets: ["latin"],
-  variable: "--font-serif",
-});
-
-const fontMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
-});
-
-const fontSpectral = Spectral({
-  weight: ["400", "700"],
-  style: ["normal", "italic"],
-  subsets: ["latin"],
-  variable: "--font-spectral",
-  display: "swap",
-});
-
-const blueScreenFont = localFont({
-  src: "../public/fonts/BlueScreenPersonalUseRegular-0W1M9.ttf",
-  variable: "--font-bluescreen",
-});
+const sans = Manrope({ subsets: ["latin"], variable: "--font-sans" });
+const serif = Instrument_Serif({ subsets: ["latin"], variable: "--font-serif", weight: "400" });
+const mono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" });
 
 export const metadata: Metadata = {
-  title: "KAIO",
-  description:
-    "Kaio Barbosa-Chifan — Software Engineer & Creative Technologist",
+  title: "Kaio Barbosa-Chifan",
+  description: "Software engineer building BazaarGhost and Herm TUI.",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
+
+function posts() {
+  const dir = path.join(process.cwd(), "content/posts");
+  return fs
+    .readdirSync(dir)
+    .filter((file) => file.endsWith(".md") && file !== "sfde-docker-audit.md")
+    .map((file) => {
+      const meta = matter(fs.readFileSync(path.join(dir, file), "utf8"));
+      return {
+        slug: file.replace(/\.md$/, ""),
+        title: String(meta.data.title || file.replace(/\.md$/, "")),
+        date: String(meta.data.date instanceof Date ? meta.data.date.toISOString() : meta.data.date || ""),
+      };
+    })
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+}
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html
-      lang="en"
-      className={`dark ${fontSans.variable} ${fontSerif.variable} ${fontMono.variable} ${fontSpectral.variable} ${blueScreenFont.variable}`}
-    >
-      <body className="font-sans antialiased">
-        <ViewTransition>
-          <Shell>{children}</Shell>
-        </ViewTransition>
+    <html lang="en" className={`${sans.variable} ${serif.variable} ${mono.variable}`}>
+      <body>
+        <Shell posts={posts()}>{children}</Shell>
         <Analytics />
       </body>
     </html>
