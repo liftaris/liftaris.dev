@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    viewTransition: true,
+  },
   images: {
     remotePatterns: [
       {
@@ -7,6 +10,11 @@ const nextConfig = {
         hostname: 'assets.tina.io',
         port: '',
         pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'maps.googleapis.com',
+        pathname: '/maps/api/staticmap/**',
       },
     ],
   },

@@ -41,4 +41,9 @@ tina/__generated__/.cache
 # IntelliJ IDEA
 .idea
 
-node_modulesstyles/output.css
+styles/output.css
+tsconfig.tsbuildinfo
+
+.playwright-mcp/
+
+supabase/

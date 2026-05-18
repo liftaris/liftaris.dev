@@ -1,0 +1,15 @@
+<svg width="1920" height="1080" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0093E9;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#80D0C7;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#grad)" />
+  <text x="50%" y="50%" text-anchor="middle" fill="white" font-size="80" font-family="system-ui, -apple-system, sans-serif" font-weight="bold">
+    ShaderWeb
+  </text>
+  <text x="50%" y="60%" text-anchor="middle" fill="white" font-size="32" font-family="system-ui, -apple-system, sans-serif" opacity="0.8">
+    Screenshot Placeholder
+  </text>
+</svg>
