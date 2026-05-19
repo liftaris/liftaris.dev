@@ -3,7 +3,7 @@
 @import "shadcn/tailwind.css";
 
 :root {
-  --blue: #1737ff;
+  --blue: #1313ba;
   --paper: #fffbed;
   --ink: #06113a;
   --left-rail: clamp(180px, 18vw, 240px);
@@ -19,6 +19,7 @@ body {
   color: var(--paper);
   background: var(--blue);
   font-family: var(--font-mono), monospace;
+  letter-spacing: 0.012em;
   text-rendering: geometricPrecision;
 }
 a { color: inherit; text-decoration: none; }
@@ -99,7 +100,7 @@ nextjs-portal, [data-nextjs-dev-tools-button] { display: none !important; }
   font-family: var(--font-serif), Georgia, serif;
   font-size: clamp(56px, 7vw, 106px);
   font-weight: 700;
-  letter-spacing: -0.05em;
+  letter-spacing: -0.025em;
   line-height: 0.78;
 }
 .shell:not(.onBlog) .name {
@@ -197,7 +198,7 @@ nextjs-portal, [data-nextjs-dev-tools-button] { display: none !important; }
   font-family: var(--font-serif), Georgia, serif;
   font-size: clamp(46px, 6vw, 84px);
   font-weight: 400;
-  letter-spacing: -0.08em;
+  letter-spacing: -0.04em;
   line-height: 0.9;
 }
 
@@ -222,7 +223,7 @@ nextjs-portal, [data-nextjs-dev-tools-button] { display: none !important; }
   font-family: var(--font-serif), Georgia, serif;
   font-size: clamp(38px, 5vw, 64px);
   font-weight: 400;
-  letter-spacing: -0.085em;
+  letter-spacing: -0.04em;
   line-height: 0.86;
 }
 .card p,
@@ -237,7 +238,7 @@ nextjs-portal, [data-nextjs-dev-tools-button] { display: none !important; }
   display: block;
   margin: 18px 0;
   font-size: clamp(24px, 4vw, 42px);
-  letter-spacing: -0.07em;
+  letter-spacing: -0.025em;
   line-height: 0.96;
 }
 ul { margin: 12px 0 0; padding-left: 18px; }
@@ -337,7 +338,7 @@ li { margin: 8px 0; }
 .article-content h3 {
   font-family: var(--font-serif), Georgia, serif;
   font-weight: 400;
-  letter-spacing: -0.075em;
+  letter-spacing: -0.035em;
   line-height: 0.95;
   color: var(--ink);
 }
