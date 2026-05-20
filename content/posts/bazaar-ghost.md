@@ -49,7 +49,7 @@ Though I have a page about this [on the site](https://www.bazaarghost.stream/how
 
 Whoa the bold letters in that one bullet list spells out **SFOT,** I wonder if that's the lazy shorthand I use to refer to the stream processing step. Yeah, simply put it's a container that takes in a vod id as input and orchestrates S, F, O, and T to spit out usernames with timestamps of where they appear in the VOD.
 
-## How it Started
+# How it Started
 
 The first version of BazaarGhost actually started earlier this year, around March 2025. Among the playerbase, I was far from the only one who had the thought of seeing how my ghosts performed vs others.
 
@@ -70,7 +70,7 @@ Yeah, the proof of concept worked, but I was running the SFOT container on my ma
 
 Github Actions (GHA). As it turns out, you can run babies all day long as long as you're repo is public and you're not [abusing their infrastructure.](https://docs.github.com/en/site-policy/github-terms/github-terms-for-additional-products-and-features#actions) Since BazaarGhost is neither a product I'm trying to sell nor a state secret, I had no problem building it in the open, and making the best out of the generous—and most importantly—free, github actions.
 
-## Putting it together
+# Putting it together
 
 With the weight of cost removed, I was giddy to know that my project was feasible at (a relatively small) scale, at little to no cost.
 
@@ -120,7 +120,7 @@ Each chunk job builds the SFOT container, then runs it with environment variable
 
 The frontend is intentionally minimal. It's a quick Next.js on Vercel, a search box, and results that link directly to the timestamp in the VOD. I also disabled image optimization, because those use up a ton of Vercel edge function invocations. On the free/hobby tier, it's quite easy to hit the limit. As a consequence, images don't load as fast but since it's not a big part of the UX. Most of the images are the streamer avatars that show up in the search results.
 
-## Final Thoughts
+# Final Thoughts
 
 BazaarGhost started as a curiosity, and it is now a great source of fulfillment outside of work, something I was previosuly lacking. It has been so rewarding to see all the dicussion surrounding it, and to see people have positive experiences with the site, even if small.
 
