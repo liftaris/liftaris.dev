@@ -29,6 +29,8 @@ export function Shell({ posts, children }: ShellProps) {
 
   return (
     <div className={onBlog ? "shell onBlog" : "shell"}>
+      <div className="noise" aria-hidden="true" />
+
       <nav className="stageNav" aria-label="Primary">
         <Link className={pathname === "/projects" ? "active" : ""} href="/projects">projects</Link>
         <Link className={pathname === "/experience" ? "active" : ""} href="/experience">experience</Link>
