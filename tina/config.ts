@@ -159,7 +159,7 @@ export default defineConfig({
           },
         ],
         ui: {
-          router: ({ document }) => '/about',
+          router: () => '/about',
         },
       },
     ],

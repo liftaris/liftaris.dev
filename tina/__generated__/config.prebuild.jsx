@@ -157,7 +157,7 @@ var config_default = defineConfig({
           }
         ],
         ui: {
-          router: ({ document }) => "/about"
+          router: () => "/about"
         }
       }
     ]

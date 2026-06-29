@@ -121,13 +121,3 @@ export const SOCIAL = {
   linkedin: "https://www.linkedin.com/in/kaiobarb",
   email: "mailto:kaio@liftaris.dev",
 };
-
-export const PROJECT_SLUGS = Object.keys(PROJECTS);
-export const EXPERIENCE_KEYS = Object.keys(EXPERIENCE);
-
-export const PLACES = [];
-export const PLACE_KEYS = [];
-export const IMAGE_CATALOG: Record<string, string> = {
-  profile: "/profile.png",
-  "bazaarghost-diagram": "/BazaarGhost/BG-Vod_Processing_Diagram-Dark.png",
-};

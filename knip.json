@@ -1,5 +1,5 @@
 {
-  "$schema": "https://unpkg.com/knip@6.3.0/schema.json",
+  "$schema": "https://unpkg.com/knip@6.23.0/schema.json",
   "project": ["**/*.{js,jsx,ts,tsx}"],
   "entry": [
     "app/**/*.{js,jsx,ts,tsx}",
@@ -8,13 +8,11 @@
   "ignore": [
     "**/tina/__generated__/**",
     "**/public/admin/**",
-    "**/*.config.{js,mjs,ts}",
-    "eslint.config.mjs",
-    "knip.json"
+    "**/*.config.{js,mjs,ts}"
   ],
   "ignoreDependencies": [
-    "next-devtools-mcp",
-    "liquid-glass-react",
+    "shadcn",
+    "tw-animate-css",
     "tailwindcss"
   ],
   "ignoreBinaries": [],
