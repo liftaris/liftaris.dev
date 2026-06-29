@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { SOCIAL } from "@/data/portfolio";
+import { ShaderBackdrop } from "@/components/ShaderBackdrop";
 
 export interface ShellPost {
   slug: string;
@@ -29,7 +30,7 @@ export function Shell({ posts, children }: ShellProps) {
 
   return (
     <div className={onBlog ? "shell onBlog" : "shell"}>
-      <div className="noise" aria-hidden="true" />
+      <ShaderBackdrop />
 
       <nav className="stageNav" aria-label="Primary">
         <Link className={pathname === "/projects" ? "active" : ""} href="/projects">projects</Link>
