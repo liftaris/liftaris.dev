@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { SOCIAL } from "@/data/portfolio";
+import { TownSquare } from "@/components/TownSquare";
 
 export interface ShellPost {
   slug: string;
@@ -37,9 +38,12 @@ export function Shell({ posts, children }: ShellProps) {
         <a href={SOCIAL.github} target="_blank" rel="noreferrer">github</a>
       </nav>
 
-      <button className="name" onClick={() => go("/")} aria-label="Home">
-        <h1><span>Kaio</span><span>Barbosa</span><span>-</span><span>Chifan</span></h1>
-      </button>
+      <div className="identity">
+        <button className="name" onClick={() => go("/")} aria-label="Home">
+          <h1><span>Kaio</span><span>Barbosa</span><span>-</span><span>Chifan</span></h1>
+        </button>
+        {!onBlog && <TownSquare />}
+      </div>
 
       <aside className="writing" aria-label="Writing">
         <h2>Writing</h2>
@@ -61,6 +65,12 @@ export function Shell({ posts, children }: ShellProps) {
       <section className="stageContent" aria-live="polite">
         {children}
       </section>
+
+      {!onBlog && (
+        <footer className="mobileTownSquare" aria-label="TownSquare">
+          <TownSquare />
+        </footer>
+      )}
     </div>
   );
 }

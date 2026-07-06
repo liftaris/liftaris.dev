@@ -40,6 +40,10 @@ function posts() {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${sans.variable} ${serif.variable} ${mono.variable}`}>
+      <head>
+        <link rel="preconnect" href="https://townsquare.cauenapier.com" crossOrigin="" />
+        <link rel="stylesheet" href="https://townsquare.cauenapier.com/widget.css" />
+      </head>
       <body>
         <Shell posts={posts()}>{children}</Shell>
         <Analytics />

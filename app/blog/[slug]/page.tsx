@@ -5,6 +5,7 @@ import client from "@/tina/__generated__/client";
 import type { PostQuery, PostQueryVariables } from "@/tina/__generated__/types";
 import PostClient from "@/components/tina/PostClient";
 import type { Metadata } from "next";
+import { TownSquare } from "@/components/TownSquare";
 
 interface PageProps { params: Promise<{ slug: string }>; }
 
@@ -36,9 +37,14 @@ export default async function BlogPost({ params }: PageProps) {
   const { slug } = await params;
   return (
     <ViewTransition enter={{ "blog-enter": "blog-enter", default: "none" }} exit="none" default="none">
-      <article className="article-content">
-        <PostClient {...await getPostData(slug)} />
-      </article>
+      <>
+        <article className="article-content">
+          <PostClient {...await getPostData(slug)} />
+        </article>
+        <footer className="blogTownSquare" aria-label="TownSquare">
+          <TownSquare />
+        </footer>
+      </>
     </ViewTransition>
   );
 }
