@@ -103,8 +103,8 @@ nextjs-portal, [data-nextjs-dev-tools-button] { display: none !important; }
   cursor: pointer;
   white-space: nowrap;
 }
-.shell:not(.onBlog) .identity:hover,
-.shell:not(.onBlog) .identity:focus-within { transform: translateY(calc(-1 * var(--townsquare-reveal))); }
+.shell:not(.onBlog) .identity:not(:has(> #townsquare-root[hidden])):hover,
+.shell:not(.onBlog) .identity:not(:has(> #townsquare-root[hidden])):focus-within { transform: translateY(calc(-1 * var(--townsquare-reveal))); }
 .name:hover h1 { text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 4px; }
 .name h1 span { display: block; }
 .shell.onBlog .name h1 span:nth-child(3) { text-align: center; }

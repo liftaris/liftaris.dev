@@ -38,14 +38,6 @@ export function TownSquare() {
 
     let cancelled = false;
     let handle: TownSquareHandle | undefined;
-    const registrationObserver = new MutationObserver(() => {
-      if (root.textContent?.includes("isn't registered to TownSquare")) {
-        handle?.destroy?.();
-        root.replaceChildren();
-        root.hidden = true;
-      }
-    });
-    registrationObserver.observe(root, { childList: true, subtree: true, characterData: true });
 
     async function mount() {
       const url = `${SERVER_ORIGIN}/townsquare.mjs`;
@@ -71,7 +63,6 @@ export function TownSquare() {
 
     return () => {
       cancelled = true;
-      registrationObserver.disconnect();
       handle?.destroy?.();
       root.replaceChildren();
       root.hidden = false;
