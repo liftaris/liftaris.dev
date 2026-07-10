@@ -1,30 +1,23 @@
-import fs from "fs";
-import path from "path";
 import { ViewTransition } from "react";
 import client from "@/tina/__generated__/client";
 import type { PostQuery, PostQueryVariables } from "@/tina/__generated__/types";
 import PostClient from "@/components/tina/PostClient";
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { TownSquare } from "@/components/TownSquare";
+import { getPostSlugs, postExists } from "@/lib/posts";
 
 interface PageProps { params: Promise<{ slug: string }>; }
 
 async function getPostData(slug: string) {
+  if (!postExists(slug)) notFound();
   const variables: PostQueryVariables = { relativePath: `${slug}.md` };
-  try {
-    const res = await client.queries.post(variables);
-    return { data: res.data, query: res.query, variables };
-  } catch {
-    return { data: {} as PostQuery, query: "", variables };
-  }
+  const res = await client.queries.post(variables);
+  return { data: res.data as PostQuery, query: res.query, variables };
 }
 
 export async function generateStaticParams() {
-  const dir = path.join(process.cwd(), "content/posts");
-  return fs
-    .readdirSync(dir)
-    .filter((file) => file.endsWith(".md"))
-    .map((file) => ({ slug: file.replace(/\.md$/, "") }));
+  return getPostSlugs().map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {

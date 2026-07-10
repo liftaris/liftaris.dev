@@ -22,6 +22,7 @@ export function Shell({ posts, children }: ShellProps) {
   const pathname = usePathname() || "/";
   const [, startTransition] = useTransition();
   const onBlog = pathname.startsWith("/blog/");
+  const onHome = pathname === "/";
   const activeSlug = onBlog ? pathname.replace("/blog/", "").replace(/\/$/, "") : "";
 
   const go = (href: string) => {
@@ -29,7 +30,7 @@ export function Shell({ posts, children }: ShellProps) {
   };
 
   return (
-    <div className={onBlog ? "shell onBlog" : "shell"}>
+    <div className={onBlog ? "shell onBlog" : onHome ? "shell onHome" : "shell"}>
       <div className="noise" aria-hidden="true" />
 
       <nav className="stageNav" aria-label="Primary">
@@ -42,7 +43,7 @@ export function Shell({ posts, children }: ShellProps) {
         <button className="name" onClick={() => go("/")} aria-label="Home">
           <h1><span>Kaio</span><span>Barbosa</span><span>-</span><span>Chifan</span></h1>
         </button>
-        {!onBlog && <TownSquare />}
+        {!onBlog && <TownSquare key={pathname} />}
       </div>
 
       <aside className="writing" aria-label="Writing">
@@ -68,7 +69,7 @@ export function Shell({ posts, children }: ShellProps) {
 
       {!onBlog && (
         <footer className="mobileTownSquare" aria-label="TownSquare">
-          <TownSquare />
+          <TownSquare key={pathname} />
         </footer>
       )}
     </div>

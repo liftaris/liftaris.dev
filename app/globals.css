@@ -124,13 +124,20 @@ nextjs-portal, [data-nextjs-dev-tools-button] { display: none !important; }
   --townsquare-stage: clamp(220px, 24vw, 340px);
   --townsquare-toolbar: 64px;
   --townsquare-reveal: calc(var(--townsquare-stage) + var(--townsquare-toolbar));
+  position: absolute;
   bottom: calc(-1 * var(--townsquare-reveal));
   right: calc(var(--site-gutter) + 1rem);
   width: auto;
 }
+.shell.onHome .identity {
+  position: fixed;
+}
+.shell:not(.onBlog) .identity:has(> #townsquare-root[hidden]) {
+  bottom: 0;
+}
 .shell:not(.onBlog) .name h1 {
   font-size: clamp(64px, 11vw, 168px);
-  line-height: 0.72;
+  line-height: 0.8;
 }
 .shell:not(.onBlog) .name h1 span {
   display: inline;
@@ -497,6 +504,7 @@ li { margin: 8px 0; }
   .shell.onBlog { display: block; }
   .shell.onBlog .stageNav,
   .shell.onBlog .identity,
+  .shell:not(.onBlog) .identity,
   .shell.onBlog .name,
   .shell.onBlog .writing,
   .stageNav,

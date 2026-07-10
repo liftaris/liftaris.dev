@@ -6,6 +6,7 @@
     "tina/config.{js,ts}"
   ],
   "ignore": [
+    "**/*.test.{ts,tsx}",
     "**/tina/__generated__/**",
     "**/public/admin/**",
     "**/*.config.{js,mjs,ts}"

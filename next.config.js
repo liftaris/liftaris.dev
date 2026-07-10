@@ -3,6 +3,7 @@ const nextConfig = {
   experimental: {
     viewTransition: true,
   },
+  allowedDevOrigins: ['kaiborg'],
   images: {
     remotePatterns: [
       {
@@ -21,6 +22,3 @@ const nextConfig = {
 }
 
 module.exports = nextConfig
-module.exports = {
-  allowedDevOrigins: ['kaiborg'],
-}

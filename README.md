@@ -1,15 +1,36 @@
-## Getting Started
+# liftaris.dev
 
-First, run the development server:
+Kaio Barbosa-Chifan's portfolio, built with Next.js, React, TypeScript, and TinaCMS.
+
+## Setup
+
+Install dependencies:
 
 ```bash
-npm run dev
+bun install
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
+Create `.env` with the Tina credentials required to edit and build content:
 
-You can start editing the page by modifying `pages/index.js`. The page auto-updates as you edit the file.
+```bash
+NEXT_PUBLIC_TINA_CLIENT_ID=
+TINA_TOKEN=
+```
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.js`.
+Start the development server:
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
+```bash
+bun run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+## Checks
+
+```bash
+bun test
+bun run lint
+bunx tsc --noEmit
+bun run knip
+bun run build
+```
