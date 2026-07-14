@@ -86,11 +86,10 @@ export function Stage({ view }: StageProps) {
 
   return (
     <div className="pane experiencePane">
-      <p className="experienceSummary"><strong>Full-stack, customer-facing work across AI tooling, regulated platforms, component systems, CI/CD infrastructure, and data-heavy product interfaces.</strong></p>
       {jobs.map((job) => (
         <article className="row" key={job.company}>
-          <div><p>{job.period}</p><h3>{job.company}</h3><p>{job.role}</p></div>
-          <div><ul>{job.proof.map((line) => <li key={line}>{line}</li>)}</ul></div>
+          <div><p>{job.period}</p><h3>{job.company}</h3></div>
+          <div><p>{job.body}</p></div>
         </article>
       ))}
     </div>

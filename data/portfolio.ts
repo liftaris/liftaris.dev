@@ -64,55 +64,30 @@ export const PROJECTS: Record<string, Project> = {
 
 export interface Experience {
   company: string;
-  role: string;
   period: string;
-  stack: string[];
   body: string;
-  summary: string;
-  proof: string[];
 }
 
 export const EXPERIENCE: Record<string, Experience> = {
   moderna: {
     company: "Moderna",
-    role: "Full Stack",
     period: "2023 — Present",
-    stack: ["TypeScript", "Next.js", "Angular", "NestJS", "Terraform", "AWS", "GitHub Actions", "AI tooling"],
-    body: "Full-stack engineering on internal AI tooling, commercial web platforms, compliance systems, and AWS infrastructure.",
-    summary: "Full-stack engineering on internal AI tooling, commercial web platforms, compliance systems, and AWS infrastructure.",
-    proof: [
-      "Lead developer on an internal AI translation platform.",
-      "Built regulatory compliance tooling for Moderna Legal.",
-      "Core contributor to the React component system and GitHub Actions CI/CD gating system.",
-      "Currently building a multi-tenant microfrontend platform.",
-    ],
+    body: "I'm on the Commercial Websites team. On any given day, I may be building new global experiences, wrangling infrastructure in AWS, or building new front-end experiences in React for 100s of thousands of users. These days, our team is building out a new module-federated platform to power the next generation of Moderna's commercial websites, which keeps me busy. In this role, I've had the opportunity to lead the development of an LLM powered translation tool for commercial usage, and a critical regulatory platform for healthcare professionals with complex business requirements.",
   },
   freelance: {
     company: "Freelance",
-    role: "Full Stack",
     period: "2022 — 2023",
-    stack: ["React", "Node.js", "Python"],
-    body: "Full-stack web builds and early AI prototypes for small clients.",
-    summary: "Full-stack web builds and early AI prototypes for small clients.",
-    proof: ["Shipped client projects end to end.", "Built LLM-backed prototypes before the post-ChatGPT tooling wave."],
+    body: "Started doing bounties on Replit's now decommissioned bounty program, and gained a wealth of experience doing random things. A LoRA style marketplace for artists, a Unity game, several React/Next dashboards and prototypes, and a WASM binding for HSNWLib.",
   },
   healthnote: {
     company: "Health Note",
-    role: "Full Stack",
     period: "2022",
-    stack: ["React", "Node.js", "PostgreSQL"],
-    body: "Patient-intake product work for a digital-health startup automating clinical note-taking.",
-    summary: "Patient-intake product work for a digital-health startup automating clinical note-taking.",
-    proof: ["Shipped patient-facing intake flows.", "Worked directly with clinical staff on UX."],
+    body: "Health Note was a great period of growth for me. Being a small startup, it refined my fronted skills as well as rounded me out. I worked closely with the CTO, made product decisions, and of course, moved quickly. Health Note was assisting clinics and physicians with \"AI\" before ChatGPT exploded onto the scene, and it was a rewarding experience.",
   },
   parsons: {
     company: "Parsons",
-    role: "Front-End",
     period: "2021 — 2022",
-    stack: ["Angular", "TypeScript", "D3.js"],
-    body: "Front-end work on geospatial analysis tooling for a defense and infrastructure contractor.",
-    summary: "Front-end work on geospatial analysis tooling for a defense and infrastructure contractor.",
-    proof: ["Built data-viz dashboards for geospatial analysts.", "Contributed to Angular component systems."],
+    body: "In my first professional stint as a software dev, I built dashboards for the FAA and CBP. That's basically all I did: data visualization in a SPA, following mocks to a T. With React, yeah.",
   },
 };
 

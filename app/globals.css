@@ -287,7 +287,7 @@ nextjs-portal, [data-nextjs-dev-tools-button] { display: none !important; }
 }
 .pane header span,
 .card p:first-child,
-.row p:first-child {
+.row > div:first-child > p:first-child {
   display: block;
   margin: 0 0 10px;
   font-size: 11px;
@@ -363,14 +363,9 @@ li { margin: 8px 0; }
 }
 .links a { background: var(--paper); color: var(--blue); }
 .row { grid-template-columns: 0.72fr 1.28fr; }
-.experienceSummary {
-  max-width: 820px;
-  margin: 0 0 28px;
-  font-size: 14px;
-  line-height: 1.55;
-}
-.experiencePane .row ul {
-  margin-top: 0;
+.experiencePane .row {
+  grid-template-columns: 1fr;
+  gap: 0;
 }
 .projectTitleRow {
   display: grid;
