@@ -43,6 +43,7 @@ tina/__generated__/.cache
 
 styles/output.css
 tsconfig.tsbuildinfo
+next-env.d.ts
 
 .playwright-mcp/
 

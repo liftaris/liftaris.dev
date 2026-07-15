@@ -2,7 +2,6 @@
 author: Kaio
 title: Bazaar Ghost
 date: 2025-11-30T00:00:00.000Z
-hero_image: /BazaarGhost/web-app-manifest-512x512.png
 ---
 
 On November 2nd, I released [https://www.bazaarghost.stream](https://www.bazaarghost.stream) into the wild. The next day, I made [a post on the Bazaar subreddit](https://www.reddit.com/r/PlayTheBazaar/comments/1onkxqn/announcing_bazaarghost_see_your_ghost_go_up/) that went fairly viral, at least in terms of the relative size of the community

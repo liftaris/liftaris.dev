@@ -2,65 +2,62 @@ export interface Project {
   slug: string;
   name: string;
   tag: string;
-  tagline: string;
   year: string;
   stat?: { value: string; label: string };
   stack: string[];
-  links: { site?: string; github?: string; npm?: string; blog?: string };
+  links: ProjectLink[];
   body: string;
-  blurb: string;
-  logo?: string;
   proof: string[];
-  image?: string;
-  featured?: boolean;
 }
 
-export const PROJECTS: Record<string, Project> = {
-  bazaarghost: {
+export type ProjectLinkKind = "site" | "github" | "npm" | "blog";
+
+export interface ProjectLink {
+  kind: ProjectLinkKind;
+  label: string;
+  href: string;
+  primary?: boolean;
+}
+
+export const PROJECTS: Project[] = [
+  {
+    slug: "herm",
+    name: "Herm TUI",
+    tag: "A terminal interface for Hermes Agent.",
+    year: "2026",
+    stack: ["TypeScript", "Bun", "OpenTUI React", "SQLite", "JSON-RPC", "Hermes Agent"],
+    links: [
+      { kind: "github", label: "github", href: "https://github.com/liftaris/herm", primary: true },
+      { kind: "npm", label: "npm", href: "https://www.npmjs.com/package/herm-tui" },
+    ],
+    body: "A tabbed, mouse-aware TUI that brings Hermes Agent into an OpenCode-style terminal workspace with chat, sessions, memory, skills, cron, config, analytics, and kanban tabs.",
+    proof: [
+      "Streams chat with markdown, images, diff chips, tool-call expansion, and an animated ASCII avatar.",
+      "Talks to the same Hermes gateway as the CLI over stdio JSON-RPC.",
+      "Supports profile switching, command palette, slash commands, @-refs, rebindable keys, and theme picker.",
+    ],
+  },
+  {
     slug: "bazaarghost",
     name: "BazaarGhost",
     tag: "Computer vision for Twitch VODs.",
-    tagline: "Computer vision for Twitch VODs.",
     year: "2025",
     stat: { value: "18,000+", label: "unique visitors in month one" },
     stack: ["Python", "OpenCV", "PaddleOCR", "FFmpeg", "Twitch EventSub", "Supabase", "GitHub Actions", "Next.js"],
-    links: {
-      site: "https://bazaarghost.stream",
-      github: "https://github.com/liftaris/bazaar-ghost",
-      blog: "/blog/bazaar-ghost",
-    },
+    links: [
+      { kind: "site", label: "site", href: "https://bazaarghost.stream", primary: true },
+      { kind: "github", label: "github", href: "https://github.com/liftaris/bazaar-ghost" },
+      { kind: "blog", label: "blog", href: "/blog/bazaar-ghost" },
+    ],
     body: "Indexes Twitch VODs for The Bazaar, detects matchup screens, extracts opponent usernames, and makes appearances searchable at bazaarghost.stream.",
-    blurb: "Indexes Twitch VODs for The Bazaar, detects matchup screens, extracts opponent usernames, and makes appearances searchable at bazaarghost.stream.",
     proof: [
       "Discovers Bazaar streamers from Twitch chapter metadata.",
       "Splits VODs into parallel 30-minute processing chunks.",
       "Runs Streamlink, FFmpeg, OpenCV template matching, and PaddleOCR in a containerized SFDE pipeline.",
       "Stores detections, screenshots, and notifications in Supabase.",
     ],
-    image: "/BazaarGhost/BG-Vod_Processing_Diagram-Dark.png",
-    featured: true,
   },
-  herm: {
-    slug: "herm",
-    name: "Herm TUI",
-    tag: "A terminal interface for Hermes Agent.",
-    tagline: "A terminal interface for Hermes Agent.",
-    year: "2026",
-    stack: ["TypeScript", "Bun", "OpenTUI React", "SQLite", "JSON-RPC", "Hermes Agent"],
-    links: {
-      github: "https://github.com/liftaris/herm",
-      npm: "https://www.npmjs.com/package/herm-tui",
-    },
-    body: "A tabbed, mouse-aware TUI that brings Hermes Agent into an OpenCode-style terminal workspace with chat, sessions, memory, skills, cron, config, analytics, and kanban tabs.",
-    blurb: "A tabbed, mouse-aware TUI that brings Hermes Agent into an OpenCode-style terminal workspace with chat, sessions, memory, skills, cron, config, analytics, and kanban tabs.",
-    proof: [
-      "Streams chat with markdown, images, diff chips, tool-call expansion, and an animated ASCII avatar.",
-      "Talks to the same Hermes gateway as the CLI over stdio JSON-RPC.",
-      "Supports profile switching, command palette, slash commands, @-refs, rebindable keys, and theme picker.",
-    ],
-    featured: true,
-  },
-};
+];
 
 export interface Experience {
   company: string;

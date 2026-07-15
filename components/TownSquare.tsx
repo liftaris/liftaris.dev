@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { TOWNSQUARE_MODULE, TOWNSQUARE_ORIGIN } from "@/lib/townsquare";
 
 type TownSquareHandle = { destroy?: () => void };
 type TownSquareApi = {
@@ -26,7 +27,6 @@ declare global {
   }
 }
 
-const SERVER_ORIGIN = "https://townsquare.cauenapier.com";
 const SITE_KEY = "site_OCZSUJoivCjamGNG";
 
 export function TownSquare() {
@@ -40,12 +40,11 @@ export function TownSquare() {
     let handle: TownSquareHandle | undefined;
 
     async function mount() {
-      const url = `${SERVER_ORIGIN}/townsquare.mjs`;
-      const api = window.__liftarisTownSquare ?? await import(/* webpackIgnore: true */ url) as TownSquareApi;
+      const api = window.__liftarisTownSquare ?? await import(/* webpackIgnore: true */ TOWNSQUARE_MODULE) as TownSquareApi;
       window.__liftarisTownSquare = api;
       if (cancelled) return;
       handle = api.mountTownSquare(root, {
-        serverOrigin: SERVER_ORIGIN,
+        serverOrigin: TOWNSQUARE_ORIGIN,
         siteKey: SITE_KEY,
         theme: "host",
         scene: {
@@ -57,7 +56,8 @@ export function TownSquare() {
       });
     }
 
-    mount().catch(() => {
+    mount().catch((error) => {
+      console.error("TownSquare failed to mount", error);
       root.hidden = true;
     });
 
@@ -69,5 +69,5 @@ export function TownSquare() {
     };
   }, []);
 
-  return <div id="townsquare-root" ref={rootRef} />;
+  return <div className="townsquareHost" ref={rootRef} />;
 }

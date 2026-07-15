@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useEffect, useRef, useTransition } from "react";
 import { SOCIAL } from "@/data/portfolio";
 import { TownSquare } from "@/components/TownSquare";
 
@@ -21,6 +21,8 @@ export function Shell({ posts, children }: ShellProps) {
   const router = useRouter();
   const pathname = usePathname() || "/";
   const [, startTransition] = useTransition();
+  const shellRef = useRef<HTMLDivElement>(null);
+  const nameRef = useRef<HTMLButtonElement>(null);
   const onBlog = pathname.startsWith("/blog/");
   const onHome = pathname === "/";
   const activeSlug = onBlog ? pathname.replace("/blog/", "").replace(/\/$/, "") : "";
@@ -29,8 +31,22 @@ export function Shell({ posts, children }: ShellProps) {
     startTransition(() => router.push(href));
   };
 
+  useEffect(() => {
+    const name = nameRef.current;
+    const shell = shellRef.current;
+    if (!name || !shell) return;
+
+    const syncIdentityWidth = () => {
+      shell.style.setProperty("--identity-width", `${name.getBoundingClientRect().width}px`);
+    };
+    const observer = new ResizeObserver(syncIdentityWidth);
+    observer.observe(name);
+    syncIdentityWidth();
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div className={onBlog ? "shell onBlog" : onHome ? "shell onHome" : "shell"}>
+    <div ref={shellRef} className={onBlog ? "shell onBlog" : onHome ? "shell onHome" : "shell"}>
       <div className="noise" aria-hidden="true" />
 
       <nav className="stageNav" aria-label="Primary">
@@ -40,10 +56,9 @@ export function Shell({ posts, children }: ShellProps) {
       </nav>
 
       <div className="identity">
-        <button className="name" onClick={() => go("/")} aria-label="Home">
+        <button ref={nameRef} className="name" onClick={() => go("/")} aria-label="Home">
           <h1><span>Kaio</span><span>Barbosa</span><span>-</span><span>Chifan</span></h1>
         </button>
-        {!onBlog && <TownSquare key={pathname} />}
       </div>
 
       <aside className="writing" aria-label="Writing">
@@ -68,8 +83,8 @@ export function Shell({ posts, children }: ShellProps) {
       </section>
 
       {!onBlog && (
-        <footer className="mobileTownSquare" aria-label="TownSquare">
-          <TownSquare key={pathname} />
+        <footer className="townSquare" aria-label="TownSquare">
+          <TownSquare />
         </footer>
       )}
     </div>

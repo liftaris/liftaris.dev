@@ -56,13 +56,10 @@ type Query {
   document(collection: String, relativePath: String): DocumentNode!
   post(relativePath: String): Post!
   postConnection(before: String, after: String, first: Float, last: Float, sort: String, filter: PostFilter): PostConnection!
-  about(relativePath: String): About!
-  aboutConnection(before: String, after: String, first: Float, last: Float, sort: String, filter: AboutFilter): AboutConnection!
 }
 
 input DocumentFilter {
   post: PostFilter
-  about: AboutFilter
 }
 
 type DocumentConnectionEdges {
@@ -88,13 +85,12 @@ type Collection {
   documents(before: String, after: String, first: Float, last: Float, sort: String, filter: DocumentFilter, folder: String): DocumentConnection!
 }
 
-union DocumentNode = Post | About | Folder
+union DocumentNode = Post | Folder
 
 type Post implements Node & Document {
   title: String!
   date: String!
   body: JSON
-  hero_image: String
   id: ID!
   _sys: SystemInfo!
   _values: JSON!
@@ -136,7 +132,6 @@ input PostFilter {
   title: StringFilter
   date: DatetimeFilter
   body: PostBodyFilter
-  hero_image: ImageFilter
 }
 
 type PostConnectionEdges {
@@ -150,63 +145,6 @@ type PostConnection implements Connection {
   edges: [PostConnectionEdges]
 }
 
-type AboutExperience {
-  title: String
-  dateStart: String
-  showStartDate: Boolean
-  dateEnd: String
-  showEndDate: Boolean
-  description: String
-  hasPassed: Boolean
-}
-
-type About implements Node & Document {
-  profile: String
-  body: JSON
-  experience: [AboutExperience]
-  id: ID!
-  _sys: SystemInfo!
-  _values: JSON!
-}
-
-input RichTextFilter {
-  startsWith: String
-  eq: String
-  exists: Boolean
-}
-
-input BooleanFilter {
-  eq: Boolean
-  exists: Boolean
-}
-
-input AboutExperienceFilter {
-  title: StringFilter
-  dateStart: DatetimeFilter
-  showStartDate: BooleanFilter
-  dateEnd: DatetimeFilter
-  showEndDate: BooleanFilter
-  description: StringFilter
-  hasPassed: BooleanFilter
-}
-
-input AboutFilter {
-  profile: ImageFilter
-  body: RichTextFilter
-  experience: AboutExperienceFilter
-}
-
-type AboutConnectionEdges {
-  cursor: String!
-  node: About
-}
-
-type AboutConnection implements Connection {
-  pageInfo: PageInfo!
-  totalCount: Float!
-  edges: [AboutConnectionEdges]
-}
-
 type Mutation {
   addPendingDocument(collection: String!, relativePath: String!, template: String): DocumentNode!
   updateDocument(collection: String, relativePath: String!, params: DocumentUpdateMutation!): DocumentNode!
@@ -215,42 +153,21 @@ type Mutation {
   createFolder(collection: String, relativePath: String!): DocumentNode!
   updatePost(relativePath: String!, params: PostMutation!): Post!
   createPost(relativePath: String!, params: PostMutation!): Post!
-  updateAbout(relativePath: String!, params: AboutMutation!): About!
-  createAbout(relativePath: String!, params: AboutMutation!): About!
 }
 
 input DocumentUpdateMutation {
   post: PostMutation
-  about: AboutMutation
   relativePath: String
 }
 
 input DocumentMutation {
   post: PostMutation
-  about: AboutMutation
 }
 
 input PostMutation {
   title: String
   date: String
   body: JSON
-  hero_image: String
-}
-
-input AboutExperienceMutation {
-  title: String
-  dateStart: String
-  showStartDate: Boolean
-  dateEnd: String
-  showEndDate: Boolean
-  description: String
-  hasPassed: Boolean
-}
-
-input AboutMutation {
-  profile: String
-  body: JSON
-  experience: [AboutExperienceMutation]
 }
 
 schema {

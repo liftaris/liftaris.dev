@@ -13,9 +13,6 @@
   ],
   "ignoreDependencies": [
     "shadcn",
-    "slate",
-    "slate-dom",
-    "slate-react",
     "tw-animate-css",
     "tailwindcss"
   ],

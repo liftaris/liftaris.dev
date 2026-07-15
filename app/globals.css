@@ -48,7 +48,7 @@ body {
 a { color: inherit; text-decoration: none; }
 a:hover, button:hover { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }
 button { color: inherit; font: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; }
-nextjs-portal, [data-nextjs-dev-tools-button] { display: none !important; }
+
 
 .shell {
   position: relative;
@@ -61,8 +61,6 @@ nextjs-portal, [data-nextjs-dev-tools-button] { display: none !important; }
 }
 
 .shell.onBlog {
-  grid-template-rows: minmax(0, 1fr);
-  gap: 0;
   align-items: stretch;
 }
 
@@ -143,22 +141,20 @@ nextjs-portal, [data-nextjs-dev-tools-button] { display: none !important; }
   width: auto;
 }
 .shell:not(.onBlog) .identity {
+  position: fixed;
+  left: 1rem;
+  bottom: 0;
+  right: auto;
+  z-index: 6;
+  width: min-content;
+  background: var(--blue);
+}
+.shell:not(.onBlog) {
   --townsquare-stage: clamp(220px, 24vw, 340px);
   --townsquare-toolbar: 64px;
   --townsquare-reveal: calc(var(--townsquare-stage) + var(--townsquare-toolbar));
-  position: absolute;
-  left: calc(1rem - var(--site-gutter));
-  bottom: calc(-1 * var(--townsquare-reveal));
-  right: auto;
-  width: min-content;
 }
-.shell.onHome .identity {
-  position: fixed;
-  left: 1rem;
-}
-.shell:not(.onBlog) .identity:has(> #townsquare-root[hidden]) {
-  bottom: 0;
-}
+
 .shell:not(.onBlog) .name h1 {
   font-size: clamp(64px, 9vw, 168px);
   line-height: 0.8;
@@ -170,7 +166,15 @@ nextjs-portal, [data-nextjs-dev-tools-button] { display: none !important; }
   content: " ";
 }
 
-.identity > #townsquare-root {
+.townSquare {
+  position: fixed;
+  left: 1rem;
+  bottom: calc(-1 * var(--townsquare-reveal));
+  z-index: 5;
+  width: var(--identity-width, clamp(659px, 92.7vw, 1730px));
+  transition: transform 0.2s ease;
+}
+.townSquare > .townsquareHost {
   position: relative;
   z-index: 3;
   height: var(--townsquare-reveal);
@@ -178,73 +182,37 @@ nextjs-portal, [data-nextjs-dev-tools-button] { display: none !important; }
   overflow: hidden;
   border-radius: 0%;
 }
-.identity > #townsquare-root .townsquare {
+.townSquare > .townsquareHost .townsquare {
   --ts-stage-height: var(--townsquare-stage);
   --ts-toolbar-reserve: var(--townsquare-toolbar);
   min-height: var(--townsquare-reveal);
   border-radius: 0px;
 }
 
-#townsquare-root#townsquare-root {
+.townsquareHost {
+  color-scheme: light;
   --r: 0px;
   --r-sm: 0px;
-  --scene: transparent;
-  --ground-fill: transparent;
+  --scene: light-dark(transparent, #00288e);
+  --ground-fill: light-dark(transparent, #ffffff);
   --page: #ffffff;
-  --surface: rgba(9, 0, 141, 0.828);
-  --ink: #fff;
-  --you: #c8641f;
-  --tree-trunk: #efede9;
-  --tree-canopy: #ffffff;
-  --other: #26241f;
+  --surface: light-dark(rgba(9, 0, 141, 0.828), #f9f06b);
+  --ink: light-dark(#fff, #f2eee6);
+  --you: light-dark(#c8641f, #df8a43);
+  --tree-trunk: light-dark(#efede9, #ffffff);
+  --tree-canopy: light-dark(#ffffff, #f0f0f0);
+  --other: light-dark(#26241f, #ddd7cc);
   --ground-line: #fff;
   --ground: #fff;
   --you-deep: var(--you);
   --text: var(--ink);
   --muted: var(--ink);
 }
-#townsquare-root#townsquare-root[data-townsquare-theme="dark"] {
-  --r: 0px;
-  --r-sm: 0px;
-  --scene: #00288e;
-  --ground-fill: transparent;
-  --page: #ffffff;
-  --surface: #f9f06b;
-  --ink: #f2eee6;
-  --you: #df8a43;
-  --tree-trunk: #ffffff;
-  --tree-canopy: #f0f0f0;
-  --other: #ddd7cc;
-  --ground-line: #fff;
-  --ground: #fff;
-  --you-deep: var(--you);
-  --text: var(--ink);
-  --muted: var(--ink);
+.townsquareHost[data-townsquare-theme="dark"] {
+  color-scheme: dark;
 }
-@media (prefers-color-scheme: dark) {
-  #townsquare-root#townsquare-root[data-townsquare-theme="auto"] {
-  --r: 0px;
-  --r-sm: 0px;
-  --scene: #00288e;
-  --ground-fill: #ffffff;
-  --page: #ffffff;
-  --surface: #f9f06b;
-  --ink: #f2eee6;
-  --you: #df8a43;
-  --tree-trunk: #ffffff;
-  --tree-canopy: #f0f0f0;
-  --other: #ddd7cc;
-  --ground-line: #fff;
-  --ground: #fff;
-  --you-deep: var(--you);
-  --text: var(--ink);
-  --muted: var(--ink);
-  }
-}
-
-#townsquare-root#townsquare-root .townsquare,
-#townsquare-root#townsquare-root .townsquare * {
-  border-radius: 0 !important;
+.townsquareHost[data-townsquare-theme="auto"] {
+  color-scheme: light dark;
 }
 
 .writing {
@@ -265,7 +233,6 @@ nextjs-portal, [data-nextjs-dev-tools-button] { display: none !important; }
 }
 
 .postlist { display: grid; }
-.postlist button,
 .postlist a {
   display: block;
   border-top: 1px solid currentColor;
@@ -304,12 +271,6 @@ nextjs-portal, [data-nextjs-dev-tools-button] { display: none !important; }
   to { opacity: 1; transform: translateY(0); filter: blur(0); }
 }
 
-.pane header {
-  border-bottom: 2px solid var(--paper);
-  padding-bottom: 12px;
-  margin-bottom: 10px;
-}
-.pane header span,
 .card p:first-child,
 .row > div:first-child > p:first-child {
   display: block;
@@ -318,14 +279,6 @@ nextjs-portal, [data-nextjs-dev-tools-button] { display: none !important; }
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-}
-.pane header h2 {
-  margin: 0;
-  font-family: var(--font-serif), Georgia, serif;
-  font-size: clamp(46px, 6vw, 84px);
-  font-weight: 400;
-  letter-spacing: -0.04em;
-  line-height: 0.9;
 }
 
 .card,
@@ -338,13 +291,7 @@ nextjs-portal, [data-nextjs-dev-tools-button] { display: none !important; }
 }
 .card > div,
 .row > div { min-width: 0; }
-.card b {
-  font-family: var(--font-serif), Georgia, serif;
-  font-size: 56px;
-  font-weight: 400;
-  letter-spacing: -0.08em;
-  line-height: 0.9;
-}
+
 .card h3,
 .row h3 {
   margin: 8px 0 12px;
@@ -492,13 +439,12 @@ li { margin: 8px 0; }
   padding: 0;
   background: var(--blue);
 }
-.blogTownSquare #townsquare-root {
+.blogTownSquare .townsquareHost {
   min-height: 340px;
 }
-.blogTownSquare #townsquare-root .townsquare {
+.blogTownSquare .townsquareHost .townsquare {
   --ts-stage-height: 340px;
 }
-.mobileTownSquare { display: none; }
 ::view-transition-old(.blog-enter) {
   display: none;
 }
@@ -511,33 +457,43 @@ li { margin: 8px 0; }
   to { clip-path: inset(0 0 0 0); }
 }
 
-@media (min-width: 1101px) {
-  .shell:not(.onBlog) .identity:not(:has(> #townsquare-root[hidden])):focus-within {
+@media (min-width: 1281px) {
+  .shell:not(.onBlog):has(.townSquare > .townsquareHost:not([hidden])):has(.identity:focus-within, .townSquare:focus-within) :is(.identity, .townSquare) {
     transform: translateY(calc(-1 * var(--townsquare-reveal)));
   }
 }
 
-@media (min-width: 1101px) and (hover: hover) and (pointer: fine) {
-  .shell:not(.onBlog) .identity:not(:has(> #townsquare-root[hidden])):hover {
+@media (min-width: 1281px) and (hover: hover) and (pointer: fine) {
+  .shell:not(.onBlog):has(.townSquare > .townsquareHost:not([hidden])):has(.identity:hover, .townSquare:hover) :is(.identity, .townSquare) {
     transform: translateY(calc(-1 * var(--townsquare-reveal)));
   }
 }
 
-@media (min-width: 1101px) and (max-width: 1280px) {
-  :root {
-    --left-rail: clamp(180px, 18vw, 220px);
-    --right-rail: clamp(190px, 18vw, 220px);
-    --site-max: 1280px;
+@media (max-width: 1280px) {
+  .shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--right-rail);
+    grid-template-areas:
+      "nav writing-label"
+      "stage postlist"
+      "identity identity"
+      "townsquare townsquare";
+    grid-template-rows: auto minmax(auto, 1fr) auto auto;
+    align-content: start;
+    overflow: visible;
   }
-  .stageNav {
-    flex-direction: column;
-    gap: 10px;
+  .shell.onBlog { display: flex; flex-direction: column; }
+  .shell.onBlog .stageNav,
+  .shell.onBlog .identity,
+  .shell.onBlog .writing,
+  .shell.onBlog .stageContent {
+    flex: none;
+    align-self: stretch;
   }
-}
-
-@media (max-width: 1100px) {
-  .shell { display: block; overflow: visible; }
-  .shell.onBlog { display: block; }
+  .shell.onBlog .stageContent {
+    width: 100%;
+    margin: 0;
+  }
   .shell.onBlog .stageNav,
   .shell.onBlog .identity,
   .shell:not(.onBlog) .identity,
@@ -549,36 +505,117 @@ li { margin: 8px 0; }
   .writing { position: static; top: auto; right: auto; left: auto; bottom: auto; width: auto; max-width: none; }
   .shell.onBlog .stageNav,
   .stageNav { padding: 22px 20px 0; flex-wrap: wrap; }
-  .writing { padding: 0 20px 28px; }
-  .identity { overflow: visible; transition: none; }
+  .shell:not(.onBlog) .stageNav {
+    grid-area: nav;
+    margin-bottom: 20px;
+  }
+  .writing { order: 3; padding: 0 20px 28px; }
+  .shell:not(.onBlog) .writing { display: contents; }
+  .shell:not(.onBlog) .writing h2 {
+    grid-area: writing-label;
+    margin: 0;
+    padding: 22px 20px 0;
+  }
+  .shell:not(.onBlog) .postlist {
+    grid-area: postlist;
+    align-self: start;
+    padding: 0 20px 28px;
+  }
+  .identity { order: 2; overflow: visible; transition: none; }
+  .shell:not(.onBlog) .identity { grid-area: identity; }
   .shell.onBlog .identity { pointer-events: auto; }
   .shell.onBlog .name,
   .name { padding: 28px 16px 0; background: transparent; width: auto; transform: none; }
-  .identity > #townsquare-root { display: none; }
   .shell:not(.onBlog) .identity:hover,
   .shell:not(.onBlog) .identity:focus-within { transform: none; }
   .shell:not(.onBlog) .name h1,
   .shell.onBlog .name h1 { font-size: clamp(26px, 8vw, 82px); }
   .name h1 span { display: inline; }
   .name h1 span:first-child::after { content: " "; }
-  .postlist button,
   .postlist a { display: block; }
   .shell.onBlog .stageContent,
-  .stageContent { width: auto; min-height: auto; padding: 20px; background: transparent; color: var(--paper); }
+  .stageContent { order: 4; width: auto; min-height: auto; padding: 20px; background: transparent; color: var(--paper); }
+  .shell:not(.onBlog) .stageContent { grid-area: stage; }
   .row,
   .card { grid-template-columns: 1fr; }
-  .mobileTownSquare {
+  .townSquare {
+    grid-area: townsquare;
+    order: 5;
+    position: relative;
+    left: auto;
+    bottom: auto;
     display: block;
-    margin: 36px 0 0;
+    width: auto;
+    margin: 0;
     background: var(--blue);
+    transform: none;
   }
-  .mobileTownSquare #townsquare-root {
+  .townSquare .townsquareHost {
+    height: 344px;
     min-height: 344px;
   }
-  .mobileTownSquare #townsquare-root .townsquare {
+  .townSquare .townsquareHost .townsquare {
     --ts-stage-height: 280px;
     --ts-toolbar-reserve: 64px;
     min-height: 344px;
+  }
+  .shell:not(.onBlog) {
+    --sticky-row-height: 62px;
+    padding-bottom: calc(344px + clamp(53px, 9.2vw, 94px));
+  }
+  .shell:not(.onBlog) .stageNav,
+  .shell:not(.onBlog) .writing h2 {
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    background: var(--blue);
+  }
+  .shell:not(.onBlog) .postlist {
+    position: sticky;
+    top: var(--sticky-row-height);
+    z-index: 6;
+    background: var(--blue);
+  }
+  .shell:not(.onBlog) .identity {
+    position: fixed;
+    right: 0;
+    bottom: 344px;
+    left: 0;
+    z-index: 6;
+    width: 100%;
+    background: var(--blue);
+  }
+  .shell:not(.onBlog) .name {
+    background: var(--blue);
+  }
+  .shell:not(.onBlog) .townSquare {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 5;
+  }
+}
+
+@media (min-width: 701px) and (max-width: 1280px) {
+  .shell:not(.onBlog) .stageContent { padding-top: 0; }
+  .shell:not(.onBlog) .pane > :first-child { padding-top: 0; }
+}
+
+@media (max-width: 700px) {
+  .shell:not(.onBlog) {
+    grid-template-columns: minmax(0, 1fr) max-content;
+    grid-template-areas:
+      "nav writing-label"
+      "postlist postlist"
+      "stage stage"
+      "identity identity"
+      "townsquare townsquare";
+    grid-template-rows: auto auto minmax(auto, 1fr) auto auto;
+  }
+  .shell:not(.onBlog) .postlist {
+    justify-self: end;
+    width: var(--right-rail);
   }
 }
 

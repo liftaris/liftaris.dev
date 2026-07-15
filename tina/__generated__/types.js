@@ -11,24 +11,6 @@ export const PostPartsFragmentDoc = gql`
   title
   date
   body
-  hero_image
-}
-    `;
-export const AboutPartsFragmentDoc = gql`
-    fragment AboutParts on About {
-  __typename
-  profile
-  body
-  experience {
-    __typename
-    title
-    dateStart
-    showStartDate
-    dateEnd
-    showEndDate
-    description
-    hasPassed
-  }
 }
     `;
 export const PostDocument = gql`
@@ -88,63 +70,6 @@ export const PostConnectionDocument = gql`
   }
 }
     ${PostPartsFragmentDoc}`;
-export const AboutDocument = gql`
-    query about($relativePath: String!) {
-  about(relativePath: $relativePath) {
-    ... on Document {
-      _sys {
-        filename
-        basename
-        hasReferences
-        breadcrumbs
-        path
-        relativePath
-        extension
-      }
-      id
-    }
-    ...AboutParts
-  }
-}
-    ${AboutPartsFragmentDoc}`;
-export const AboutConnectionDocument = gql`
-    query aboutConnection($before: String, $after: String, $first: Float, $last: Float, $sort: String, $filter: AboutFilter) {
-  aboutConnection(
-    before: $before
-    after: $after
-    first: $first
-    last: $last
-    sort: $sort
-    filter: $filter
-  ) {
-    pageInfo {
-      hasPreviousPage
-      hasNextPage
-      startCursor
-      endCursor
-    }
-    totalCount
-    edges {
-      cursor
-      node {
-        ... on Document {
-          _sys {
-            filename
-            basename
-            hasReferences
-            breadcrumbs
-            path
-            relativePath
-            extension
-          }
-          id
-        }
-        ...AboutParts
-      }
-    }
-  }
-}
-    ${AboutPartsFragmentDoc}`;
 export function getSdk(requester) {
   return {
     post(variables, options) {
@@ -152,12 +77,6 @@ export function getSdk(requester) {
     },
     postConnection(variables, options) {
       return requester(PostConnectionDocument, variables, options);
-    },
-    about(variables, options) {
-      return requester(AboutDocument, variables, options);
-    },
-    aboutConnection(variables, options) {
-      return requester(AboutConnectionDocument, variables, options);
     }
   };
 }

@@ -4,6 +4,7 @@ import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { Shell } from "@/components/Shell";
 import { getPostSummaries } from "@/lib/posts";
+import { TOWNSQUARE_ORIGIN, TOWNSQUARE_STYLESHEET } from "@/lib/townsquare";
 
 const sans = Manrope({ subsets: ["latin"], variable: "--font-sans" });
 const serif = Young_Serif({ subsets: ["latin"], variable: "--font-serif", weight: "400" });
@@ -23,8 +24,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${sans.variable} ${serif.variable} ${mono.variable}`}>
       <head>
-        <link rel="preconnect" href="https://townsquare.cauenapier.com" crossOrigin="" />
-        <link rel="stylesheet" href="https://townsquare.cauenapier.com/widget.css" />
+        <link rel="preconnect" href={TOWNSQUARE_ORIGIN} crossOrigin="" />
+        <link rel="stylesheet" href={TOWNSQUARE_STYLESHEET} />
       </head>
       <body>
         <Shell posts={getPostSummaries()}>{children}</Shell>

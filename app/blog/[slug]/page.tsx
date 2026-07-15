@@ -1,4 +1,4 @@
-import { ViewTransition } from "react";
+import { cache, ViewTransition } from "react";
 import client from "@/tina/__generated__/client";
 import type { PostQuery, PostQueryVariables } from "@/tina/__generated__/types";
 import PostClient from "@/components/tina/PostClient";
@@ -9,12 +9,12 @@ import { getPostSlugs, postExists } from "@/lib/posts";
 
 interface PageProps { params: Promise<{ slug: string }>; }
 
-async function getPostData(slug: string) {
+const getPostData = cache(async (slug: string) => {
   if (!postExists(slug)) notFound();
   const variables: PostQueryVariables = { relativePath: `${slug}.md` };
   const res = await client.queries.post(variables);
   return { data: res.data as PostQuery, query: res.query, variables };
-}
+});
 
 export async function generateStaticParams() {
   return getPostSlugs().map((slug) => ({ slug }));

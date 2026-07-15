@@ -2,8 +2,6 @@
 title: Understanding L Systems
 author: Kaio
 date: '2023-03-19T18:50:44.000Z'
-hero_image: /LSystemN3.gif
-imgSrc: /alfons-taekema-bali.jpg
 ---
 
 This week, I made a point to dive into something I've held an interest in for a long time, prodded on by the rediscovery of the book "[The Algorithmic Beauty of Plants](algorithmicbotany.org/papers/abop/abop.pdf)" whose mere title made such an impact that I have not been able to forget about it. It is a textbook all about the fascinating world of modeling plants algorithmically.&#x20;
