@@ -1,4 +1,4 @@
-import { Geist_Mono, Instrument_Serif, Manrope } from "next/font/google";
+import { Geist_Mono, Manrope, Young_Serif } from "next/font/google";
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
@@ -6,7 +6,7 @@ import { Shell } from "@/components/Shell";
 import { getPostSummaries } from "@/lib/posts";
 
 const sans = Manrope({ subsets: ["latin"], variable: "--font-sans" });
-const serif = Instrument_Serif({ subsets: ["latin"], variable: "--font-serif", weight: "400" });
+const serif = Young_Serif({ subsets: ["latin"], variable: "--font-serif", weight: "400" });
 const mono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" });
 
 export const metadata: Metadata = {
