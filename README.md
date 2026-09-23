@@ -1,36 +1,111 @@
 # liftaris.dev
 
-Kaio Barbosa's portfolio, built with Next.js, React, TypeScript, and TinaCMS.
+Kaio Barbosa's portfolio, built with Astro, React, and EmDash CMS on Cloudflare
+Workers. Posts live in D1, uploads in R2, and login sessions in Workers KV.
+Publishing and editing posts does not require a build or Git commit.
 
-## Setup
-
-Install dependencies:
-
-```bash
-bun install
-```
-
-Create `.env` with the Tina credentials required to edit and build content:
+## Local development
 
 ```bash
-NEXT_PUBLIC_TINA_CLIENT_ID=
-TINA_TOKEN=
-```
-
-Start the development server:
-
-```bash
+bun install --frozen-lockfile
 bun run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open the URL printed by Astro (normally `http://localhost:4321`). The CMS is at
+`/_emdash/admin`; `/admin` redirects there. On a fresh local database, use the
+**Dev bypass** link printed by EmDash to import the seed content and sign in as a
+local development administrator. This bypass is disabled in production.
+
+Cloudflare bindings are emulated locally. No Tina Cloud credentials are used.
+A local `.dev.vars` file can hold Worker secrets; it is ignored by Git.
 
 ## Checks
 
 ```bash
 bun test
 bun run lint
-bunx tsc --noEmit
+bun run typecheck
 bun run knip
 bun run build
 ```
+
+`bun run start` serves the production build through Wrangler.
+
+## Content and migration
+
+The `posts` collection contains title, date, and rich-text body fields. Its
+public URLs remain `/blog/<slug>`, including the existing mixed-case
+`Understanding-L-Systems` URL. The Theme Image editor block keeps separate light
+and dark image URLs and alternative text.
+
+When editing a published post, **Save** keeps a draft revision. Use **Publish
+changes** to make that revision visible on the site.
+
+`content/posts/*.md` is the preserved import archive, not the live CMS. The
+conversion script creates `seed/seed.json`, preserving original text, dates,
+URLs, nested lists, links, code, and images:
+
+```bash
+bun run migrate:posts
+```
+
+This command only prepares the import. EmDash initializes the schema on first
+request; content is imported by the setup wizard with seed content enabled (or
+the local dev bypass). Existing content is not overwritten on redeploy. Do not
+use the archive or seed to edit published content: use EmDash.
+
+Original image assets remain under `public/` at their existing URLs. New uploads
+are managed by EmDash in the private R2 bucket and served through its media API.
+
+## Production setup and deployment
+
+`wrangler.jsonc` contains the production Worker, custom domains, D1, R2, session
+KV, and a Cron Trigger for EmDash scheduled publishing and maintenance.
+
+```bash
+bunx wrangler login
+bun run deploy
+```
+
+The first-admin setup flow is protected by the `EMDASH_SETUP_KEY` Worker secret.
+Open the private setup link supplied during deployment, then create your admin
+account and register your own passkey. The browser receives an hour-long,
+HttpOnly setup cookie; the key is removed from the address bar. Once setup is
+complete, EmDash's regular authentication applies. Keep the setup key private.
+The local `.emdash/` directory is ignored by Git and can hold this handoff link.
+
+To set the secret manually, use `bunx wrangler secret put EMDASH_SETUP_KEY` and
+enter a cryptographically random value. Never commit it. The setup URL is
+`https://www.liftaris.dev/_emdash/admin/setup?setup_key=YOUR_VALUE`.
+
+The site's original `/work` and `/posts` redirects are configured in Astro.
+Both `liftaris.dev` and `www.liftaris.dev` are attached to the production Worker.
+
+## GitHub builds
+
+Connect `liftaris/liftaris.dev` in **Workers & Pages → liftaris-dev → Settings →
+Builds → Connect**:
+
+| Setting | Value |
+| --- | --- |
+| Production branch | `main` |
+| Root directory | Repository root |
+| Build command | `bun run build` |
+| Deploy command | `bunx wrangler deploy` |
+| Bun version | `1.3.13` |
+
+Commit the source, `bun.lock`, seed, generated EmDash types, and Wrangler config.
+No Tina build variables or CMS build tokens are needed. `EMDASH_SETUP_KEY` is a
+Worker runtime secret, not a build variable. D1/R2/KV persist across deployments;
+automatic builds update the application without resetting CMS content.
+
+## Backups
+
+Use Cloudflare D1 backups/Time Travel for the database, and retain R2 media.
+EmDash's content export can also be used for a portable backup. The Markdown
+archive is only the original migration snapshot; it is not a backup of later
+editor changes. Export current content before deliberately replacing the D1
+binding or making a destructive schema change.
+
+References: [EmDash](https://github.com/emdash-cms/emdash),
+[Cloudflare Workers Builds](https://developers.cloudflare.com/workers/ci-cd/builds/).

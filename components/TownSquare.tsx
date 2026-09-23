@@ -40,7 +40,7 @@ export function TownSquare() {
     let handle: TownSquareHandle | undefined;
 
     async function mount() {
-      const api = window.__liftarisTownSquare ?? await import(/* webpackIgnore: true */ TOWNSQUARE_MODULE) as TownSquareApi;
+      const api = window.__liftarisTownSquare ?? await import(/* @vite-ignore */ TOWNSQUARE_MODULE) as TownSquareApi;
       window.__liftarisTownSquare = api;
       if (cancelled) return;
       handle = api.mountTownSquare(root, {

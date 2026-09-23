@@ -19,6 +19,12 @@ function formatCount(value: number) {
   return value.toLocaleString("en-US");
 }
 
+function countField(value: unknown, field: string) {
+  if (!value || typeof value !== "object" || !(field in value)) return undefined;
+  const count = (value as Record<string, unknown>)[field];
+  return typeof count === "number" ? count : undefined;
+}
+
 function useHermStats() {
   const [stats, setStats] = useState<HermStats>({});
 
@@ -39,8 +45,8 @@ function useHermStats() {
       const failures = [repoResult, npmResult].filter((result) => result.status === "rejected");
       if (failures.length > 0) console.warn("Some project statistics could not be loaded", failures);
       setStats({
-        stars: typeof repo?.stargazers_count === "number" ? repo.stargazers_count : undefined,
-        downloads: typeof npm?.downloads === "number" ? npm.downloads : undefined,
+        stars: countField(repo, "stargazers_count"),
+        downloads: countField(npm, "downloads"),
       });
     });
 

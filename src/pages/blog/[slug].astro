@@ -1,0 +1,20 @@
+---
+import { getEmDashEntry } from "emdash";
+import { PortableText } from "emdash/ui";
+import Portfolio from "../../layouts/Portfolio.astro";
+import ThemeImage from "../../components/ThemeImage.astro";
+import { TownSquare } from "../../../components/TownSquare";
+
+const { entry: post, error, cacheHint } = await getEmDashEntry("posts", Astro.params.slug!);
+if (error && error.name !== "LiveEntryNotFoundError") throw error;
+if (!post) return Astro.rewrite("/404");
+Astro.cache.set(cacheHint);
+---
+<Portfolio title={`${post.data.title} | Kaio Barbosa`} content={{ collection: "posts", id: post.data.id, slug: post.id }}>
+  <article class="article-content">
+    <p class="meta">{new Date(post.data.date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })}</p>
+    <h1 {...post.edit.title}>{post.data.title}</h1>
+    <PortableText value={post.data.content} components={{ type: { themeImage: ThemeImage } }} />
+  </article>
+  <footer class="blogTownSquare" aria-label="TownSquare"><TownSquare client:load /></footer>
+</Portfolio>

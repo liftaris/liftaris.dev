@@ -1,0 +1,76 @@
+---
+import { getEmDashCollection } from "emdash";
+import { EmDashHead, EmDashBodyStart, EmDashBodyEnd } from "emdash/ui";
+import { createPublicPageContext } from "emdash/page";
+import { SOCIAL } from "../../data/portfolio";
+import { TownSquare } from "../../components/TownSquare";
+import { TOWNSQUARE_ORIGIN, TOWNSQUARE_STYLESHEET } from "../../lib/townsquare";
+import "@fontsource-variable/geist-mono";
+import "@fontsource-variable/manrope";
+import "@fontsource/young-serif";
+import "../styles/global.css";
+
+interface Props { title?: string; content?: { collection: string; id: string; slug?: string | null } }
+const { title = "Kaio Barbosa", content } = Astro.props;
+const pathname = Astro.url.pathname.replace(/\/$/, "") || "/";
+const onBlog = pathname.startsWith("/blog/");
+const posts = [];
+let cursor: string | undefined;
+do {
+  const result = await getEmDashCollection("posts", { status: "published", orderBy: { date: "desc" }, limit: 100, cursor });
+  if (result.error) throw result.error;
+  Astro.cache.set(result.cacheHint);
+  posts.push(...result.entries);
+  cursor = result.nextCursor;
+} while (cursor);
+const page = createPublicPageContext({ Astro, kind: content ? "content" : "custom", title,
+  description: "Software engineer building BazaarGhost and Herm TUI.", content,
+  canonical: new URL(pathname, Astro.site).href, siteName: "Kaio Barbosa" });
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <EmDashHead page={page} />
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="preconnect" href={TOWNSQUARE_ORIGIN} crossorigin="anonymous" />
+    <link rel="stylesheet" href={TOWNSQUARE_STYLESHEET} />
+  </head>
+  <body>
+    <EmDashBodyStart page={page} />
+    <div class:list={["shell", { onBlog, onHome: pathname === "/" }]}>
+      <div class="noise" aria-hidden="true"></div>
+      <nav class="stageNav" aria-label="Primary">
+        <a class:list={{ active: pathname === "/projects" }} href="/projects">projects</a>
+        <a class:list={{ active: pathname === "/experience" }} href="/experience">experience</a>
+        <a href={SOCIAL.github} target="_blank" rel="noreferrer">github</a>
+      </nav>
+      <div class="identity">
+        <a class="name" href="/" aria-label="Home"><h1><span>Kaio</span><span>Barbosa</span></h1></a>
+      </div>
+      <aside class="writing" aria-label="Writing">
+        <h2>Writing</h2>
+        <div class="postlist">
+          {posts.map((post) => <a class:list={{ active: pathname === `/blog/${post.id}` }} href={`/blog/${post.id}`}>
+            <time datetime={new Date(post.data.date).toISOString()}>{new Date(post.data.date).toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" })}</time>
+            <span>{post.data.title}</span>
+          </a>)}
+        </div>
+      </aside>
+      <section class="stageContent"><slot /></section>
+      {!onBlog && <footer class="townSquare" aria-label="TownSquare"><TownSquare client:load /></footer>}
+    </div>
+    <EmDashBodyEnd page={page} />
+    <script>
+      const shell = document.querySelector<HTMLElement>(".shell");
+      const name = document.querySelector<HTMLElement>(".name");
+      if (shell && name) {
+        const syncWidth = () => shell.style.setProperty("--identity-width", `${name.getBoundingClientRect().width}px`);
+        new ResizeObserver(syncWidth).observe(name);
+        syncWidth();
+      }
+    </script>
+  </body>
+</html>

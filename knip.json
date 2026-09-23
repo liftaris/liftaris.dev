@@ -1,32 +1,29 @@
 {
   "$schema": "https://unpkg.com/knip@6.23.0/schema.json",
-  "project": ["**/*.{js,jsx,ts,tsx}"],
+  "project": [
+    "src/**/*.{astro,ts,tsx}",
+    "components/**/*.{ts,tsx}",
+    "lib/**/*.ts",
+    "data/**/*.ts",
+    "scripts/*.mjs"
+  ],
   "entry": [
-    "app/**/*.{js,jsx,ts,tsx}",
-    "tina/config.{js,ts}"
+    "src/pages/**/*.{astro,ts}",
+    "src/plugins/*.ts",
+    "scripts/*.mjs"
   ],
   "ignore": [
     "**/*.test.{ts,tsx}",
-    "**/tina/__generated__/**",
-    "**/public/admin/**",
     "**/*.config.{js,mjs,ts}"
   ],
   "ignoreDependencies": [
     "shadcn",
     "tw-animate-css",
-    "tailwindcss"
+    "tailwindcss",
+    "cloudflare"
   ],
   "ignoreBinaries": [],
   "ignoreExportsUsedInFile": true,
-  "next": {
-    "entry": [
-      "app/{page,layout,error,loading,not-found,template,default,sitemap,robots,manifest,global-error}.{js,jsx,ts,tsx}",
-      "app/**/route.{js,jsx,ts,tsx}",
-      "app/**/{page,layout,error,loading,not-found,template,default,global-error}.{js,jsx,ts,tsx}",
-      "middleware.{js,ts}",
-      "instrumentation.{js,ts}"
-    ]
-  },
   "rules": {
     "files": "warn",
     "dependencies": "warn",

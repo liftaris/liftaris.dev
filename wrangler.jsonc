@@ -1,0 +1,52 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "liftaris-dev",
+  "compatibility_date": "2026-09-22",
+  "workers_dev": true,
+  "main": "./src/worker.ts",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "routes": [
+    {
+      "pattern": "liftaris.dev",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.liftaris.dev",
+      "custom_domain": true
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "liftaris-emdash",
+      "database_id": "0e886ca8-384e-4090-8035-c187268c7da7"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "liftaris-emdash-media"
+    }
+  ],
+  "triggers": {
+    "crons": [
+      "* * * * *"
+    ]
+  },
+  "observability": {
+    "enabled": true
+  },
+  "kv_namespaces": [
+    {
+      "binding": "SESSION",
+      "id": "8bf01aa04a0d44499c86e377038ad892"
+    }
+  ],
+  "secrets": {
+    "required": [
+      "EMDASH_SETUP_KEY"
+    ]
+  }
+}

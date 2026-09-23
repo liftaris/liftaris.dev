@@ -34,9 +34,9 @@ yarn-error.log*
 # vercel
 .vercel
 
-# tina client (has machine-specific paths)
-tina/__generated__/client.ts
-tina/__generated__/.cache
+# Cloudflare
+.wrangler/
+.dev.vars*
 
 # IntelliJ IDEA
 .idea
@@ -48,3 +48,11 @@ next-env.d.ts
 .playwright-mcp/
 
 supabase/
+
+# Astro and EmDash
+.astro/
+dist/
+.emdash/
+*.db
+*.db-shm
+*.db-wal
