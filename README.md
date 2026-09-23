@@ -54,8 +54,16 @@ request; content is imported by the setup wizard with seed content enabled (or
 the local dev bypass). Existing content is not overwritten on redeploy. Do not
 use the archive or seed to edit published content: use EmDash.
 
-Original image assets remain under `public/` at their existing URLs. New uploads
-are managed by EmDash in the private R2 bucket and served through its media API.
+The existing blog images have been imported into EmDash's media library. Live
+posts reference those media records (or their media URLs for the Theme Image
+block), and the files are served from the private R2 bucket through EmDash's
+media API. New uploads use the same library.
+
+Original files remain under `public/` to preserve existing direct image links
+and keep the initial seed portable. The seed is a one-time copy of the original
+posts, including their historical references to TinaCMS; it is not the live CMS
+or an ongoing backup. Importing the seed alone does not register its static
+images in the media library.
 
 ## Production setup and deployment
 
