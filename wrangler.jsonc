@@ -63,6 +63,41 @@
       "id": "8bf01aa04a0d44499c86e377038ad892"
     }
   ],
+  "previews": {
+    "vars": {
+      "HOUSE_OWNER_ID": ""
+    },
+    "kv_namespaces": [
+      {
+        "binding": "SESSION",
+        "id": "c2d847173c624a3e816ed26dceb8504c"
+      }
+    ],
+    "d1_databases": [
+      {
+        "binding": "DB",
+        "database_name": "liftaris-preview-cms",
+        "database_id": "98b72d63-316e-4f01-bde4-4e42365cf07f"
+      },
+      {
+        "binding": "VISITOR_DB",
+        "database_name": "liftaris-preview-visitors",
+        "database_id": "c9850c71-4143-4490-ab8d-28d487c4fb00",
+        "migrations_dir": "migrations/visitor-auth"
+      }
+    ],
+    "r2_buckets": [
+      {
+        "binding": "MEDIA",
+        "bucket_name": "liftaris-preview-media"
+      }
+    ],
+    "durable_objects": {
+      "bindings": [
+        { "name": "HOUSE", "class_name": "House" }
+      ]
+    }
+  },
   "secrets": {
     "required": [
       "EMDASH_SETUP_KEY",

@@ -1,0 +1,11 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "d1_databases": [
+    {
+      "binding": "VISITOR_DB",
+      "database_name": "liftaris-preview-visitors",
+      "database_id": "c9850c71-4143-4490-ab8d-28d487c4fb00",
+      "migrations_dir": "migrations/visitor-auth"
+    }
+  ]
+}

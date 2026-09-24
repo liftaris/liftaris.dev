@@ -8,7 +8,8 @@ The app keeps Astro 7, `@astrojs/cloudflare` 14, and EmDash 0.38. `src/worker.ts
 | --- | --- | --- |
 | Existing production portfolio | `wrangler.jsonc` / Wrangler | Existing `liftaris-dev` Worker, CMS `DB`, `MEDIA`, `SESSION`, custom domains, and publishing cron |
 | Local development | Astro / Wrangler local simulator | Separate local `VISITOR_DB`, local House SQLite storage, and local CMS bindings |
-| Isolated hosted preview | `alchemy.run.ts` / Alchemy | A new Worker, CMS D1, visitor D1, media R2, session KV, and House namespace for each stage |
+| GitHub branch previews | `wrangler.jsonc` `previews` / Workers Builds | Dedicated preview CMS D1, visitor D1, media R2, session KV; automatic per-branch House namespace |
+| Optional standalone Alchemy preview | `alchemy.run.ts` / Alchemy | A new Worker, CMS D1, visitor D1, media R2, session KV, and House namespace for each stage |
 
 Alchemy does not adopt the existing production resources, copy their contents, or attach `liftaris.dev` routes. Its output includes the preview URL, Worker name, and database IDs. The preview CMS starts empty and follows EmDash's normal setup process; its D1 adapter performs its own CMS migrations. House gifts live only in the Durable Object, while anonymous visitor identities and sessions live only in `VISITOR_DB`. PartySync shares additions and withdrawals; positions and physics remain local to each page and reset on reload.
 
@@ -69,7 +70,33 @@ bun scripts/verify-house-browser.ts http://127.0.0.1:8787
 
 The script refuses non-loopback hosts, uses isolated browser sessions, creates local test visitors/gifts, and reclaims its test gifts on exit. It covers inspected and held gifts surviving remote deletion, departure/focus cleanup, additions during a grab, missed deletions on reconnect, a half-open socket after foreground return, and already-loaded private cards. Use disposable local storage, not production bindings.
 
-## Hosted Alchemy preview
+## GitHub branch previews
+
+Workers Builds deploys non-production branches with `wrangler preview`. This uses the explicit `previews` block in `wrangler.jsonc`, not the top-level production bindings and not the Alchemy stack. Astro otherwise injects a `SESSION` preview binding without a namespace ID, which Cloudflare rejects during deployment.
+
+The checked-in preview bindings use `liftaris-preview-sessions`, `liftaris-preview-cms`, `liftaris-preview-visitors`, and `liftaris-preview-media`. These are separate from production. Branches using the same IDs share those preview resources; House Durable Object storage is isolated automatically per branch. The CMS database and media bucket start empty. EmDash initializes its own schema and offers its normal setup/import flow; production content is not copied.
+
+`bun run build` validates the emitted `dist/server/wrangler.json` for complete preview bindings, separation from production storage, separate CMS/visitor databases, and alignment with the visitor migration target. Before deploying visitor schema changes, run:
+
+```sh
+bun run db:visitor:preview
+```
+
+This uses `wrangler.preview-migrations.json`, whose visitor database ID must match `previews.d1_databases`. Wrangler's D1 migration commands do not select the new `previews` block. Do not use the top-level production/local visitor binding or substitute the CMS database.
+
+Set `EMDASH_SETUP_KEY`, `VISITOR_AUTH_SECRET`, and `JEV_API_KEY` as secrets in the **Previews Base** configuration. Use distinct preview setup/auth secrets and keep the visitor secret stable. Secret values do not belong in Git or plaintext `vars`. For a new environment, use a private JSON or dotenv file containing only these keys:
+
+```sh
+bunx wrangler preview base-config secret bulk /path/to/private-preview-secrets.json
+bun run build
+bunx wrangler preview --name interactive-stuff --secrets-file /path/to/private-preview-secrets.json
+```
+
+Base secrets are copied when a Preview is created, not when the Base changes. The explicit secrets file initializes an existing Preview too, including one created by a previously failed build. Subsequent branch pushes deploy through Workers Builds and retain its secrets. Use `wrangler preview secret list --name interactive-stuff` to verify the names without exposing values.
+
+Production routes and Cron Triggers do not run against branch previews. Leave them at the top level; never use `bun run deploy` to repair a preview. The published preview URL is shown by Wrangler and the Cloudflare dashboard.
+
+## Optional standalone Alchemy preview
 
 Alchemy's own Astro integration installs a different adapter and rejects the existing adapter. This stack instead consumes the already-built Astro output with `Cloudflare.Worker({ main, bundle: false, assets })`. It uploads the emitted module tree unchanged, preserves the custom Worker entrypoint, and uses `dist/client` for static assets. Always build immediately before a plan or deployment.
 

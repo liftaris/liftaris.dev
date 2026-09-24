@@ -35,9 +35,10 @@ run `bun run db:visitor:local`. Set `HOUSE_OWNER_ID` to your EmDash user ID for
 private-message access and moderation while signed into the CMS.
 
 See the [gift specification](docs/portfolio-gifts-spec.md) and
-[local/Alchemy deployment guide](docs/portfolio-deployment.md). Production needs
-a real visitor database ID and Worker secrets before deployment; the checked-in
-visitor database ID is a local development sentinel.
+[deployment guide](docs/portfolio-deployment.md). GitHub branch previews use the
+`previews` bindings in `wrangler.jsonc`, isolated from production. Production still
+needs a real visitor database ID and Worker secrets before deployment; its
+checked-in visitor database ID is a local development sentinel.
 
 ## Portfolio interaction lab
 
