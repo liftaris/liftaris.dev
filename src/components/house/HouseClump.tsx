@@ -1,40 +1,40 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
 import { createSceneEngine } from "../clump/matter-engine";
-import { initialPoses, OBJECTS } from "../clump/model";
+import { OBJECTS } from "../clump/model";
 import type { Point, SceneEngine } from "../clump/model";
-import { ensureVisitor, HouseError, placeObject } from "../../lib/house/client";
-import { giftObjects } from "../../lib/house/emoji";
-import type { HouseSnapshot } from "../../lib/house/types";
+import { giftObjects, worldSize } from "../../lib/house/emoji";
+import type { Gift } from "../../lib/house/types";
+import { reconcileGifts, retiringGiftIds } from "./gift-presence";
 
-type Grab = { id: string; point: Point; origin: Point; baseRevision: number; moved: boolean; pointerId?: number };
+type Grab = { id: string; point: Point; origin: Point; moved: boolean; pointerId?: number };
 const INITIAL_SIZE = { width: 500, height: 600 };
 
-export function HouseClump({ snapshot, onSnapshot, onOpen, onStatus }: {
-  snapshot: HouseSnapshot | null;
-  onSnapshot: (snapshot: HouseSnapshot) => void;
-  onOpen: (id: string, origin: DOMRect) => void;
-  onStatus: (message: string) => void;
+export function HouseClump({ gifts, inspectedId, onOpen }: {
+  gifts: readonly Gift[];
+  inspectedId: string | null;
+  onOpen: (gift: Gift, origin: DOMRect) => void;
 }) {
   const viewport = useRef<HTMLDivElement>(null);
   const world = useRef<HTMLDivElement>(null);
   const nodes = useRef(new Map<string, HTMLButtonElement>());
   const engine = useRef<SceneEngine | null>(null);
-  const currentSnapshot = useRef(snapshot);
   const grabbed = useRef<Grab | null>(null);
   const start = useRef<() => void>(() => {});
   const paint = useRef<() => void>(() => {});
   const clickSuppressed = useRef<{ id: string; until: number } | null>(null);
-  const pendingPlacement = useRef(false);
-  const centered = useRef(false);
-  const transitions = useRef(new Map<string, Animation>());
-  const paintedRevision = useRef(-1);
-  const hasPainted = useRef(false);
+  const [displayed, setDisplayed] = useState<Gift[]>(() => [...gifts]);
   const [grabId, setGrabId] = useState<string | null>(null);
   const [scale, setScale] = useState(1);
-  const objects = useMemo(() => [...OBJECTS, ...giftObjects(snapshot?.gifts ?? [])], [snapshot?.gifts]);
-  const size = snapshot?.size ?? INITIAL_SIZE;
-  currentSnapshot.current = snapshot;
+  const [size, setSize] = useState(INITIAL_SIZE);
+  const bounds = useRef(INITIAL_SIZE);
+  const objects = useMemo(() => [...OBJECTS, ...giftObjects(displayed)], [displayed]);
+  const retiring = retiringGiftIds(displayed, gifts, [inspectedId, grabId]);
+  const liveIds = new Set(gifts.map((gift) => gift.id));
+
+  useLayoutEffect(() => {
+    setDisplayed((current) => reconcileGifts(current, gifts));
+  }, [gifts]);
 
   useEffect(() => {
     const element = viewport.current;
@@ -46,9 +46,9 @@ export function HouseClump({ snapshot, onSnapshot, onOpen, onStatus }: {
     return () => observer.disconnect();
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const reduced = matchMedia("(prefers-reduced-motion: reduce)");
-    const scene = createSceneEngine({ scene: "clump", collision: "outline", size: INITIAL_SIZE, reducedMotion: reduced.matches });
+    const scene = createSceneEngine({ scene: "clump", collision: "outline", size: bounds.current, reducedMotion: reduced.matches });
     engine.current = scene;
     let frame = 0;
     let previous = 0;
@@ -58,9 +58,12 @@ export function HouseClump({ snapshot, onSnapshot, onOpen, onStatus }: {
       for (const pose of scene.getPoses()) {
         const element = nodes.current.get(pose.id);
         if (!element) continue;
+        // React owns membership and content, never the simulation's transform.
         element.style.transform = `translate(${pose.x}px, ${pose.y}px) translate(-50%, -50%) rotate(${pose.angle}rad)`;
+        element.style.visibility = "visible";
         element.dataset.x = String(pose.x);
         element.dataset.y = String(pose.y);
+        element.dataset.angle = String(pose.angle);
       }
     };
     const tick = (now: number) => {
@@ -96,7 +99,6 @@ export function HouseClump({ snapshot, onSnapshot, onOpen, onStatus }: {
           scene.endDrag(true);
           grabbed.current = null;
           setGrabId(null);
-          if (currentSnapshot.current) applySnapshot(currentSnapshot.current);
         }
       } else run();
     };
@@ -106,76 +108,30 @@ export function HouseClump({ snapshot, onSnapshot, onOpen, onStatus }: {
       cancelAnimationFrame(frame);
       document.removeEventListener("visibilitychange", visibility);
       scene.dispose();
-      for (const animation of transitions.current.values()) animation.cancel();
-      transitions.current.clear();
       engine.current = null;
     };
   }, []);
 
-  useEffect(() => {
-    if (!snapshot || grabbed.current) return;
-    applySnapshot(snapshot);
-  }, [snapshot, objects]);
-
-  useEffect(() => {
-    if (!snapshot || centered.current || !viewport.current) return;
-    const element = viewport.current;
-    element.scrollLeft = Math.max(0, (snapshot.size.width * scale - element.clientWidth) / 2);
-    element.scrollTop = Math.max(0, (snapshot.size.height * scale - element.clientHeight) / 2);
-    centered.current = true;
-  }, [snapshot, scale]);
+  useLayoutEffect(() => {
+    const scene = engine.current;
+    if (!scene) return;
+    // Grow the local stage without rescaling positions or interrupting a grab.
+    // Never shrink it around a visitor's existing arrangement after a deletion.
+    const requested = worldSize(displayed.length);
+    const next = { width: Math.max(bounds.current.width, requested.width), height: Math.max(bounds.current.height, requested.height) };
+    if (next.width !== bounds.current.width || next.height !== bounds.current.height) {
+      scene.resize(next, true);
+      bounds.current = next;
+      setSize(next);
+    }
+    scene.syncObjects(objects);
+    paint.current();
+    start.current();
+  }, [objects, displayed.length]);
 
   const position = (event: ReactPointerEvent): Point => {
-    const bounds = world.current!.getBoundingClientRect();
-    return { x: (event.clientX - bounds.left) / scale, y: (event.clientY - bounds.top) / scale };
-  };
-
-  const applySnapshot = (next: HouseSnapshot) => {
-    if (!engine.current || paintedRevision.current === next.revision) return;
-    const animate = hasPainted.current && !matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const before = new Map<string, string>();
-    if (animate) for (const [id, element] of nodes.current) before.set(id, getComputedStyle(element).transform);
-    for (const animation of transitions.current.values()) animation.cancel();
-    transitions.current.clear();
-    engine.current.resize(next.size);
-    engine.current.syncObjects([...OBJECTS, ...giftObjects(next.gifts)], next.poses);
-    engine.current.applyPoses(next.poses);
-    paint.current();
-    if (animate) for (const [id, element] of nodes.current) {
-      const transform = before.get(id);
-      if (!transform) continue;
-      const animation = element.animate([{ transform }, { transform: element.style.transform }], { duration: 360, easing: "cubic-bezier(0.2, 0, 0, 1)" });
-      transitions.current.set(id, animation);
-      void animation.finished.then(() => {
-        if (transitions.current.get(id) === animation) transitions.current.delete(id);
-      }).catch(() => {});
-    }
-    paintedRevision.current = next.revision;
-    hasPainted.current = true;
-  };
-
-  const interruptTransition = () => {
-    if (!transitions.current.size || !engine.current) return;
-    const poses = engine.current.getPoses().map((pose) => {
-      const element = nodes.current.get(pose.id);
-      if (!element) return pose;
-      const matrix = new DOMMatrixReadOnly(getComputedStyle(element).transform);
-      return { ...pose, x: matrix.e + element.offsetWidth / 2, y: matrix.f + element.offsetHeight / 2, angle: Math.atan2(matrix.b, matrix.a) };
-    });
-    for (const animation of transitions.current.values()) animation.cancel();
-    transitions.current.clear();
-    engine.current.applyPoses(poses);
-    paint.current();
-    paintedRevision.current = -1;
-  };
-
-  const synchronize = (next: HouseSnapshot) => {
-    // A later socket event can arrive before our own mutation's HTTP response.
-    // Reject old poses as well as old React state in that case.
-    if (next.revision < (currentSnapshot.current?.revision ?? -1)) return;
-    currentSnapshot.current = next;
-    onSnapshot(next);
-    applySnapshot(next);
+    const rect = world.current!.getBoundingClientRect();
+    return { x: (event.clientX - rect.left) / scale, y: (event.clientY - rect.top) / scale };
   };
 
   const finish = (cancel = false) => {
@@ -189,38 +145,17 @@ export function HouseClump({ snapshot, onSnapshot, onOpen, onStatus }: {
       if (element?.hasPointerCapture(grab.pointerId)) element.releasePointerCapture(grab.pointerId);
     }
     if (grab.moved) clickSuppressed.current = { id: grab.id, until: performance.now() + 400 };
-    if (!grab.moved || cancel) {
-      const latest = currentSnapshot.current;
-      if (latest) synchronize(latest);
-      return;
-    }
-    const pose = engine.current?.getPoses().find((item) => item.id === grab.id);
-    if (!pose) return;
-    pendingPlacement.current = true;
     start.current();
-    void ensureVisitor().then(() => placeObject({ baseRevision: grab.baseRevision, pose })).then((next) => {
-      synchronize(next);
-      onStatus("Placed.");
-    }).catch((error: unknown) => {
-      if (error instanceof HouseError && error.snapshot) {
-        synchronize(error.snapshot);
-        onStatus("The house changed while you were moving that. Try again.");
-      } else {
-        if (currentSnapshot.current) synchronize(currentSnapshot.current);
-        onStatus(error instanceof Error ? error.message : "Couldn’t save that move. Try again.");
-      }
-    }).finally(() => { pendingPlacement.current = false; });
   };
 
   const pointerDown = (event: ReactPointerEvent<HTMLButtonElement>, id: string) => {
-    if (event.button !== 0 || grabbed.current || pendingPlacement.current || !currentSnapshot.current) return;
+    if (event.button !== 0 || grabbed.current || retiring.has(id)) return;
     event.preventDefault();
-    interruptTransition();
-    paintedRevision.current = -1;
     event.currentTarget.focus({ preventScroll: true });
     event.currentTarget.setPointerCapture(event.pointerId);
     const point = position(event);
-    grabbed.current = { id, point, origin: point, pointerId: event.pointerId, baseRevision: currentSnapshot.current.revision, moved: false };
+    grabbed.current = { id, point, origin: point, pointerId: event.pointerId, moved: false };
+    setGrabId(id);
   };
 
   const pointerMove = (event: ReactPointerEvent<HTMLButtonElement>) => {
@@ -231,7 +166,6 @@ export function HouseClump({ snapshot, onSnapshot, onOpen, onStatus }: {
       if (Math.hypot(point.x - grab.origin.x, point.y - grab.origin.y) * scale < 5) return;
       if (!engine.current?.beginDrag(grab.id, grab.origin)) return;
       grab.moved = true;
-      setGrabId(grab.id);
     }
     grab.point = point;
     engine.current?.moveDrag(point);
@@ -242,17 +176,15 @@ export function HouseClump({ snapshot, onSnapshot, onOpen, onStatus }: {
     const key = event.key.toLowerCase();
     if (key === "escape" && grabbed.current) { event.preventDefault(); finish(true); return; }
     if (["enter", " "].includes(key) && grabbed.current?.id === id) { event.preventDefault(); finish(); return; }
-    if (!["arrowleft", "arrowright", "arrowup", "arrowdown", "q", "e"].includes(key)) return;
+    if (retiring.has(id) || !["arrowleft", "arrowright", "arrowup", "arrowdown", "q", "e"].includes(key)) return;
     event.preventDefault();
-    if (pendingPlacement.current || !currentSnapshot.current || grabbed.current?.pointerId !== undefined) return;
+    if (grabbed.current?.pointerId !== undefined) return;
     const scene = engine.current;
     if (!scene) return;
     if (!grabbed.current) {
-      interruptTransition();
-      paintedRevision.current = -1;
       const pose = scene.getPoses().find((item) => item.id === id);
       if (!pose || !scene.beginDrag(id, pose)) return;
-      grabbed.current = { id, point: { x: pose.x, y: pose.y }, origin: pose, baseRevision: currentSnapshot.current.revision, moved: true };
+      grabbed.current = { id, point: { x: pose.x, y: pose.y }, origin: pose, moved: true };
       setGrabId(id);
     }
     const grab = grabbed.current;
@@ -265,17 +197,22 @@ export function HouseClump({ snapshot, onSnapshot, onOpen, onStatus }: {
     start.current();
   };
 
-  const initial = initialPoses("clump", INITIAL_SIZE);
   return <div ref={viewport} className="house-viewport" role="group" aria-label="Kaio’s things and visitor gifts" aria-describedby="house-movement-help">
     <div className="house-world-space" style={{ width: size.width * scale, height: size.height * scale }}>
       <div ref={world} className="house-world" style={{ width: size.width, height: size.height, transform: `scale(${scale})` }}>
         {objects.map((object) => {
-          const gift = snapshot?.gifts.find((item) => item.id === object.id);
-          const pose = snapshot?.poses.find((item) => item.id === object.id) ?? initial.find((item) => item.id === object.id);
-          return <button type="button" key={object.id} className="house-object" data-object={object.id} data-gift={Boolean(gift)} data-grabbed={grabId === object.id}
+          const gift = displayed.find((item) => item.id === object.id);
+          const removing = retiring.has(object.id);
+          return <button type="button" key={object.id} className="house-object" data-object={object.id} data-gift={Boolean(gift)} data-grabbed={grabId === object.id} data-removing={removing}
             ref={(element) => { if (element) nodes.current.set(object.id, element); else nodes.current.delete(object.id); }}
-            style={{ width: Math.max(44, object.width), height: Math.max(44, object.height), fontSize: Math.max(object.width, object.height) * .87, transform: `translate(${pose?.x ?? size.width / 2}px, ${pose?.y ?? size.height / 2}px) translate(-50%, -50%) rotate(${pose?.angle ?? 0}rad)` }}
+            style={{ width: Math.max(44, object.width), height: Math.max(44, object.height), fontSize: Math.max(object.width, object.height) * .87 }}
+            aria-disabled={removing || undefined} tabIndex={removing ? -1 : 0}
             aria-label={gift ? `${object.name}, gift from ${gift.authorName}. Open gift or use arrow keys to move.` : `${object.name}. Use arrow keys to move.`} aria-describedby="house-movement-help"
+            onAnimationEnd={(event) => {
+              if (event.target !== event.currentTarget || event.animationName !== "house-depart" || !removing) return;
+              if (document.activeElement === event.currentTarget) document.getElementById("gift-draft")?.focus({ preventScroll: true });
+              setDisplayed((current) => current.filter((item) => item.id !== object.id));
+            }}
             onPointerDown={(event) => pointerDown(event, object.id)} onPointerMove={pointerMove}
             onPointerUp={(event) => { if (grabbed.current?.pointerId === event.pointerId) finish(); }}
             onPointerCancel={(event) => { if (grabbed.current?.pointerId === event.pointerId) finish(true); }}
@@ -284,12 +221,12 @@ export function HouseClump({ snapshot, onSnapshot, onOpen, onStatus }: {
             onBlur={() => { if (grabbed.current?.id === object.id && grabbed.current.pointerId === undefined) finish(); }}
             onClick={(event) => {
               const suppressed = clickSuppressed.current;
-              if (gift && !(suppressed?.id === gift.id && performance.now() < suppressed.until)) onOpen(gift.id, event.currentTarget.getBoundingClientRect());
+              if (gift && liveIds.has(gift.id) && !(suppressed?.id === gift.id && performance.now() < suppressed.until)) onOpen(gift, event.currentTarget.getBoundingClientRect());
             }}
           ><span className="house-object-art" aria-hidden="true">{object.emoji}</span></button>;
         })}
       </div>
     </div>
-    <p id="house-movement-help" className="house-sr-only">Drag to move things. With a keyboard, arrows move, Q and E turn, Enter places, and Escape cancels. Press Enter on a gift to open it.</p>
+    <p id="house-movement-help" className="house-sr-only">Drag to move things in your own arrangement. With a keyboard, arrows move, Q and E turn, Enter places, and Escape cancels. Press Enter on a gift to open it.</p>
   </div>;
 }

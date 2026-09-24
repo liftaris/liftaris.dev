@@ -1,10 +1,10 @@
-import type { CreateGift, EmojiOption, GiftDetail, HouseSnapshot, PlaceObject, Visitor } from "./types";
+import type { CreateGift, EmojiOption, GiftDetail, HouseSnapshot, Visitor } from "./types";
 
 const TOKEN_KEY = "kaio.house.visitor";
 let visitorPromise: Promise<Visitor> | undefined;
 
 export class HouseError extends Error {
-  constructor(message: string, readonly status: number, readonly snapshot?: HouseSnapshot) {
+  constructor(message: string, readonly status: number) {
     super(message);
     this.name = "HouseError";
   }
@@ -22,8 +22,8 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(path, { ...init, headers, credentials: "same-origin", cache: "no-store" });
   const result: unknown = await response.json().catch(() => null);
   if (!response.ok) {
-    const failure = result && typeof result === "object" ? result as { error?: unknown; snapshot?: HouseSnapshot } : null;
-    throw new HouseError(typeof failure?.error === "string" ? failure.error : "That didn’t go through. Please try again.", response.status, failure?.snapshot);
+    const failure = result && typeof result === "object" ? result as { error?: unknown } : null;
+    throw new HouseError(typeof failure?.error === "string" ? failure.error : "That didn’t go through. Please try again.", response.status);
   }
   return result as T;
 }
@@ -65,44 +65,4 @@ export const getHouse = (signal?: AbortSignal) => request<HouseSnapshot>("/api/h
 export const getGift = (id: string, signal?: AbortSignal) => request<GiftDetail>(`/api/house/gifts/${encodeURIComponent(id)}`, { signal });
 export const createGift = (gift: CreateGift) => request<HouseSnapshot>("/api/house/gifts", { method: "POST", body: JSON.stringify(gift) });
 export const reclaimGift = (id: string) => request<HouseSnapshot>(`/api/house/gifts/${encodeURIComponent(id)}`, { method: "DELETE" });
-export const placeObject = (placement: PlaceObject) => request<HouseSnapshot>("/api/house/place", { method: "POST", body: JSON.stringify(placement) });
 export const suggestEmoji = (text: string, signal?: AbortSignal) => request<{ options: EmojiOption[] }>("/api/house/suggest", { method: "POST", body: JSON.stringify({ text }), signal });
-
-export function watchHouse(onSnapshot: (snapshot: HouseSnapshot) => void): () => void {
-  let socket: WebSocket | undefined;
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  let disposed = false;
-  let retries = 0;
-  const connect = () => {
-    if (disposed) return;
-    const url = new URL("/api/house/events", location.href);
-    url.protocol = location.protocol === "https:" ? "wss:" : "ws:";
-    // Public snapshots only. Never put the visitor credential in a socket URL.
-    socket = new WebSocket(url);
-    socket.onopen = () => {
-      retries = 0;
-      void getHouse().then((snapshot) => { if (!disposed) onSnapshot(snapshot); }).catch(() => {});
-    };
-    socket.onmessage = (event) => {
-      try {
-        const message = JSON.parse(String(event.data));
-        if (message.type === "snapshot" && message.snapshot) onSnapshot(message.snapshot);
-      } catch { /* Ignore malformed events; a reconnect retrieves the canonical snapshot. */ }
-    };
-    socket.onclose = () => {
-      if (!disposed) timer = setTimeout(connect, Math.min(1000 * 2 ** retries++, 15000));
-    };
-    socket.onerror = () => socket?.close();
-  };
-  connect();
-  const refresh = () => {
-    if (!document.hidden) void getHouse().then((snapshot) => { if (!disposed) onSnapshot(snapshot); }).catch(() => {});
-  };
-  document.addEventListener("visibilitychange", refresh);
-  return () => {
-    disposed = true;
-    clearTimeout(timer);
-    socket?.close();
-    document.removeEventListener("visibilitychange", refresh);
-  };
-}

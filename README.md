@@ -25,7 +25,9 @@ The homepage contains the shared Matter.js clump. Visitors can leave emoji gifts
 optionally attach a public or private message, and take back their own gifts.
 Jev suggests emoji while they type. Anonymous animal identities use Better Auth
 and localStorage with a 100-year bearer lifetime; clearing storage loses ownership.
-Final placements, gift creation, and withdrawals synchronize between visitors.
+Gift additions and withdrawals synchronize through PartySync. Movement and physics
+stay local to each visitor, with a fresh arrangement on reload. A remotely deleted
+gift stays available while inspected or dragged, then fades away on close or release.
 
 The gift backend uses Effect, a SQLite Durable Object, and a separate visitor D1
 database. Set `VISITOR_AUTH_SECRET` and `JEV_API_KEY` in ignored `.dev.vars`, then

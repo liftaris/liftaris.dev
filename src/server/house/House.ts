@@ -1,12 +1,14 @@
-import { DurableObject } from "cloudflare:workers";
 import { ManagedRuntime } from "effect";
+import { SyncServer } from "partysync/server";
+import type { Connection, WSMessage } from "partyserver";
+import { collectionRecord, HOUSE_COLLECTION } from "../../lib/house/collection";
 import { findEmoji } from "../../lib/house/emoji";
-import { settleHouse } from "../../lib/house/physics";
-import type { Viewer } from "../../lib/house/types";
+import type { HouseSnapshot, Viewer } from "../../lib/house/types";
 import { HouseService, result } from "./service";
 import { HouseStore } from "./store";
+import { isPublicSyncRequest } from "./sync";
 
-export class House extends DurableObject<Env> {
+export class House extends SyncServer<Env> {
   private readonly runtime: ManagedRuntime.ManagedRuntime<HouseService, never>;
 
   constructor(ctx: DurableObjectState, env: Env) {
@@ -14,10 +16,11 @@ export class House extends DurableObject<Env> {
     const store = new HouseStore({
       query: <T extends Record<string, string | number | null>>(query: string, ...values: (string | number | null)[]) => this.ctx.storage.sql.exec<T>(query, ...values).toArray(),
       transaction: (run) => this.ctx.storage.transactionSync(run),
-    }, { initial: (gifts) => settleHouse(gifts, []), settle: settleHouse, hasEmoji: (id) => Boolean(findEmoji(id)) });
+    }, (id) => Boolean(findEmoji(id)));
+    // Native DO RPC bypasses PartyServer.onStart: initialize in the constructor
+    // so GET/create/remove work even before the first WebSocket connection.
     ctx.blockConcurrencyWhile(async () => store.initialize());
     this.runtime = ManagedRuntime.make(HouseService.layer(store));
-    ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("ping", "pong"));
   }
 
   async snapshot() {
@@ -30,19 +33,13 @@ export class House extends DurableObject<Env> {
 
   async create(input: unknown, viewer: Viewer) {
     const response = await this.runtime.runPromise(result(HouseService.use((house) => house.create(input, viewer))));
-    if (response.ok) this.broadcast(response.value);
+    if (response.ok) this.publish(response.value);
     return response;
   }
 
   async remove(id: string, viewer: Viewer) {
     const response = await this.runtime.runPromise(result(HouseService.use((house) => house.remove(id, viewer))));
-    if (response.ok) this.broadcast(response.value);
-    return response;
-  }
-
-  async place(input: unknown, viewer: Viewer) {
-    const response = await this.runtime.runPromise(result(HouseService.use((house) => house.place(input, viewer))));
-    if (response.ok) this.broadcast(response.value);
+    if (response.ok) this.publish(response.value);
     return response;
   }
 
@@ -52,34 +49,34 @@ export class House extends DurableObject<Env> {
 
   async fetch(request: Request): Promise<Response> {
     if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket") return new Response("WebSocket required", { status: 426 });
-    const pair = new WebSocketPair();
-    this.ctx.acceptWebSocket(pair[1]);
-    const snapshot = await this.snapshot();
-    if (!snapshot.ok) {
-      pair[1].close(1011, "Reconnect to the house.");
-      return Response.json({ error: snapshot.error }, { status: snapshot.status });
+    // Keep the existing DO identity and endpoint without exposing PartyServer's
+    // client-controlled room, props, connection IDs, or authentication headers.
+    const url = new URL(request.url);
+    url.search = "";
+    return super.fetch(new Request(url, { headers: { Upgrade: "websocket", "x-partykit-room": "home" } }));
+  }
+
+  async onMessage(connection: Connection, message: WSMessage): Promise<void> {
+    if (!isPublicSyncRequest(message)) {
+      connection.close(1008, "Use the house API for changes.");
+      return;
     }
-    pair[1].send(JSON.stringify({ type: "snapshot", snapshot: snapshot.value }));
-    return new Response(null, { status: 101, webSocket: pair[0] });
-  }
-
-  webSocketMessage(socket: WebSocket): void {
-    // This channel publishes public state only; commands use authenticated HTTP.
-    socket.close(1008, "Use the house API for changes.");
-  }
-
-  webSocketClose(socket: WebSocket, code: number, reason: string): void {
-    socket.close(code, reason);
-  }
-
-  webSocketError(socket: WebSocket): void {
-    socket.close(1011, "Reconnect to the house.");
-  }
-
-  private broadcast(snapshot: unknown): void {
-    const message = JSON.stringify({ type: "snapshot", snapshot });
-    for (const socket of this.ctx.getWebSockets()) {
-      try { socket.send(message); } catch { socket.close(1011, "Reconnect to the house."); }
+    const response = await this.snapshot();
+    if (!response.ok) {
+      connection.close(1011, "The house could not load.");
+      return;
     }
+    // Keep partysync's permanent-row replacement, but assemble in JavaScript:
+    // aggregating the entire collection inside SQLite hits its 2 MB value limit.
+    connection.send(JSON.stringify({
+      sync: true, channel: HOUSE_COLLECTION, payload: [collectionRecord(response.value)],
+    }));
+  }
+
+  private publish(snapshot: HouseSnapshot): void {
+    this.broadcast(JSON.stringify({
+      broadcast: true, type: "update", channel: HOUSE_COLLECTION,
+      payload: [collectionRecord(snapshot)],
+    }));
   }
 }

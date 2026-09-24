@@ -42,6 +42,18 @@
   line-height: 1;
 }
 .house-object[data-grabbed="true"] { z-index: 3; cursor: grabbing; }
+/* Transform/visibility belong to the local renderer, not React snapshots. */
+.house-object { visibility: hidden; }
+.house-object[data-gift="true"] { animation: house-arrive 220ms ease-out; }
+.house-object[data-removing="true"] {
+  pointer-events: none;
+  animation: house-depart 260ms ease-in forwards;
+}
+@keyframes house-arrive { from { opacity: 0; } to { opacity: 1; } }
+@keyframes house-depart { from { opacity: 1; } to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .house-object[data-gift="true"] { animation-duration: 1ms; }
+}
 .house-object-art {
   display: block;
   pointer-events: none;

@@ -1,5 +1,4 @@
-import { OBJECTS, type Pose, type Size } from "../../components/clump/model";
-import type { CreateGift, Gift, GiftDetail, HouseSnapshot, PlaceObject, Viewer } from "../../lib/house/types";
+import type { CreateGift, Gift, GiftDetail, HouseSnapshot, Viewer } from "../../lib/house/types";
 import { failure } from "./errors";
 
 export type SqlValue = string | number | null;
@@ -7,16 +6,12 @@ export interface HouseSql {
   query<T extends Record<string, SqlValue>>(sql: string, ...values: SqlValue[]): T[];
   transaction<T>(run: () => T): T;
 }
-export interface HousePhysics {
-  initial(gifts: Gift[]): { poses: Pose[]; size: Size };
-  settle(gifts: Gift[], poses: Pose[], changedPose?: Pose): { poses: Pose[]; size: Size };
-  hasEmoji(id: string): boolean;
-}
+
 type GiftRow = {
   id: string; emoji_id: string; creator_id: string; author_name: string;
   created_at: string; visibility: "public" | "private"; message: string | null;
 };
-type StateRow = { revision: number; poses: string; size: string };
+type StateRow = { revision: number };
 
 function publicGift(row: GiftRow): Gift {
   return {
@@ -34,13 +29,13 @@ function actorId(viewer: Viewer): string {
 
 /** All command checks and writes run in one synchronous SQLite transaction. */
 export class HouseStore {
-  constructor(private readonly sql: HouseSql, private readonly physics: HousePhysics) {}
+  constructor(private readonly sql: HouseSql, private readonly hasEmoji: (id: string) => boolean) {}
 
   initialize(): void {
     this.sql.transaction(() => {
       this.sql.query(`CREATE TABLE IF NOT EXISTS house_migrations (version INTEGER PRIMARY KEY)`);
       this.sql.query(`CREATE TABLE IF NOT EXISTS house_state (
-        id INTEGER PRIMARY KEY CHECK (id = 1), revision INTEGER NOT NULL, poses TEXT NOT NULL, size TEXT NOT NULL
+        id INTEGER PRIMARY KEY CHECK (id = 1), revision INTEGER NOT NULL
       )`);
       this.sql.query(`CREATE TABLE IF NOT EXISTS gifts (
         id TEXT PRIMARY KEY, emoji_id TEXT NOT NULL, creator_id TEXT NOT NULL,
@@ -55,20 +50,25 @@ export class HouseStore {
       this.sql.query(`CREATE TABLE IF NOT EXISTS house_limits (
         key TEXT PRIMARY KEY, started INTEGER NOT NULL, count INTEGER NOT NULL
       )`);
-      if (!this.sql.query<StateRow>("SELECT revision, poses, size FROM house_state WHERE id = 1").length) {
-        const initial = this.physics.initial([]);
-        this.sql.query("INSERT INTO house_state VALUES (1, 0, ?, ?)", JSON.stringify(initial.poses), JSON.stringify(initial.size));
+      if (!this.sql.query("SELECT version FROM house_migrations WHERE version = 2").length) {
+        // Keep the existing revision, gifts, receipts and reclaim tombstones. Only
+        // the obsolete authoritative layout is discarded, once, in this transaction.
+        this.sql.query(`CREATE TABLE house_state_v2 (
+          id INTEGER PRIMARY KEY CHECK (id = 1), revision INTEGER NOT NULL
+        )`);
+        this.sql.query("INSERT INTO house_state_v2 SELECT id, revision FROM house_state");
+        this.sql.query("DROP TABLE house_state");
+        this.sql.query("ALTER TABLE house_state_v2 RENAME TO house_state");
+        this.sql.query("INSERT INTO house_migrations VALUES (2)");
       }
+      this.sql.query("INSERT OR IGNORE INTO house_state VALUES (1, 0)");
       this.sql.query("INSERT OR IGNORE INTO house_migrations VALUES (1)");
     });
   }
 
   snapshot(): HouseSnapshot {
-    const state = this.sql.query<StateRow>("SELECT revision, poses, size FROM house_state WHERE id = 1")[0];
-    return {
-      revision: state.revision, gifts: this.gifts(),
-      poses: JSON.parse(state.poses) as Pose[], size: JSON.parse(state.size) as Size,
-    };
+    const state = this.sql.query<StateRow>("SELECT revision FROM house_state WHERE id = 1")[0];
+    return { revision: state.revision, gifts: this.gifts() };
   }
 
   detail(id: string, viewer: Viewer): GiftDetail {
@@ -84,7 +84,7 @@ export class HouseStore {
 
   create(viewer: Viewer, input: CreateGift, createdAt: string, now: number, payloadHash: string): HouseSnapshot {
     const creator = actorId(viewer);
-    if (!this.physics.hasEmoji(input.emojiId)) throw failure(400, "Choose one of the suggested emoji.");
+    if (!this.hasEmoji(input.emojiId)) throw failure(400, "Choose one of the suggested emoji.");
     const message = input.message?.trim() || null;
     const name = input.displayName?.trim() || viewer.visitor?.name || "Kaio";
     const visibility = message ? input.visibility : "public";
@@ -93,16 +93,15 @@ export class HouseStore {
         "SELECT gift_id, payload FROM gift_receipts WHERE creator_id = ? AND request_id = ?", creator, input.requestId,
       )[0];
       if (receipt) {
-        if (receipt.payload !== payloadHash) throw failure(409, "This placement was already used for a different gift.");
+        if (receipt.payload !== payloadHash) throw failure(409, "This request was already used for a different gift.");
         // Receipts outlive removals: retrying a lost response never recreates a withdrawn gift.
         return this.snapshot();
       }
       this.limit(viewer, "gift", now, 10);
-      const previous = this.snapshot();
       const id = `gift-${crypto.randomUUID()}`;
       this.sql.query("INSERT INTO gifts VALUES (?, ?, ?, ?, ?, ?, ?)", id, input.emojiId, creator, name, createdAt, visibility, message);
       this.sql.query("INSERT INTO gift_receipts VALUES (?, ?, ?, ?)", creator, input.requestId, id, payloadHash);
-      return this.save(previous.revision + 1, this.physics.settle(this.gifts(), previous.poses));
+      return this.save();
     });
   }
 
@@ -116,24 +115,9 @@ export class HouseStore {
         throw failure(404, "This gift is no longer here.");
       }
       if (!viewer.owner && viewer.visitor?.id !== row.creator_id) throw failure(403, "Only its sender or Kaio can remove this gift.");
-      const previous = this.snapshot();
       this.sql.query("INSERT OR IGNORE INTO removed_gifts VALUES (?, ?)", id, row.creator_id);
       this.sql.query("DELETE FROM gifts WHERE id = ?", id);
-      return this.save(previous.revision + 1, this.physics.settle(this.gifts(), previous.poses.filter((pose) => pose.id !== id)));
-    });
-  }
-
-  place(viewer: Viewer, input: PlaceObject, now: number): HouseSnapshot {
-    actorId(viewer);
-    return this.sql.transaction(() => {
-      const previous = this.snapshot();
-      if (previous.revision !== input.baseRevision) throw failure(409, "The house changed while you were moving that object.", previous);
-      if (!OBJECTS.some((object) => object.id === input.pose.id) && !previous.gifts.some((gift) => gift.id === input.pose.id)) {
-        throw failure(404, "That object is no longer here.");
-      }
-      if (input.pose.x > previous.size.width || input.pose.y > previous.size.height) throw failure(400, "Keep the object inside the house.");
-      this.limit(viewer, "place", now, 120);
-      return this.save(previous.revision + 1, this.physics.settle(previous.gifts, previous.poses, input.pose));
+      return this.save();
     });
   }
 
@@ -159,8 +143,8 @@ export class HouseStore {
     return this.sql.query<GiftRow>("SELECT * FROM gifts ORDER BY created_at, id").map(publicGift);
   }
 
-  private save(revision: number, layout: { poses: Pose[]; size: Size }): HouseSnapshot {
-    this.sql.query("UPDATE house_state SET revision = ?, poses = ?, size = ? WHERE id = 1", revision, JSON.stringify(layout.poses), JSON.stringify(layout.size));
+  private save(): HouseSnapshot {
+    this.sql.query("UPDATE house_state SET revision = revision + 1 WHERE id = 1");
     return this.snapshot();
   }
 

@@ -1,15 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getHouse, watchHouse } from "../../lib/house/client";
-import type { HouseSnapshot } from "../../lib/house/types";
+import { getHouse } from "../../lib/house/client";
+import { useHouseSync } from "../../lib/house/use-house-sync";
+import type { Gift, HouseSnapshot } from "../../lib/house/types";
 import { GiftComposer } from "./GiftComposer";
 import { GiftDialog } from "./GiftDialog";
 import { HouseClump } from "./HouseClump";
 import "./house.css";
 
+const EMPTY_GIFTS: readonly Gift[] = [];
+
 export function House() {
   const [snapshot, setSnapshot] = useState<HouseSnapshot | null>(null);
-  const [opened, setOpened] = useState<{ id: string; origin: DOMRect } | null>(null);
-  const [status, setStatus] = useState("");
+  // An open card is a local snapshot, not a lookup into the live collection.
+  const [opened, setOpened] = useState<{ gift: Gift; origin: DOMRect } | null>(null);
   const [loadError, setLoadError] = useState("");
   const [ready, setReady] = useState(false);
   const latest = useRef(-1);
@@ -18,26 +21,23 @@ export function House() {
     latest.current = next.revision;
     setSnapshot(next);
     setLoadError("");
-    setOpened((value) => value && !next.gifts.some((gift) => gift.id === value.id) ? null : value);
   }, []);
   const close = useCallback(() => setOpened(null), []);
+  useHouseSync(accept);
 
   useEffect(() => {
     setReady(true);
     const controller = new AbortController();
     void getHouse(controller.signal).then(accept).catch(() => {
-      if (!controller.signal.aborted) setLoadError("The house couldn’t connect. Reconnecting…");
+      if (!controller.signal.aborted && latest.current < 0) setLoadError("The house couldn’t connect. Reconnecting…");
     });
-    const disconnect = watchHouse(accept);
-    return () => { controller.abort(); disconnect(); };
+    return () => controller.abort();
   }, [accept]);
 
-  const openedGift = snapshot?.gifts.find((gift) => gift.id === opened?.id);
   return <div className="house" data-ready={ready}>
-    <HouseClump snapshot={snapshot} onSnapshot={accept} onOpen={(id, origin) => setOpened({ id, origin })} onStatus={setStatus} />
+    <HouseClump gifts={snapshot?.gifts ?? EMPTY_GIFTS} inspectedId={opened?.gift.id ?? null} onOpen={(gift, origin) => setOpened({ gift, origin })} />
     <GiftComposer onGift={accept} />
     {loadError && <p className="house-connection" role="status">{loadError}</p>}
-    <p className={status && status !== "Placed." ? "house-connection" : "house-sr-only"} role="status">{status}</p>
-    {opened && openedGift && <GiftDialog gift={openedGift} origin={opened.origin} onClose={close} onSnapshot={accept} />}
+    {opened && <GiftDialog gift={opened.gift} origin={opened.origin} onClose={close} onSnapshot={accept} />}
   </div>;
 }

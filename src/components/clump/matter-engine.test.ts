@@ -244,6 +244,34 @@ describe("apartment direct manipulation", () => {
   });
 });
 
+test("local stage growth and membership changes preserve poses and an ongoing grab", () => {
+  const size = { width: 500, height: 600 };
+  const engine = createSceneEngine({ scene: "clump", collision: "outline", size });
+  try {
+    settle(engine);
+    const before = engine.getPoses();
+    const held = pose(engine, "octopus");
+    engine.beginDrag(held.id, held);
+    engine.resize({ width: 700, height: 800 }, true);
+    const gift = { id: "gift-one", name: "Gift", emoji: "🎁", width: 48, height: 48, shape: "circle" as const };
+    engine.syncObjects([...OBJECTS, gift], [{ id: gift.id, x: 600, y: 700, angle: 0 }]);
+    expect(new Set(engine.getPoses().map((item) => item.id))).toEqual(new Set([...OBJECTS.map((item) => item.id), gift.id]));
+    expect(engine.getPoses().filter((item) => item.id !== gift.id)).toEqual(before);
+    engine.moveDrag({ x: held.x + 65, y: held.y - 80 });
+    advance(engine, 25);
+    expect(Math.hypot(pose(engine, held.id).x - held.x, pose(engine, held.id).y - held.y)).toBeGreaterThan(30);
+    const beforeRemoval = engine.getPoses().filter((item) => item.id !== gift.id);
+    engine.syncObjects(OBJECTS);
+    expect(new Set(engine.getPoses().map((item) => item.id))).toEqual(new Set(OBJECTS.map((item) => item.id)));
+    expect(engine.getPoses()).toEqual(beforeRemoval);
+    const beforeContinuing = pose(engine, held.id);
+    engine.moveDrag({ x: held.x - 65, y: held.y + 60 });
+    advance(engine, 25);
+    expect(pose(engine, held.id).x).toBeLessThan(beforeContinuing.x - 30);
+    engine.endDrag();
+  } finally { engine.dispose(); }
+});
+
 test("fresh poster clumps are denser, but a saved poster arrangement is not recompressed", () => {
   const engine = createSceneEngine({ scene: "clump", collision: "peg", size: SIZE });
   try {

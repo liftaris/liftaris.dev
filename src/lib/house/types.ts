@@ -1,5 +1,3 @@
-import type { Pose, Size } from "../../components/clump/model";
-
 export type Audience = "public" | "private";
 export interface Gift {
   id: string;
@@ -13,8 +11,6 @@ export interface Gift {
 export interface HouseSnapshot {
   revision: number;
   gifts: Gift[];
-  poses: Pose[];
-  size: Size;
 }
 export interface Visitor {
   id: string;
@@ -36,10 +32,7 @@ export interface CreateGift {
   /** Empty means the visitor's assigned animal name. */
   displayName?: string;
 }
-export interface PlaceObject {
-  baseRevision: number;
-  pose: Pose;
-}
+
 export interface EmojiOption {
   id: string;
   emoji: string;

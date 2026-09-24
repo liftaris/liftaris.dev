@@ -13,7 +13,7 @@ export function json(value: unknown, status = 200): Response {
 }
 
 export function response<T>(result: HouseResult<T>): Response {
-  return result.ok ? json(result.value) : json({ error: result.error, ...(result.snapshot ? { snapshot: result.snapshot } : {}) }, result.status);
+  return result.ok ? json(result.value) : json({ error: result.error }, result.status);
 }
 
 export function sameOrigin(request: Request): void {

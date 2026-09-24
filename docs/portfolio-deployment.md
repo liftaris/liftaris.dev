@@ -10,7 +10,7 @@ The app keeps Astro 7, `@astrojs/cloudflare` 14, and EmDash 0.38. `src/worker.ts
 | Local development | Astro / Wrangler local simulator | Separate local `VISITOR_DB`, local House SQLite storage, and local CMS bindings |
 | Isolated hosted preview | `alchemy.run.ts` / Alchemy | A new Worker, CMS D1, visitor D1, media R2, session KV, and House namespace for each stage |
 
-Alchemy does not adopt the existing production resources, copy their contents, or attach `liftaris.dev` routes. Its output includes the preview URL, Worker name, and database IDs. The preview CMS starts empty and follows EmDash's normal setup process; its D1 adapter performs its own CMS migrations. House gifts and positions live only in the Durable Object, while anonymous visitor identities and sessions live only in `VISITOR_DB`.
+Alchemy does not adopt the existing production resources, copy their contents, or attach `liftaris.dev` routes. Its output includes the preview URL, Worker name, and database IDs. The preview CMS starts empty and follows EmDash's normal setup process; its D1 adapter performs its own CMS migrations. House gifts live only in the Durable Object, while anonymous visitor identities and sessions live only in `VISITOR_DB`. PartySync shares additions and withdrawals; positions and physics remain local to each page and reset on reload.
 
 `VISITOR_DB.database_id` in `wrangler.jsonc` is the deliberately invalid-for-production local sentinel `00000000-0000-0000-0000-000000000001`. Local commands can use it. Provision and configure a real, separate production visitor database before deploying the existing Wrangler target. Do not point visitor auth at the CMS `DB`.
 
@@ -47,6 +47,7 @@ Visitor identity is a Better Auth bearer token stored in localStorage. The store
 ```sh
 bun run typecheck
 bun run build
+node scripts/verify-house-worker.mjs
 ```
 
 The build must export `House` from `dist/server/entry.mjs`, retain the default `fetch` and `scheduled` handlers, and emit the `HOUSE` / `VISITOR_DB` bindings in `dist/server/wrangler.json`. The Astro build may open local helper servers. It does not deploy the Worker.
@@ -57,7 +58,16 @@ For a strictly local production-build smoke test with the existing custom-domain
 bunx wrangler dev --local --port 8787 --local-upstream 127.0.0.1:8787 --upstream-protocol http
 ```
 
-Stop the Astro development server while testing the built Worker against the same local storage. Then restart Astro after build/typecheck commands, which may invalidate its Vite dependency cache.
+Stop the Astro development server while testing the built Worker against the same local storage. Restart the local Wrangler process after rebuilding `dist/`: its asset index can otherwise retain deleted files and return 404s despite a successful Worker reload. Restart Astro after build/typecheck commands, which may invalidate its Vite dependency cache.
+
+Run the repeatable two-browser lifecycle checks against an initialized, disposable local server:
+
+```sh
+bunx agent-browser@0.38.1 install
+bun scripts/verify-house-browser.ts http://127.0.0.1:8787
+```
+
+The script refuses non-loopback hosts, uses isolated browser sessions, creates local test visitors/gifts, and reclaims its test gifts on exit. It covers inspected and held gifts surviving remote deletion, departure/focus cleanup, additions during a grab, missed deletions on reconnect, a half-open socket after foreground return, and already-loaded private cards. Use disposable local storage, not production bindings.
 
 ## Hosted Alchemy preview
 

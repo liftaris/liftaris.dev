@@ -197,17 +197,6 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
       });
     },
 
-    applyPoses(poses) {
-      if (disposed) return;
-      endDrag();
-      for (const pose of poses) {
-        const item = byId.get(pose.id);
-        if (!item) continue;
-        setPose(item, pose);
-        Sleeping.set(item.body, true);
-      }
-    },
-
     step(deltaMs) {
       if (disposed || apartment) return false;
       if (deltaMs <= 0 || !Number.isFinite(deltaMs)) {
@@ -302,8 +291,12 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
       setPose(item, { ...pose, x: pose.x + dx, y: pose.y + dy, angle: pose.angle + angle });
     },
 
-    resize(nextSize) {
+    resize(nextSize, preservePositions = false) {
       if (disposed || nextSize.width <= 0 || nextSize.height <= 0) return;
+      if (preservePositions) {
+        size = { ...nextSize };
+        return;
+      }
       endDrag();
       const previousSize = size;
       size = { ...nextSize };

@@ -59,8 +59,6 @@ export interface SceneEngine {
   getPoses(): Pose[];
   /** Add/remove gifts while preserving the existing simulation bodies. */
   syncObjects(objects: readonly ObjectSpec[], poses?: readonly Pose[]): void;
-  /** Apply the authoritative scene without adding local motion. */
-  applyPoses(poses: readonly Pose[]): void;
   /** Advances one fixed time step. Returns true while work remains. */
   step(deltaMs: number): boolean;
   beginDrag(id: string, point: Point): boolean;
@@ -68,7 +66,8 @@ export interface SceneEngine {
   endDrag(cancel?: boolean): void;
   /** Keyboard moves and rotations preserve the same input contract. */
   nudge(id: string, dx: number, dy: number, angle?: number): void;
-  resize(size: Size): void;
+  /** Growing a shared collection's local stage need not move bodies or release its handle. */
+  resize(size: Size, preservePositions?: boolean): void;
   getDebugShapes(): { id: string; vertices: Point[] }[];
   dispose(): void;
 }

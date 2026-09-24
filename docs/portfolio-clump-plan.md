@@ -2,7 +2,7 @@
 
 Research and working plan, updated September 24, 2026, incorporating the interaction questions and answers. The first `/lab/clump` prototype is implemented and verified locally. This document records its behavior, acceptance criteria, and the longer-term direction.
 
-**Selected direction:** scene 01, the clump, with object-sized collision bodies will occupy the existing homepage's empty blue space. The [homepage and visitor gifts specification](portfolio-gifts-spec.md) records the next phase, including anonymous attribution, optional public/private messages, reclaiming gifts, and shared final placements after release. The other scenes remain lab experiments.
+**Selected direction:** scene 01, the clump, with object-sized collision bodies will occupy the existing homepage's empty blue space. The [homepage and visitor gifts specification](portfolio-gifts-spec.md) records the next phase, including anonymous attribution, optional public/private messages, reclaiming gifts, and shared gift membership with local-only arrangements. The other scenes remain lab experiments.
 
 ## Creative brief
 

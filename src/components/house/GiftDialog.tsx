@@ -37,7 +37,7 @@ export function GiftDialog({ gift, origin, onClose, onSnapshot }: {
     const controller = new AbortController();
     void getGift(gift.id, controller.signal).then(setDetail).catch((reason: unknown) => {
       if (controller.signal.aborted) return;
-      if (reason instanceof HouseError && reason.status === 404) onClose();
+      if (reason instanceof HouseError && reason.status === 404) setError("This gift has been taken back. You can finish looking before closing it.");
       else setError(reason instanceof Error ? reason.message : "Couldn’t open this gift. Please try again.");
     });
     return () => controller.abort();
