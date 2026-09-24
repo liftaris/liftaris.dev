@@ -8,10 +8,10 @@ The app keeps Astro 7, `@astrojs/cloudflare` 14, and EmDash 0.38. `src/worker.ts
 | --- | --- | --- |
 | Existing production portfolio | `wrangler.jsonc` / Wrangler | Existing `liftaris-dev` Worker, CMS `DB`, `MEDIA`, `SESSION`, custom domains, and publishing cron |
 | Local development | Astro / Wrangler local simulator | Separate local `VISITOR_DB`, local House SQLite storage, and local CMS bindings |
-| GitHub branch previews | `wrangler.jsonc` `previews` / Workers Builds | Dedicated preview CMS D1, visitor D1, media R2, session KV; automatic per-branch House namespace |
-| Optional standalone Alchemy preview | `alchemy.run.ts` / Alchemy | A new Worker, CMS D1, visitor D1, media R2, session KV, and House namespace for each stage |
+| GitHub branch previews | `wrangler.jsonc` `previews` / Workers Builds | Shared production CMS D1 and media R2; separate preview visitor D1, session KV, and automatic per-branch House namespace |
+| Optional standalone Alchemy preview | `alchemy.run.ts` / Alchemy | Shared production CMS D1 and media R2 bindings; a new Worker, visitor D1, session KV, and House namespace for each stage |
 
-Alchemy does not adopt the existing production resources, copy their contents, or attach `liftaris.dev` routes. Its output includes the preview URL, Worker name, and database IDs. The preview CMS starts empty and follows EmDash's normal setup process; its D1 adapter performs its own CMS migrations. House gifts live only in the Durable Object, while anonymous visitor identities and sessions live only in `VISITOR_DB`. PartySync shares additions and withdrawals; positions and physics remain local to each page and reset on reload.
+Preview and production intentionally use one EmDash CMS database and media library. Alchemy references those existing resources with raw Worker bindings; it does not adopt, create, migrate, or delete them as managed stack resources, copy their contents, or attach `liftaris.dev` routes. Its output includes the preview URL, Worker name, and database IDs. EmDash's D1 adapter manages its CMS schema, so preview CMS versions must remain compatible with the shared database. House gifts live only in the Durable Object, while anonymous visitor identities and sessions live only in `VISITOR_DB`. PartySync shares additions and withdrawals; positions and physics remain local to each page and reset on reload.
 
 `VISITOR_DB.database_id` in `wrangler.jsonc` is the deliberately invalid-for-production local sentinel `00000000-0000-0000-0000-000000000001`. Local commands can use it. Provision and configure a real, separate production visitor database before deploying the existing Wrangler target. Do not point visitor auth at the CMS `DB`.
 
@@ -74,9 +74,11 @@ The script refuses non-loopback hosts, uses isolated browser sessions, creates l
 
 Workers Builds deploys non-production branches with `wrangler preview`. This uses the explicit `previews` block in `wrangler.jsonc`, not the top-level production bindings and not the Alchemy stack. Astro otherwise injects a `SESSION` preview binding without a namespace ID, which Cloudflare rejects during deployment.
 
-The checked-in preview bindings use `liftaris-preview-sessions`, `liftaris-preview-cms`, `liftaris-preview-visitors`, and `liftaris-preview-media`. These are separate from production. Branches using the same IDs share those preview resources; House Durable Object storage is isolated automatically per branch. The CMS database and media bucket start empty. EmDash initializes its own schema and offers its normal setup/import flow; production content is not copied.
+The preview `DB` binding uses the existing `liftaris-emdash` database, and `MEDIA` uses `liftaris-emdash-media`, exactly as production does. Existing posts, media, and CMS users are available without another setup wizard or seed import. CMS edits, uploads, deletions, and schema migrations affect the shared live CMS; preview is not a sandbox for destructive CMS testing. Use the production CMS admin origin for existing passkeys, whose credentials are origin-bound.
 
-`bun run build` validates the emitted `dist/server/wrangler.json` for complete preview bindings, separation from production storage, separate CMS/visitor databases, and alignment with the visitor migration target. Before deploying visitor schema changes, run:
+Runtime sessions use `liftaris-preview-sessions` and visitor identities use `liftaris-preview-visitors`, separate from production and from the CMS. Branches using the same IDs share those preview resources; House Durable Object storage is isolated automatically per branch.
+
+`bun run build` validates the emitted `dist/server/wrangler.json` for complete preview bindings, shared production CMS/media storage, isolated visitor/session storage, and alignment with the visitor migration target. Before deploying visitor schema changes, run:
 
 ```sh
 bun run db:visitor:preview
@@ -96,7 +98,7 @@ Base secrets are copied when a Preview is created, not when the Base changes. Th
 
 The first deployment must include `--secrets-file`: with Wrangler 4.135, a brand-new Preview has no version from which to inherit, even after Base secrets are configured, and otherwise fails with code 10222. Once bootstrapped, ordinary pushes need no secret values in the build environment.
 
-Production routes and Cron Triggers do not run against branch previews. Leave them at the top level; never use `bun run deploy` to repair a preview. The published preview URL is shown by Wrangler and the Cloudflare dashboard.
+Production routes and Cron Triggers do not run against branch previews. Leave them at the top level; scheduled CMS publishing runs only on production, not again on a preview. Never use `bun run deploy` to repair a preview. The published preview URL is shown by Wrangler and the Cloudflare dashboard.
 
 ## Optional standalone Alchemy preview
 
@@ -120,7 +122,7 @@ Alchemy owns migration application for its preview `Visitors` resource through `
 
 The existing `bun run deploy` path still targets the Wrangler-owned production Worker. The added visitor database sentinel must be replaced first, visitor migrations must be applied to that new production database, and `VISITOR_AUTH_SECRET` / `JEV_API_KEY` must be configured as Worker secrets. Set `HOUSE_OWNER_ID` explicitly when moderation is wanted. Preserve the existing CMS database ID, R2 bucket, KV namespace, custom domains, and cron.
 
-The isolated Alchemy preview is not a production migration. Promoting it requires a separate decision about resource ownership and the existing CMS content. Do not use `--adopt`, rename preview resources to production names, or copy preview IDs into production config as a shortcut.
+The Alchemy preview is not a production migration. Promoting its visitor or House infrastructure requires a separate decision about resource ownership. The CMS and media bindings already reference production and must remain unmanaged by the preview stack. Do not use `--adopt`, rename preview resources to production names, or copy preview visitor IDs into production config as a shortcut.
 
 ## References
 

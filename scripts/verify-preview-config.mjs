@@ -8,23 +8,28 @@ const config = JSON.parse(readFileSync(
 const preview = config.previews;
 assert.ok(preview, "Built Worker must declare a previews configuration");
 
-function resource(group, binding, identifier, pattern) {
+function resource(group, binding, identifier, pattern, shared = false) {
   const entry = preview[group]?.find((item) => item.binding === binding);
   assert.ok(entry, `Preview is missing ${binding}`);
   assert.match(entry[identifier] ?? "", pattern, `Preview ${binding} needs a real ${identifier}`);
-  assert.ok(
-    !(config[group] ?? []).some((item) => item[identifier] === entry[identifier]),
-    `Preview ${binding} must not use production storage`,
-  );
+  if (shared) {
+    const production = config[group]?.find((item) => item.binding === binding);
+    assert.equal(entry[identifier], production?.[identifier], `Preview ${binding} must share production CMS storage`);
+  } else {
+    assert.ok(
+      !(config[group] ?? []).some((item) => item[identifier] === entry[identifier]),
+      `Preview ${binding} must not use production storage`,
+    );
+  }
   return entry;
 }
 
 resource("kv_namespaces", "SESSION", "id", /^[a-f0-9]{32}$/i);
 const databaseId = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
-const cms = resource("d1_databases", "DB", "database_id", databaseId);
+const cms = resource("d1_databases", "DB", "database_id", databaseId, true);
 const visitors = resource("d1_databases", "VISITOR_DB", "database_id", databaseId);
 assert.notEqual(cms.database_id, visitors.database_id, "CMS and visitor databases must be separate");
-resource("r2_buckets", "MEDIA", "bucket_name", /^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/);
+resource("r2_buckets", "MEDIA", "bucket_name", /^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/, true);
 
 const house = preview.durable_objects?.bindings?.find((item) => item.name === "HOUSE");
 assert.equal(house?.class_name, "House", "Preview must bind its House Durable Object");
@@ -47,4 +52,4 @@ for (const name of ["EMDASH_SETUP_KEY", "VISITOR_AUTH_SECRET", "JEV_API_KEY"]) {
 }
 assert.equal(preview.routes, undefined, "Preview must not claim production routes");
 assert.equal(preview.triggers, undefined, "Preview must not configure production cron triggers");
-console.log("PASS built preview bindings are complete and isolated from production");
+console.log("PASS preview shares CMS storage and isolates visitor/session/House bindings");

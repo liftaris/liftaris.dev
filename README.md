@@ -36,8 +36,10 @@ private-message access and moderation while signed into the CMS.
 
 See the [gift specification](docs/portfolio-gifts-spec.md) and
 [deployment guide](docs/portfolio-deployment.md). GitHub branch previews use the
-`previews` bindings in `wrangler.jsonc`, isolated from production. Production still
-needs a real visitor database ID and Worker secrets before deployment; its
+`previews` bindings in `wrangler.jsonc`. Preview and production share the same
+EmDash database and media library; visitor identities, runtime sessions, and House
+state remain separate. No second CMS setup or content copy is needed. Production
+still needs a real visitor database ID and Worker secrets before deployment; its
 checked-in visitor database ID is a local development sentinel.
 
 ## Portfolio interaction lab

@@ -1,6 +1,6 @@
 # The shared house: homepage clump and visitor gifts
 
-Implementation specification, September 24, 2026. Scene 01, the clump, with object-sized collision bodies is integrated into the homepage. The gift UI, Better Auth anonymous visitors, Effect services, SQLite House Durable Object, Jev suggestions, and Alchemy preview stack are implemented. Local API and browser integration checks pass. No deployment has been performed. See [deployment setup](portfolio-deployment.md) for hosted bindings and secrets.
+Implementation specification, September 24, 2026. Scene 01, the clump, with object-sized collision bodies is integrated into the homepage. The gift UI, Better Auth anonymous visitors, Effect services, SQLite House Durable Object, Jev suggestions, and Alchemy preview stack are implemented. See [deployment setup](portfolio-deployment.md) for hosted bindings, secrets, and local verification commands.
 
 ## Confirmed experience
 
@@ -92,9 +92,9 @@ Pinned experimental `partysync@2.1.0` runs over PartyServer hibernation WebSocke
 
 Effect owns command validation, authorization, TypeSafe calls, storage services, concurrency errors, and retry/cancellation boundaries. Matter retains its imperative numerical loop and transform rendering.
 
-Alchemy should describe the House Durable Object, Worker integration, bindings, migrations, and secrets. Prove compatibility in a disposable preview stack before changing existing production resource ownership. Preserve the EmDash request handler, scheduled publishing handler, DB/MEDIA/SESSION bindings, media access, custom domains, and image plugin. The current Alchemy Astro integration supplies its own adapter, so adopting it requires deliberate integration rather than adding a second adapter. [Alchemy Astro integration](https://alchemy.run/cloudflare/frontend/astro/).
+Alchemy describes the House Durable Object, Worker integration, bindings, migrations, and secrets. Hosted previews share production's EmDash CMS database and media library, while visitor, session, and House state remain separate. Do not clone or adopt the shared CMS resources, run another first-admin setup, or use preview CMS access for destructive testing. Preserve the EmDash request handler, scheduled publishing handler, DB/MEDIA/SESSION bindings, media access, custom domains, and image plugin. Only production runs the CMS publishing cron. The current Alchemy Astro integration supplies its own adapter, so adopting it requires deliberate integration rather than adding a second adapter. [Alchemy Astro integration](https://alchemy.run/cloudflare/frontend/astro/).
 
-Pinned dependencies are Effect 4.0.0-rc.117, Alchemy 2.0.0-beta.79, Better Auth 1.7.5, and TypeSafe SDK 0.6.0. The Alchemy stack consumes the current adapter's prebuilt Worker, preserving EmDash's request and scheduled handlers. The user-provided `JEV_API_KEY` has been verified with a real suggestions request. This implementation does not deploy resources or migrate production CMS ownership.
+Pinned dependencies are Effect 4.0.0-rc.117, Alchemy 2.0.0-beta.79, Better Auth 1.7.5, and TypeSafe SDK 0.6.0. The Alchemy stack consumes the current adapter's prebuilt Worker, preserving EmDash's request and scheduled handlers without changing production CMS ownership.
 
 ## Confirmed product decisions
 

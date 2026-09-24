@@ -85,8 +85,9 @@
     "d1_databases": [
       {
         "binding": "DB",
-        "database_name": "liftaris-preview-cms",
-        "database_id": "98b72d63-316e-4f01-bde4-4e42365cf07f"
+        // One CMS and media library serve production and branch previews.
+        "database_name": "liftaris-emdash",
+        "database_id": "0e886ca8-384e-4090-8035-c187268c7da7"
       },
       {
         "binding": "VISITOR_DB",
@@ -98,7 +99,7 @@
     "r2_buckets": [
       {
         "binding": "MEDIA",
-        "bucket_name": "liftaris-preview-media"
+        "bucket_name": "liftaris-emdash-media"
       }
     ],
     "durable_objects": {

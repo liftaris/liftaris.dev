@@ -3,18 +3,18 @@ import * as Cloudflare from "alchemy/Cloudflare";
 import { Config, Effect } from "effect";
 import type { House } from "./src/server/house/House";
 
-// This stack owns an isolated preview. Production remains owned by Wrangler.
+// This stack owns preview runtime state, but only binds the existing shared CMS.
+// Production resources remain owned by Wrangler, never adopted by this stack.
 // Build with the existing Astro adapter first so EmDash's fetch/scheduled
 // handlers, House export, and Vite-generated module layout stay intact.
 export default Stack(
   "liftaris-house-preview",
   { providers: Cloudflare.providers(), state: Cloudflare.state() },
   Effect.gen(function* () {
-    const cms = yield* Cloudflare.D1.Database("Cms");
+    const cmsDatabaseId = "0e886ca8-384e-4090-8035-c187268c7da7";
     const visitors = yield* Cloudflare.D1.Database("Visitors", {
       migrations: "./migrations/visitor-auth",
     });
-    const media = yield* Cloudflare.R2.Bucket("Media");
     const sessions = yield* Cloudflare.KV.Namespace("Sessions");
 
     const website = yield* Cloudflare.Worker("Website", {
@@ -23,11 +23,8 @@ export default Stack(
       assets: "./dist/client",
       compatibility: { date: "2026-09-22", flags: ["nodejs_compat"] },
       workersDev: true,
-      crons: ["* * * * *"],
       observability: { enabled: true },
       env: {
-        DB: cms,
-        MEDIA: media,
         SESSION: sessions,
         VISITOR_DB: visitors,
         HOUSE: Cloudflare.DurableObject<House>("House", { className: "House" }),
@@ -38,11 +35,20 @@ export default Stack(
       },
     });
 
+    // Raw bindings reference shared storage without managing its lifecycle.
+    // Scheduled CMS publishing stays exclusively on the production Worker.
+    yield* website.bind`shared-cms`({
+      bindings: [
+        { type: "d1", name: "DB", databaseId: cmsDatabaseId },
+        { type: "r2_bucket", name: "MEDIA", bucketName: "liftaris-emdash-media" },
+      ],
+    });
+
     return {
       url: website.url,
       workerName: website.workerName,
       visitorDatabaseId: visitors.databaseId,
-      cmsDatabaseId: cms.databaseId,
+      cmsDatabaseId,
     };
   }),
 );
