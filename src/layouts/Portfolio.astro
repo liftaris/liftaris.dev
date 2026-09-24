@@ -3,8 +3,6 @@ import { getEmDashCollection } from "emdash";
 import { EmDashHead, EmDashBodyStart, EmDashBodyEnd } from "emdash/ui";
 import { createPublicPageContext } from "emdash/page";
 import { SOCIAL } from "../../data/portfolio";
-import { TownSquare } from "../../components/TownSquare";
-import { TOWNSQUARE_ORIGIN, TOWNSQUARE_STYLESHEET } from "../../lib/townsquare";
 import "@fontsource-variable/geist-mono";
 import "@fontsource-variable/manrope";
 import "@fontsource/young-serif";
@@ -35,13 +33,10 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
     <title>{title}</title>
     <EmDashHead page={page} />
     <link rel="icon" href="/favicon.ico" />
-    <link rel="preconnect" href={TOWNSQUARE_ORIGIN} crossorigin="anonymous" />
-    <link rel="stylesheet" href={TOWNSQUARE_STYLESHEET} />
   </head>
   <body>
     <EmDashBodyStart page={page} />
     <div class:list={["shell", { onBlog, onHome: pathname === "/" }]}>
-      <div class="noise" aria-hidden="true"></div>
       <nav class="stageNav" aria-label="Primary">
         <a class:list={{ active: pathname === "/projects" }} href="/projects">projects</a>
         <a class:list={{ active: pathname === "/experience" }} href="/experience">experience</a>
@@ -60,17 +55,7 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
         </div>
       </aside>
       <section class="stageContent"><slot /></section>
-      {!onBlog && <footer class="townSquare" aria-label="TownSquare"><TownSquare client:load /></footer>}
     </div>
     <EmDashBodyEnd page={page} />
-    <script>
-      const shell = document.querySelector<HTMLElement>(".shell");
-      const name = document.querySelector<HTMLElement>(".name");
-      if (shell && name) {
-        const syncWidth = () => shell.style.setProperty("--identity-width", `${name.getBoundingClientRect().width}px`);
-        new ResizeObserver(syncWidth).observe(name);
-        syncWidth();
-      }
-    </script>
   </body>
 </html>

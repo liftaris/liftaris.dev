@@ -7,6 +7,10 @@
   --font-sans: "Manrope Variable";
   --font-serif: "Young Serif";
   --blue: #1313ba;
+  /* Blend grain into blue surfaces, keeping foreground text and artwork clean. */
+  --blue-background:
+    linear-gradient(color-mix(in srgb, var(--blue) 70%, transparent) 0 0) fixed,
+    url("/noise.png?v=3") 0 0 / 100px 100px fixed var(--blue);
   --paper: #fffbed;
   --ink: #06113a;
   --left-rail: clamp(180px, 18vw, 240px);
@@ -16,36 +20,14 @@
 }
 
 * { box-sizing: border-box; }
-html { background: var(--blue); }
+html { background: var(--blue-background); }
 body {
   margin: 0;
   color: var(--paper);
-  background: var(--blue);
+  background: var(--blue-background);
   font-family: var(--font-mono), monospace;
   letter-spacing: 0.012em;
   text-rendering: geometricPrecision;
-}
-
-.noise {
-  position: fixed;
-  inset: 0;
-  z-index: 7;
-  pointer-events: none;
-  view-transition-name: site-noise;
-  background-image: url("/noise.png?v=3");
-  background-size: 100px 100px;
-  opacity: 0.3;
-}
-
-::view-transition-group(site-noise) {
-  z-index: 100;
-  animation: none;
-}
-::view-transition-old(site-noise) {
-  animation: none;
-}
-::view-transition-new(site-noise) {
-  display: none;
 }
 
 a { color: inherit; text-decoration: none; }
@@ -60,7 +42,7 @@ button { color: inherit; font: inherit; background: none; border: 0; padding: 0;
   max-width: var(--site-max);
   min-height: 100svh;
   margin: 0 auto;
-  background: var(--blue);
+  background: var(--blue-background);
 }
 
 .shell.onBlog {
@@ -84,7 +66,7 @@ button { color: inherit; font: inherit; background: none; border: 0; padding: 0;
 }
 .shell.onBlog .stageContent {
   padding: 0;
-  background: var(--blue);
+  background: var(--blue-background);
   color: var(--paper);
 }
 
@@ -117,7 +99,7 @@ button { color: inherit; font: inherit; background: none; border: 0; padding: 0;
   display: block;
   padding: 0;
   margin: 0;
-  background: var(--blue);
+  background: var(--blue-background);
   cursor: pointer;
   white-space: nowrap;
 }
@@ -149,12 +131,7 @@ button { color: inherit; font: inherit; background: none; border: 0; padding: 0;
   right: auto;
   z-index: 6;
   width: min-content;
-  background: var(--blue);
-}
-.shell:not(.onBlog) {
-  --townsquare-stage: clamp(220px, 24vw, 340px);
-  --townsquare-toolbar: 64px;
-  --townsquare-reveal: calc(var(--townsquare-stage) + var(--townsquare-toolbar));
+  background: var(--blue-background);
 }
 
 .shell:not(.onBlog) .name h1 {
@@ -166,55 +143,6 @@ button { color: inherit; font: inherit; background: none; border: 0; padding: 0;
 }
 .shell:not(.onBlog) .name h1 span:first-child::after {
   content: " ";
-}
-
-.townSquare {
-  position: fixed;
-  left: 1rem;
-  bottom: calc(-1 * var(--townsquare-reveal));
-  z-index: 5;
-  width: var(--identity-width, clamp(659px, 92.7vw, 1730px));
-  transition: transform 0.2s ease;
-}
-.townSquare > .townsquareHost {
-  position: relative;
-  z-index: 3;
-  height: var(--townsquare-reveal);
-  min-height: 0;
-  overflow: hidden;
-  border-radius: 0%;
-}
-.townSquare > .townsquareHost .townsquare {
-  --ts-stage-height: var(--townsquare-stage);
-  --ts-toolbar-reserve: var(--townsquare-toolbar);
-  min-height: var(--townsquare-reveal);
-  border-radius: 0px;
-}
-
-.townsquareHost {
-  color-scheme: light;
-  --r: 0px;
-  --r-sm: 0px;
-  --scene: light-dark(transparent, #00288e);
-  --ground-fill: light-dark(transparent, #ffffff);
-  --page: #ffffff;
-  --surface: light-dark(rgba(9, 0, 141, 0.828), #f9f06b);
-  --ink: light-dark(#fff, #f2eee6);
-  --you: light-dark(#c8641f, #df8a43);
-  --tree-trunk: light-dark(#efede9, #ffffff);
-  --tree-canopy: light-dark(#ffffff, #f0f0f0);
-  --other: light-dark(#26241f, #ddd7cc);
-  --ground-line: #fff;
-  --ground: #fff;
-  --you-deep: var(--you);
-  --text: var(--ink);
-  --muted: var(--ink);
-}
-.townsquareHost[data-townsquare-theme="dark"] {
-  color-scheme: dark;
-}
-.townsquareHost[data-townsquare-theme="auto"] {
-  color-scheme: light dark;
 }
 
 .writing {
@@ -391,13 +319,13 @@ li { margin: 8px 0; }
 .article-content > h1 {
   margin: 0;
   padding: clamp(64px, 8vh, 110px) clamp(28px, 5vw, 60px) 32px;
-  background: var(--blue);
+  background: var(--blue-background);
   color: var(--paper);
 }
 .article-content > .meta {
   margin: 0;
   padding: clamp(64px, 8vh, 110px) clamp(28px, 5vw, 60px) 14px;
-  background: var(--blue);
+  background: var(--blue-background);
 }
 .article-content > .meta + h1 {
   padding-top: 0;
@@ -436,17 +364,6 @@ li { margin: 8px 0; }
 }
 .article-content pre { overflow: auto; border: 1px solid var(--blue); padding: 18px; background: var(--paper); color: var(--blue); }
 .article-content code { color: var(--blue); }
-.blogTownSquare {
-  margin: 0;
-  padding: 0;
-  background: var(--blue);
-}
-.blogTownSquare .townsquareHost {
-  min-height: 340px;
-}
-.blogTownSquare .townsquareHost .townsquare {
-  --ts-stage-height: 340px;
-}
 ::view-transition-old(.blog-enter) {
   display: none;
 }
@@ -459,18 +376,6 @@ li { margin: 8px 0; }
   to { clip-path: inset(0 0 0 0); }
 }
 
-@media (min-width: 1281px) {
-  .shell:not(.onBlog):has(.townSquare > .townsquareHost:not([hidden])):has(.identity:focus-within, .townSquare:focus-within) :is(.identity, .townSquare) {
-    transform: translateY(calc(-1 * var(--townsquare-reveal)));
-  }
-}
-
-@media (min-width: 1281px) and (hover: hover) and (pointer: fine) {
-  .shell:not(.onBlog):has(.townSquare > .townsquareHost:not([hidden])):has(.identity:hover, .townSquare:hover) :is(.identity, .townSquare) {
-    transform: translateY(calc(-1 * var(--townsquare-reveal)));
-  }
-}
-
 @media (max-width: 1280px) {
   .shell {
     display: grid;
@@ -478,9 +383,8 @@ li { margin: 8px 0; }
     grid-template-areas:
       "nav writing-label"
       "stage postlist"
-      "identity identity"
-      "townsquare townsquare";
-    grid-template-rows: auto minmax(auto, 1fr) auto auto;
+      "identity identity";
+    grid-template-rows: auto minmax(auto, 1fr) auto;
     align-content: start;
     overflow: visible;
   }
@@ -528,8 +432,6 @@ li { margin: 8px 0; }
   .shell.onBlog .identity { pointer-events: auto; }
   .shell.onBlog .name,
   .name { padding: 28px 16px 0; background: transparent; width: auto; transform: none; }
-  .shell:not(.onBlog) .identity:hover,
-  .shell:not(.onBlog) .identity:focus-within { transform: none; }
   .shell:not(.onBlog) .name h1,
   .shell.onBlog .name h1 { font-size: clamp(26px, 8vw, 82px); }
   .name h1 span { display: inline; }
@@ -540,62 +442,34 @@ li { margin: 8px 0; }
   .shell:not(.onBlog) .stageContent { grid-area: stage; }
   .row,
   .card { grid-template-columns: 1fr; }
-  .townSquare {
-    grid-area: townsquare;
-    order: 5;
-    position: relative;
-    left: auto;
-    bottom: auto;
-    display: block;
-    width: auto;
-    margin: 0;
-    background: var(--blue);
-    transform: none;
-  }
-  .townSquare .townsquareHost {
-    height: 344px;
-    min-height: 344px;
-  }
-  .townSquare .townsquareHost .townsquare {
-    --ts-stage-height: 280px;
-    --ts-toolbar-reserve: 64px;
-    min-height: 344px;
-  }
   .shell:not(.onBlog) {
     --sticky-row-height: 62px;
-    padding-bottom: calc(344px + clamp(53px, 9.2vw, 94px));
+    padding-bottom: clamp(53px, 9.2vw, 94px);
   }
   .shell:not(.onBlog) .stageNav,
   .shell:not(.onBlog) .writing h2 {
     position: sticky;
     top: 0;
     z-index: 6;
-    background: var(--blue);
+    background: var(--blue-background);
   }
   .shell:not(.onBlog) .postlist {
     position: sticky;
     top: var(--sticky-row-height);
     z-index: 6;
-    background: var(--blue);
+    background: var(--blue-background);
   }
   .shell:not(.onBlog) .identity {
     position: fixed;
     right: 0;
-    bottom: 344px;
+    bottom: 0;
     left: 0;
     z-index: 6;
     width: 100%;
-    background: var(--blue);
+    background: var(--blue-background);
   }
   .shell:not(.onBlog) .name {
-    background: var(--blue);
-  }
-  .shell:not(.onBlog) .townSquare {
-    position: fixed;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    z-index: 5;
+    background: var(--blue-background);
   }
 }
 
@@ -611,9 +485,8 @@ li { margin: 8px 0; }
       "nav writing-label"
       "postlist postlist"
       "stage stage"
-      "identity identity"
-      "townsquare townsquare";
-    grid-template-rows: auto auto minmax(auto, 1fr) auto auto;
+      "identity identity";
+    grid-template-rows: auto auto minmax(auto, 1fr) auto;
   }
   .shell:not(.onBlog) .postlist {
     justify-self: end;

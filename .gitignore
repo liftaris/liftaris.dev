@@ -37,6 +37,7 @@ yarn-error.log*
 # Cloudflare
 .wrangler/
 .dev.vars*
+.alchemy/
 
 # IntelliJ IDEA
 .idea

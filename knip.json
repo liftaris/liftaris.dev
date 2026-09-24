@@ -3,7 +3,6 @@
   "project": [
     "src/**/*.{astro,ts,tsx}",
     "components/**/*.{ts,tsx}",
-    "lib/**/*.ts",
     "data/**/*.ts",
     "scripts/*.mjs"
   ],

@@ -19,6 +19,40 @@ local development administrator. This bypass is disabled in production.
 Cloudflare bindings are emulated locally. No Tina Cloud credentials are used.
 A local `.dev.vars` file can hold Worker secrets; it is ignored by Git.
 
+## Homepage gifts
+
+The homepage contains the shared Matter.js clump. Visitors can leave emoji gifts,
+optionally attach a public or private message, and take back their own gifts.
+Jev suggests emoji while they type. Anonymous animal identities use Better Auth
+and localStorage with a 100-year bearer lifetime; clearing storage loses ownership.
+Final placements, gift creation, and withdrawals synchronize between visitors.
+
+The gift backend uses Effect, a SQLite Durable Object, and a separate visitor D1
+database. Set `VISITOR_AUTH_SECRET` and `JEV_API_KEY` in ignored `.dev.vars`, then
+run `bun run db:visitor:local`. Set `HOUSE_OWNER_ID` to your EmDash user ID for
+private-message access and moderation while signed into the CMS.
+
+See the [gift specification](docs/portfolio-gifts-spec.md) and
+[local/Alchemy deployment guide](docs/portfolio-deployment.md). Production needs
+a real visitor database ID and Worker secrets before deployment; the checked-in
+visitor database ID is a local development sentinel.
+
+## Portfolio interaction lab
+
+Open `/lab/clump` on the development server to compare the springy clump,
+fixed-anchor structure, and top-down apartment. The physics scenes can switch
+between object-sized bodies and small collision pegs with overlapping artwork.
+Use **Show bodies** to see the collision shapes.
+
+Drag objects with a mouse or touch. With an object focused, arrows pick up and
+move, Q/E rotate, Enter places, and Escape cancels. Arrangements are retained
+when switching scenes during the visit; **Start again** resets the current scene.
+This experiment has no shared storage or object navigation yet.
+
+The [prototype plan](docs/portfolio-clump-plan.md) and
+[library research](docs/physics-library-research.md) record the design direction
+and alternatives.
+
 ## Checks
 
 ```bash
