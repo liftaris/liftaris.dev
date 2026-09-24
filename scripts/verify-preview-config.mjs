@@ -39,6 +39,11 @@ assert.equal(
 for (const name of ["EMDASH_SETUP_KEY", "VISITOR_AUTH_SECRET", "JEV_API_KEY"]) {
   assert.ok(config.secrets?.required?.includes(name), `Worker must declare required secret ${name}`);
   assert.equal(preview.vars?.[name], undefined, `${name} must not be stored in plaintext vars`);
+  assert.deepEqual(
+    preview.unsafe?.bindings?.find((binding) => binding.name === name),
+    { name, type: "inherit" },
+    `Preview must preserve server-side ${name} across deployments without embedding its value`,
+  );
 }
 assert.equal(preview.routes, undefined, "Preview must not claim production routes");
 assert.equal(preview.triggers, undefined, "Preview must not configure production cron triggers");

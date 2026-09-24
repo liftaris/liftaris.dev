@@ -84,7 +84,7 @@ bun run db:visitor:preview
 
 This uses `wrangler.preview-migrations.json`, whose visitor database ID must match `previews.d1_databases`. Wrangler's D1 migration commands do not select the new `previews` block. Do not use the top-level production/local visitor binding or substitute the CMS database.
 
-Set `EMDASH_SETUP_KEY`, `VISITOR_AUTH_SECRET`, and `JEV_API_KEY` as secrets in the **Previews Base** configuration. Use distinct preview setup/auth secrets and keep the visitor secret stable. Secret values do not belong in Git or plaintext `vars`. For a new environment, use a private JSON or dotenv file containing only these keys:
+Set `EMDASH_SETUP_KEY`, `VISITOR_AUTH_SECRET`, and `JEV_API_KEY` as secrets in the **Previews Base** configuration. Use distinct preview setup/auth secrets and keep the visitor secret stable. Secret values do not belong in Git or plaintext `vars`. Bootstrap each new branch Preview once with a private JSON or dotenv file containing only these keys:
 
 ```sh
 bunx wrangler preview base-config secret bulk /path/to/private-preview-secrets.json
@@ -92,7 +92,9 @@ bun run build
 bunx wrangler preview --name interactive-stuff --secrets-file /path/to/private-preview-secrets.json
 ```
 
-Base secrets are copied when a Preview is created, not when the Base changes. The explicit secrets file initializes an existing Preview too, including one created by a previously failed build. Subsequent branch pushes deploy through Workers Builds and retain its secrets. Use `wrangler preview secret list --name interactive-stuff` to verify the names without exposing values.
+Base secrets are copied when a Preview is created, not when the Base changes. The explicit secrets file initializes an existing Preview too, including one created by a previously failed build. Wrangler 4.135 preview uploads replace the deployment environment: neither top-level `secrets.required` nor an earlier secret upload preserves omitted bindings. The `previews.unsafe.bindings` entries explicitly inherit these three server-side secrets without putting values in Git or CI. The build validator requires those entries. Subsequent branch pushes can then deploy through Workers Builds without a secrets file. Verify the names after deployment with `wrangler preview secret list --name interactive-stuff`; a green build alone does not prove secrets survived.
+
+The first deployment must include `--secrets-file`: with Wrangler 4.135, a brand-new Preview has no version from which to inherit, even after Base secrets are configured, and otherwise fails with code 10222. Once bootstrapped, ordinary pushes need no secret values in the build environment.
 
 Production routes and Cron Triggers do not run against branch previews. Leave them at the top level; never use `bun run deploy` to repair a preview. The published preview URL is shown by Wrangler and the Cloudflare dashboard.
 

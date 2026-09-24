@@ -64,6 +64,15 @@
     }
   ],
   "previews": {
+    // Preview deployments replace env. Preserve server-side secrets explicitly;
+    // top-level secrets.required only drives local validation and type generation.
+    "unsafe": {
+      "bindings": [
+        { "name": "EMDASH_SETUP_KEY", "type": "inherit" },
+        { "name": "VISITOR_AUTH_SECRET", "type": "inherit" },
+        { "name": "JEV_API_KEY", "type": "inherit" }
+      ]
+    },
     "vars": {
       "HOUSE_OWNER_ID": ""
     },
