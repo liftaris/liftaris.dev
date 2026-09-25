@@ -12,15 +12,25 @@ type ObjectWindowProps = {
   origin: DOMRect;
   monochrome?: boolean;
   closeLabel?: string;
+  width?: number;
+  height?: number;
+  canClose?: boolean;
+  initialBounds?: DOMRect;
+  onReady?: () => void;
   onClose: () => void;
   children?: ReactNode;
 };
 
-export function ObjectWindow({ title, icon, source, origin, monochrome = false, closeLabel = "Close window", onClose, children }: ObjectWindowProps) {
+export function ObjectWindow({ title, icon, source, origin, monochrome = false, closeLabel = "Close window", width = 480, height = 380, canClose = true, initialBounds, onReady, onClose, children }: ObjectWindowProps) {
   const [body, setBody] = useState<HTMLElement | null>(null);
   const [error, setError] = useState(false);
   const close = useRef(onClose);
   close.current = onClose;
+  const closeAllowed = useRef(canClose);
+  closeAllowed.current = canClose;
+  const ready = useRef(onReady);
+  ready.current = onReady;
+  useLayoutEffect(() => { if (body) ready.current?.(); }, [body]);
 
   // Capture focus before React removes portal children on parent-driven close.
   useLayoutEffect(() => {
@@ -33,24 +43,25 @@ export function ObjectWindow({ title, icon, source, origin, monochrome = false, 
       if (disposed) return;
       const template = document.createElement("div");
       template.innerHTML = `<div class="wb-header">
-        <button type="button" class="object-window-icon"></button>
         <div class="wb-control">
           <button type="button" class="wb-collapse" aria-label="Minimize window">−</button>
           <button type="button" class="wb-close">×</button>
         </div>
-        <div class="wb-drag" tabindex="0" role="button">
-          <div class="wb-title"></div>
+        <div class="wb-drag">
+          <button type="button" class="object-window-icon"></button>
+          <div class="object-window-handle" tabindex="0" role="button"><div class="wb-title"></div></div>
         </div>
       </div><div class="wb-body"></div>`;
       let closing = false;
       const options: WinBox.Params & { template: HTMLElement } = {
         template, title, index: 20, header: 18,
         class: "object-window no-max no-full no-resize no-animation",
-        width: 480, height: 380, minwidth: 1, minheight: 44,
+        width, height, minwidth: 1, minheight: 44,
         top: 58, left: 36, right: 12, bottom: 12,
-        x: origin.left + 24, y: origin.top + 16,
+        x: initialBounds?.left ?? origin.left + 24, y: initialBounds?.top ?? origin.top + 16,
         onclose(force) {
           if (force) return false;
+          if (!closeAllowed.current) return true;
           if (closing) return true;
           closing = true;
           restoreFocus = frame.contains(document.activeElement);
@@ -76,9 +87,29 @@ export function ObjectWindow({ title, icon, source, origin, monochrome = false, 
       const iconButton = frame.querySelector<HTMLButtonElement>(".object-window-icon")!;
       iconButton.textContent = icon;
       iconButton.setAttribute("aria-label", `Collapse ${title} window`);
-      iconButton.onclick = () => { win.close(); };
+      iconButton.title = "Drag to move; click to minimize";
+      // WinBox owns movement; the pointer gesture only distinguishes a click from a drag.
+      let iconPress: { id: number; x: number; y: number; moved: boolean } | undefined;
+      iconButton.onpointerdown = (event) => {
+        if (event.button !== 0 || iconPress) return;
+        iconPress = { id: event.pointerId, x: event.clientX, y: event.clientY, moved: false };
+        iconButton.setPointerCapture(event.pointerId);
+        iconButton.focus({ preventScroll: true });
+      };
+      iconButton.onpointermove = (event) => {
+        if (iconPress?.id === event.pointerId) iconPress.moved ||= Math.hypot(event.clientX - iconPress.x, event.clientY - iconPress.y) >= 5;
+      };
+      iconButton.onpointerup = (event) => {
+        if (iconPress?.id !== event.pointerId) return;
+        const moved = iconPress.moved || Math.hypot(event.clientX - iconPress.x, event.clientY - iconPress.y) >= 5;
+        iconPress = undefined;
+        if (iconButton.hasPointerCapture(event.pointerId)) iconButton.releasePointerCapture(event.pointerId);
+        if (!moved) win.close();
+      };
+      iconButton.onpointercancel = iconButton.onlostpointercapture = () => { iconPress = undefined; };
+      iconButton.onclick = (event) => { if (event.detail === 0) win.close(); };
       frame.querySelector(".wb-close")!.setAttribute("aria-label", closeLabel);
-      const handle = frame.querySelector<HTMLElement>(".wb-drag")!;
+      const handle = frame.querySelector<HTMLElement>(".object-window-handle")!;
       handle.setAttribute("aria-label", `Move ${title} window. Use arrow keys; Escape collapses.`);
       frame.querySelector<HTMLButtonElement>(".wb-collapse")!.onclick = () => { win.close(); };
 
@@ -88,7 +119,7 @@ export function ObjectWindow({ title, icon, source, origin, monochrome = false, 
       );
       // WinBox bounds dragging but does not resize open windows on viewport changes.
       const fit = () => {
-        win.resize(Math.min(480, innerWidth - 48), Math.min(380, innerHeight - Number(win.top) - Number(win.bottom)));
+        win.resize(Math.min(initialBounds?.width ?? width, innerWidth - 48), Math.min(initialBounds?.height ?? height, innerHeight - Number(win.top) - Number(win.bottom)));
         move(Number(win.x), Number(win.y));
       };
       const keyboard = (event: KeyboardEvent) => {
@@ -126,10 +157,10 @@ export function ObjectWindow({ title, icon, source, origin, monochrome = false, 
       instance?.close(true);
       if (restoreFocus) {
         if (source.isConnected && source.dataset.removing !== "true") source.focus({ preventScroll: true });
-        else document.getElementById("gift-draft")?.focus({ preventScroll: true });
+        else document.querySelector<HTMLButtonElement>('[data-object="leave-gift"]')?.focus({ preventScroll: true });
       }
     };
-  }, [title, icon, source, origin, monochrome, closeLabel]);
+  }, [title, icon, source, origin, monochrome, closeLabel, width, height, initialBounds]);
 
   if (error) return <p role="alert">Couldn’t load this window. <button type="button" onClick={onClose}>Return to icon</button></p>;
   return body ? createPortal(<div className="object-window-content">{children}</div>, body) : null;

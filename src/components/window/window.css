@@ -17,6 +17,7 @@
   touch-action: none;
 }
 .object-window .wb-drag:active { cursor: grabbing; }
+.object-window-handle { height: 100%; }
 .object-window .wb-title {
   font: inherit;
   font-size: 12px;
@@ -41,7 +42,9 @@
   user-select: none;
   transform: translateZ(0);
 }
-.object-window[data-monochrome="true"] .object-window-icon { filter: grayscale(1) brightness(1.6); }
+.object-window > .wb-header .object-window-icon { cursor: grab; touch-action: none; }
+.object-window > .wb-header .object-window-icon:active { cursor: grabbing; }
+.object-window[data-monochrome="true"] > .wb-header .object-window-icon { filter: grayscale(1) brightness(1.6); }
 .object-window .wb-control { display: flex; }
 .object-window .wb-control button {
   width: 28px;

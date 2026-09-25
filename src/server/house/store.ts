@@ -1,4 +1,4 @@
-import type { CreateGift, Gift, GiftDetail, HouseSnapshot, Viewer } from "../../lib/house/types";
+import type { CreateGift, CreatedGift, Gift, GiftDetail, HouseSnapshot, Viewer } from "../../lib/house/types";
 import { failure } from "./errors";
 
 export type SqlValue = string | number | null;
@@ -82,7 +82,7 @@ export class HouseStore {
     };
   }
 
-  create(viewer: Viewer, input: CreateGift, createdAt: string, now: number, payloadHash: string): HouseSnapshot {
+  create(viewer: Viewer, input: CreateGift, createdAt: string, now: number, payloadHash: string): CreatedGift {
     const creator = actorId(viewer);
     if (!this.hasEmoji(input.emojiId)) throw failure(400, "Choose one of the suggested emoji.");
     const message = input.message?.trim() || null;
@@ -95,13 +95,14 @@ export class HouseStore {
       if (receipt) {
         if (receipt.payload !== payloadHash) throw failure(409, "This request was already used for a different gift.");
         // Receipts outlive removals: retrying a lost response never recreates a withdrawn gift.
-        return this.snapshot();
+        const snapshot = this.snapshot();
+        return { ...snapshot, createdGiftId: snapshot.gifts.some((gift) => gift.id === receipt.gift_id) ? receipt.gift_id : null };
       }
       this.limit(viewer, "gift", now, 10);
       const id = `gift-${crypto.randomUUID()}`;
       this.sql.query("INSERT INTO gifts VALUES (?, ?, ?, ?, ?, ?, ?)", id, input.emojiId, creator, name, createdAt, visibility, message);
       this.sql.query("INSERT INTO gift_receipts VALUES (?, ?, ?, ?)", creator, input.requestId, id, payloadHash);
-      return this.save();
+      return { ...this.save(), createdGiftId: id };
     });
   }
 

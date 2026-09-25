@@ -1,5 +1,5 @@
 import { Context, DateTime, Effect, Layer } from "effect";
-import type { GiftDetail, HouseSnapshot, Viewer } from "../../lib/house/types";
+import type { CreatedGift, GiftDetail, HouseSnapshot, Viewer } from "../../lib/house/types";
 import { failure, HouseError, type HouseResult } from "./errors";
 import { decodeGift } from "./schemas";
 import type { HouseStore } from "./store";
@@ -12,7 +12,7 @@ const stored = <A>(run: () => A) => Effect.try({
 export class HouseService extends Context.Service<HouseService, {
   snapshot(): Effect.Effect<HouseSnapshot, HouseError>;
   detail(id: string, viewer: Viewer): Effect.Effect<GiftDetail, HouseError>;
-  create(input: unknown, viewer: Viewer): Effect.Effect<HouseSnapshot, HouseError>;
+  create(input: unknown, viewer: Viewer): Effect.Effect<CreatedGift, HouseError>;
   remove(id: string, viewer: Viewer): Effect.Effect<HouseSnapshot, HouseError>;
   allowSuggestion(key: string): Effect.Effect<boolean, HouseError>;
 }>()("portfolio/house/HouseService") {

@@ -18,15 +18,19 @@ Visitors can reclaim gifts they created. Kaio needs an owner-only removal path f
 
 ## Composer
 
-A compact text input belongs near the clump. It opens the gift interaction without adding a new hero, section heading, onboarding paragraph, or permanent instructions around the pile. On narrow screens, it stays reachable above the virtual keyboard and remains clear of the existing site content.
+A dedicated present-box object in the clump is the entrypoint. Like the other objects, it opens a non-modal WinBox window. The homepage has no inline form or permanent introductory copy around the pile. The composer window says:
 
-Typing surfaces about five emoji candidates related to the words and their meaning or sentiment. Use a short debounce, initially approximately 250 ms. Selecting a candidate fixes the emoji; subsequent edits do not silently replace that selection.
+> Leave your mark on my site.
+> Choose an object to leave on the homepage, along with a message, an interesting link, a pun... anything you want!
+> Gifts are fun, and anonymous by default.
 
-Text finds an emoji by default; it is not automatically saved as a message. A separate inclusion choice makes it possible to type “popcorn,” choose 🍿, and leave only the emoji. Another visitor can choose 🍿 and deliberately attach “For the next movie night.” Included messages default to public. The sender can instead choose visibility limited to Kaio and the sender.
+Inside that window, a static, editable gift-window preview has the same thin blue title bar, paper body, and upper-left corner icon as the real gift. The default object is 🎁. Clicking its icon or Change object opens a catalog/search picker. Search surfaces about five candidates related to the words and their meaning or sentiment, with the existing short debounce. Selecting a candidate fixes the emoji; subsequent edits never replace it. Enter in the search field does not submit a gift, and Escape closes the picker before the outer window.
 
-Progressively reveal only the controls needed to finish the gift: message inclusion, visibility when there is a message, and anonymous animal name or chosen name. Keep the audience clear before submission, using concise functional controls. Icon-only actions still have accessible names; a placeholder is not the input's only label.
+Object search and message entry are separate. Search text is never saved as a message. Writing in the preview's optional message field explicitly attaches that text; leaving it blank sends only the object. Messages default to public, with a sender-and-Kaio-only option. An editable From line uses the browser's assigned animal name when left blank; choosing a name changes attribution for this gift only.
 
-Choosing a suggestion does not publish a gift. A deliberate placement action submits it. Preserve the draft on failure, prevent duplicate submissions, and insert the confirmed gift into the clump with a short settle animation. Reduced-motion users get a static placement or crossfade.
+Keep the audience clear before submission, using concise functional controls. Icon-only actions have accessible names; placeholders are not the inputs' only labels. The submit button sits below the inner preview. Narrow or short screens scroll the window body without horizontal overflow.
+
+Choosing a suggestion does not publish a gift. A deliberate submit sends it. Preserve the draft and idempotency key on failure, and prevent duplicate submission or dismissal while saving. The server returns the exact created gift ID, including on retries; never infer it from the latest item or a collection diff. After authorized detail readback, open the real gift at the preview's bounds, then fade away the outer composer. The real window collapses to the newly created clump object. Reduced-motion users get an immediate handoff. Private text remains only in the sender's local open card, never the public collection.
 
 ## Jev suggestions
 
@@ -50,7 +54,7 @@ Use a non-modal WinBox window: the page remains interactive and multiple objects
 
 ### Object windows
 
-[WinBox](https://github.com/nextapps-de/winbox) owns mouse/touch dragging and window stacking. Customize its template and stylesheet for thin borders, text-height blue title bars, paper bodies, and an oversized corner icon, following the TypeSafe reference and supplied wireframe. The title bar is the drag handle; the corner icon is a separate, keyboard-accessible collapse button. Keep the existing typefaces; do not introduce a taskbar, maximize control, or another window manager.
+[WinBox](https://github.com/nextapps-de/winbox) owns mouse/touch dragging and window stacking. Customize its template and stylesheet for thin borders, text-height blue title bars, paper bodies, and an oversized corner icon, following the TypeSafe reference and supplied wireframe. Both the title bar and corner icon drag the open window. Clicking or tapping the icon without dragging collapses it; releasing a drag leaves it open. A small movement threshold tolerates click jitter, and Enter/Space still activate the icon's collapse action. The unsent inner gift preview remains static; its icon changes the draft object instead. Keep the existing typefaces; do not introduce a taskbar, maximize control, or another window manager.
 
 `ObjectWindow` mounts React content into WinBox's body and loads the library only in the browser. Titlebar arrows provide keyboard movement. Windows stay within the viewport, with a scrollable body on narrow or short screens; reduced-motion users skip the collapse animation. The computer and briefcase reuse the existing content components. Other personal objects have empty window bodies until their content is defined.
 
@@ -109,7 +113,7 @@ Pinned dependencies are Effect 4.0.0-rc.117, Alchemy 2.0.0-beta.79, Better Auth 
 | Choice | Decision |
 | --- | --- |
 | Scene and collision | Scene 01, the clump; object-sized bodies |
-| Text inclusion | Emoji only by default; explicitly include a message |
+| Text inclusion | Blank message leaves only the default present; optional message entry is separate from object search |
 | Included-message audience | Public by default; sender can choose Kaio and sender only |
 | Publishing | Immediate; Kaio can remove unwanted gifts |
 | Retention | Keep every gift until its sender or Kaio removes it |

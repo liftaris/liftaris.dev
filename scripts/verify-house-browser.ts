@@ -84,7 +84,7 @@ try {
   evaluate(visitor, `window.departures=[];document.querySelector('.house-world').addEventListener('animationstart',event=>{if(event.target.dataset.removing==='true')window.departures.push(event.target.dataset.object)});true`);
   browser(visitor, "click", "[aria-label='Close gift']");
   await until(visitor, `!${node(inspected)}`);
-  assert(evaluate<boolean>(visitor, `window.departures.includes(${quote(inspected)}) && document.activeElement?.id==='gift-draft'`));
+  assert(evaluate<boolean>(visitor, `window.departures.includes(${quote(inspected)}) && document.activeElement?.dataset.object==='leave-gift'`));
   console.log("PASS inspection survives remote deletion, then fades out and restores focus");
 
   for (const outcome of ["success", "404", "focus moved"] as const) {
@@ -105,7 +105,7 @@ try {
     await until(sender, `!document.querySelector('.object-window') && !${node(reclaimed)}`);
     created.delete(reclaimed);
     if (outcome === "focus moved") assert.equal(evaluate<string>(sender, "document.activeElement?.dataset.object"), "octopus", "Reclaim must not steal focus from outside its window");
-    else assert.equal(evaluate<string>(sender, "document.activeElement?.id"), "gift-draft", `Keyboard reclaim restores focus after ${outcome}`);
+    else assert.equal(evaluate<string>(sender, "document.activeElement?.dataset.object"), "leave-gift", `Keyboard reclaim restores focus after ${outcome}`);
     console.log(`PASS reclaim focus after ${outcome}`);
   }
 

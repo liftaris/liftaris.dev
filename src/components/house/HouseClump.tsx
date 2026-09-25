@@ -9,6 +9,7 @@ import { reconcileGifts, retiringGiftIds } from "./gift-presence";
 
 type Grab = { id: string; point: Point; origin: Point; moved: boolean; pointerId?: number };
 const INITIAL_SIZE = { width: 500, height: 600 };
+const GIFT_ENTRY: ObjectSpec = { id: "leave-gift", name: "Leave a gift", emoji: "🎁", width: 64, height: 64, shape: "rectangle" };
 
 export function HouseClump({ gifts, inspectedIds, onOpen }: {
   gifts: readonly Gift[];
@@ -28,7 +29,7 @@ export function HouseClump({ gifts, inspectedIds, onOpen }: {
   const [scale, setScale] = useState(1);
   const [size, setSize] = useState(INITIAL_SIZE);
   const bounds = useRef(INITIAL_SIZE);
-  const objects = useMemo(() => [...OBJECTS, ...giftObjects(displayed)], [displayed]);
+  const objects = useMemo(() => [...OBJECTS, GIFT_ENTRY, ...giftObjects(displayed)], [displayed]);
   const retiring = retiringGiftIds(displayed, gifts, [...inspectedIds, grabId]);
   const liveIds = new Set(gifts.map((gift) => gift.id));
 
@@ -211,7 +212,7 @@ export function HouseClump({ gifts, inspectedIds, onOpen }: {
             aria-label={gift ? `${object.name}, gift from ${gift.authorName}. Open gift or use arrow keys to move.` : `${object.name}. Open window or use arrow keys to move.`} aria-describedby="house-movement-help"
             onAnimationEnd={(event) => {
               if (event.target !== event.currentTarget || event.animationName !== "house-depart" || !removing) return;
-              if (document.activeElement === event.currentTarget) document.getElementById("gift-draft")?.focus({ preventScroll: true });
+              if (document.activeElement === event.currentTarget) document.querySelector<HTMLButtonElement>('[data-object="leave-gift"]')?.focus({ preventScroll: true });
               setDisplayed((current) => current.filter((item) => item.id !== object.id));
             }}
             onPointerDown={(event) => pointerDown(event, object.id)} onPointerMove={pointerMove}

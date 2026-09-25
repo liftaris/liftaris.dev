@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { getGift, HouseError, reclaimGift } from "../../lib/house/client";
 import type { Gift, GiftDetail, HouseSnapshot } from "../../lib/house/types";
 
-export function GiftDialog({ gift, onClose, onSnapshot }: {
-  gift: Gift; onClose: () => void; onSnapshot: (snapshot: HouseSnapshot) => void;
+export function GiftDialog({ gift, initialDetail, onClose, onSnapshot }: {
+  gift: Gift; initialDetail?: GiftDetail; onClose: () => void; onSnapshot: (snapshot: HouseSnapshot) => void;
 }) {
-  const [detail, setDetail] = useState<GiftDetail | null>(null);
+  const [detail, setDetail] = useState<GiftDetail | null>(initialDetail ?? null);
   const [error, setError] = useState("");
   const [removing, setRemoving] = useState(false);
 

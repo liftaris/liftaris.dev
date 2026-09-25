@@ -28,6 +28,18 @@ function fixture() {
 }
 
 describe("shared house authorization and persistence", () => {
+  test("creation identifies this request's gift even after other visitors add gifts", async () => {
+    const { run, store } = fixture();
+    const first = await run((house) => house.create(gift, sender));
+    const id = store.snapshot().gifts[0].id;
+    expect(first).toMatchObject({ ok: true, value: { createdGiftId: id } });
+    await run((house) => house.create(gift, other));
+    expect(await run((house) => house.create(gift, sender))).toMatchObject({ ok: true, value: { createdGiftId: id } });
+    await run((house) => house.remove(id, sender));
+    expect(await run((house) => house.create(gift, sender))).toMatchObject({ ok: true, value: { createdGiftId: null } });
+    expect(store.snapshot().gifts).toHaveLength(1);
+  });
+
   test("private text is absent from snapshots and strangers' details; names confer no ownership", async () => {
     const { run, store } = fixture();
     const created = await run((house) => house.create(gift, sender));

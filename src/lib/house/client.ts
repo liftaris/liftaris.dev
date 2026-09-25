@@ -1,4 +1,4 @@
-import type { CreateGift, EmojiOption, GiftDetail, HouseSnapshot, Visitor } from "./types";
+import type { CreateGift, CreatedGift, EmojiOption, GiftDetail, HouseSnapshot, Visitor } from "./types";
 
 const TOKEN_KEY = "kaio.house.visitor";
 let visitorPromise: Promise<Visitor> | undefined;
@@ -63,6 +63,6 @@ export function ensureVisitor(): Promise<Visitor> {
 
 export const getHouse = (signal?: AbortSignal) => request<HouseSnapshot>("/api/house", { signal });
 export const getGift = (id: string, signal?: AbortSignal) => request<GiftDetail>(`/api/house/gifts/${encodeURIComponent(id)}`, { signal });
-export const createGift = (gift: CreateGift) => request<HouseSnapshot>("/api/house/gifts", { method: "POST", body: JSON.stringify(gift) });
+export const createGift = (gift: CreateGift) => request<CreatedGift>("/api/house/gifts", { method: "POST", body: JSON.stringify(gift) });
 export const reclaimGift = (id: string) => request<HouseSnapshot>(`/api/house/gifts/${encodeURIComponent(id)}`, { method: "DELETE" });
 export const suggestEmoji = (text: string, signal?: AbortSignal) => request<{ options: EmojiOption[] }>("/api/house/suggest", { method: "POST", body: JSON.stringify({ text }), signal });

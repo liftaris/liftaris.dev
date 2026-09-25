@@ -50,12 +50,12 @@ try {
   browser("mouse", "up");
   const after = rect(selector);
   assert(after.x < before.x - 50 && after.y < before.y - 30, "Dragging must move the window");
-  browser("focus", `${selector} .wb-drag`);
+  browser("focus", `${selector} .object-window-handle`);
   browser("press", "ArrowLeft");
   assert(rect(selector).x < after.x, "Keyboard movement must move the window");
   await open("case", "Experience");
   assert.equal(evaluate("document.querySelectorAll('.object-window').length"), 2);
-  evaluate(`${query(selector)}.querySelector('.wb-drag').focus()`);
+  evaluate(`${query(selector)}.querySelector('.object-window-handle').focus()`);
   assert(evaluate(`${query(selector)}.winbox.focused`), "Keyboard focus raises the window");
   browser("click", `${selector} [aria-label='Minimize window']`);
   await closed("octopus", "Octopus");
@@ -66,16 +66,42 @@ try {
   console.log("PASS WinBox drag, keyboard movement, stacking, minimize, close and focus restoration");
 
   await open("octopus", "Octopus");
+  const iconBefore = rect(selector);
+  const icon = rect(`${selector} .object-window-icon`);
+  const iconX = Math.round(icon.x + icon.width / 2), iconY = Math.round(icon.y + icon.height / 2);
+  browser("mouse", "move", String(iconX), String(iconY));
+  browser("mouse", "down");
+  browser("mouse", "move", String(iconX - 80), String(iconY - 60));
+  browser("mouse", "up");
+  assert(evaluate<boolean>(`!!${query(selector)}`), "Releasing an icon drag must keep the window open");
+  const iconAfter = rect(selector);
+  assert(iconAfter.x < iconBefore.x - 50 && iconAfter.y < iconBefore.y - 30, "Dragging the corner icon must move the window");
+  const movedIcon = rect(`${selector} .object-window-icon`);
+  const movedX = Math.round(movedIcon.x + movedIcon.width / 2), movedY = Math.round(movedIcon.y + movedIcon.height / 2);
+  browser("mouse", "move", String(movedX), String(movedY));
+  browser("mouse", "down");
+  browser("mouse", "move", String(movedX - 30), String(movedY - 20));
+  browser("mouse", "move", String(movedX), String(movedY));
+  browser("mouse", "up");
+  assert(evaluate<boolean>(`${query(selector)}?.style.pointerEvents!=='none' && ${query('[data-object=octopus]')}.getAttribute('aria-expanded')==='true'`), "Returning a drag to its starting point must not minimize");
   browser("click", `${selector} .object-window-icon`);
   await closed("octopus", "Octopus");
   assert(evaluate("document.activeElement?.dataset.object==='octopus'"), "Icon collapse restores source focus");
+  await open("octopus", "Octopus");
+  const jitterIcon = rect(`${selector} .object-window-icon`);
+  const jitterX = Math.round(jitterIcon.x + jitterIcon.width / 2), jitterY = Math.round(jitterIcon.y + jitterIcon.height / 2);
+  browser("mouse", "move", String(jitterX), String(jitterY));
+  browser("mouse", "down");
+  browser("mouse", "move", String(jitterX - 2), String(jitterY));
+  browser("mouse", "up");
+  await closed("octopus", "Octopus");
   for (const key of ["Enter", "Space"]) {
     await open("octopus", "Octopus");
     browser("focus", `${selector} .object-window-icon`);
     browser("press", key);
     await closed("octopus", "Octopus");
   }
-  console.log("PASS corner icon collapses by click, Enter and Space");
+  console.log("PASS corner icon drags without collapsing; click, Enter and Space collapse");
 
   for (const [width, height] of [[390, 844], [320, 568], [844, 390]]) {
     browser("set", "viewport", String(width), String(height));

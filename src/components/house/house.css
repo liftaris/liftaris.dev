@@ -71,93 +71,141 @@
 .house-object:focus-visible { outline: 2px solid var(--paper); outline-offset: 5px; }
 
 .house-composer {
-  position: relative;
-  width: min(100% - 32px, 360px);
-  margin: 4px auto 0;
-  padding-bottom: 8px;
+  width: 100%;
   font-family: var(--font-mono), monospace;
-  font-size: 12px;
+  font-size: 14px;
+  line-height: 1.6;
 }
-.house-input-row {
+.gift-intro h2 { margin: 0 0 16px; font-family: var(--font-serif), serif; font-weight: 400; font-size: 32px; line-height: 1.2; }
+.gift-intro p { margin: 0 0 12px; }
+.gift-intro p:last-child { font-size: 12px; }
+.gift-preview {
+  position: relative;
+  margin: 60px 0 0 24px;
+  border: 1px solid currentColor;
+  background: var(--paper, #fffbed);
+}
+.gift-preview-header {
+  position: relative;
   display: flex;
   align-items: center;
-  min-height: 52px;
-  border-bottom: 1px solid rgb(255 251 237 / .65);
-  gap: 6px;
+  justify-content: space-between;
+  height: 18px;
+  padding: 0 8px 0 48px;
+  color: var(--paper, #fffbed);
+  background: var(--blue, #1313ba);
+  font-size: 12px;
+  line-height: 18px;
 }
-.house-selected {
-  flex: 0 0 32px;
-  text-align: center;
-  font-size: 25px;
-  line-height: 1;
+.gift-preview-header > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gift-change-object {
+  flex-shrink: 0;
+  border: 0;
+  padding: 0 0 0 8px;
+  color: inherit;
+  background: none;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
 }
-.house-input-row textarea {
+.gift-preview-body { padding: 24px; }
+.gift-preview textarea {
   display: block;
-  flex: 1;
+  width: 100%;
   min-width: 0;
   margin: 0;
-  padding: 12px 0;
-  resize: none;
-  min-height: 48px;
-  max-height: 144px;
-  border: 0;
+  padding: 12px;
+  resize: vertical;
+  min-height: 144px;
+  border: 1px dashed currentColor;
   border-radius: 0;
   background: transparent;
   color: inherit;
   font: inherit;
-  font-size: 14px;
-  line-height: 24px;
+  font-size: 16px;
+  line-height: 1.6;
 }
-.house-input-row textarea::placeholder { color: rgb(255 251 237 / .75); opacity: 1; }
-.house-input-row textarea:focus-visible { outline: 2px solid var(--paper); outline-offset: 4px; }
-.house-send {
-  display: grid;
-  flex: 0 0 44px;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  padding: 10px;
+.gift-preview input::placeholder, .gift-preview textarea::placeholder { color: inherit; opacity: .6; }
+.gift-from { display: flex; align-items: baseline; gap: 10px; margin-top: 20px; }
+.gift-from > span { flex-shrink: 0; }
+.gift-from input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 0;
   border: 0;
-  border-radius: 50%;
-  background: transparent;
+  border-bottom: 1px dashed currentColor;
+  border-radius: 0;
+  background: none;
   color: inherit;
+  font: inherit;
+  font-size: 16px;
+}
+.gift-picker { margin-bottom: 20px; }
+.gift-picker label { display: block; font-size: 12px; }
+.gift-picker input {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 6px;
+  padding: 8px;
+  border: 1px solid currentColor;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 16px;
+}
+.house-send {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 44px;
+  margin: 20px 0 0 auto;
+  padding: 10px 20px;
+  border: 1px solid var(--blue, #1313ba);
+  border-radius: 0;
+  background: var(--blue, #1313ba);
+  color: var(--paper, #fffbed);
+  font: inherit;
   cursor: pointer;
 }
-.house-send svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .house-suggestions {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+  gap: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+  margin-top: 8px;
 }
 .house-suggestions button {
   display: grid;
   place-items: center;
-  flex: 0 0 44px;
-  width: 44px;
+  width: 100%;
   height: 44px;
   padding: 5px;
   border: 1px solid transparent;
-  border-radius: 10px;
+  border-radius: 0;
   color: inherit;
-  background: rgb(255 251 237 / .08);
+  background: transparent;
   font-size: 27px;
   line-height: 1;
   cursor: pointer;
 }
-.house-suggestions button[aria-pressed="true"] { border-color: var(--paper); background: rgb(255 251 237 / .16); }
+.house-suggestions button[aria-pressed="true"] { border-color: currentColor; background: rgb(19 19 186 / .07); }
 .house-suggestions button span { pointer-events: none; }
-.house-gift-options {
+.house-audience {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 4px 16px;
-  margin-top: 12px;
+  gap: 0 8px;
+  margin-top: 8px;
+  font-size: 11px;
 }
-.house-message-choice { display: flex; align-items: center; gap: 7px; min-height: 40px; cursor: pointer; }
-.house-message-choice input { width: 16px; height: 16px; accent-color: var(--paper); margin: 0; }
 .house-audience select {
-  min-height: 40px;
+  min-height: 44px;
   max-width: 100%;
   padding: 5px 0;
   border: 0;
@@ -168,35 +216,10 @@
   cursor: pointer;
 }
 .house-audience option { color: var(--blue, #1313ba); background: var(--paper, #fffbed); }
-.house-name-choice {
-  min-height: 40px;
-  padding: 5px 0;
-  border: 0;
-  background: none;
-  color: inherit;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  font: inherit;
-  cursor: pointer;
-  text-align: start;
-}
-.house-name-input { flex: 1 0 100%; }
-.house-name-input input {
-  width: 100%;
-  min-height: 44px;
-  padding: 8px 10px;
-  border: 1px solid rgb(255 251 237 / .65);
-  border-radius: 6px;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-size: 16px;
-}
-.house-name-input input::placeholder { color: rgb(255 251 237 / .75); }
+
 .house-error { font-size: 12px; line-height: 1.6; margin: 10px 0 0; }
 .house-error:empty { display: none; }
 .house-connection { text-align: center; font-size: 12px; padding-inline: 16px; }
-.house-composer button:focus-visible, .house-composer input:focus-visible, .house-composer select:focus-visible { outline: 2px solid var(--paper); outline-offset: 3px; }
 .house-composer :disabled { cursor: wait; opacity: .65; }
 
 .house-gift-body { display: flex; flex-direction: column; align-items: flex-start; width: 100%; min-height: 0; }
@@ -220,17 +243,18 @@
 .house-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
 @media (hover: hover) {
-  .house-send:hover { background: rgb(255 251 237 / .1); }
-  .house-suggestions button:hover { background: rgb(255 251 237 / .16); }
+  .house-send:hover { background: var(--paper, #fffbed); color: var(--blue, #1313ba); }
+  .house-suggestions button:hover { background: rgb(19 19 186 / .07); }
   .house-reclaim:hover { background: rgb(19 19 186 / .07); }
 }
 @media (prefers-reduced-motion: no-preference) {
   .house-send, .house-suggestions button, .house-reclaim { transition: scale 150ms cubic-bezier(0.2, 0, 0, 1), background-color 150ms linear; }
   .house-send:active, .house-suggestions button:active, .house-reclaim:active { scale: .96; }
 }
-@container (width < 390px) {
-  .house-input-row textarea { font-size: 16px; }
-  .house-gift-options { gap: 2px 12px; }
+@media (max-width: 480px) {
+  .gift-intro h2 { font-size: 28px; }
+  .gift-preview-body { padding: 16px 12px; }
+  .gift-change-object { font-size: 10px; }
 }
 @media (max-width: 1280px) {
   .shell.onHome { padding-bottom: 0; }
@@ -253,5 +277,5 @@
 }
 @media (forced-colors: active) {
   .house-object:focus-visible, .house-composer :focus-visible { outline-color: Highlight; }
-  .house-input-row, .house-suggestions button[aria-pressed="true"] { border-color: CanvasText; }
+  .gift-preview, .house-suggestions button[aria-pressed="true"] { border-color: CanvasText; }
 }

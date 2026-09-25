@@ -1,116 +1,109 @@
 import { useEffect, useRef, useState } from "react";
 import type { SubmitEvent } from "react";
-import { createGift, ensureVisitor, suggestEmoji } from "../../lib/house/client";
-import { localSuggestions } from "../../lib/house/emoji";
-import type { Audience, EmojiOption, HouseSnapshot, Visitor } from "../../lib/house/types";
+import { createGift, ensureVisitor, getGift, suggestEmoji } from "../../lib/house/client";
+import { EMOJI_CATALOG, findEmoji, localSuggestions } from "../../lib/house/emoji";
+import type { Audience, EmojiOption, GiftDetail, HouseSnapshot, Visitor } from "../../lib/house/types";
 
-export function GiftComposer({ onGift }: { onGift: (snapshot: HouseSnapshot) => void }) {
+export function GiftComposer({ onGift, onSavingChange }: {
+  onGift: (snapshot: HouseSnapshot, gift: GiftDetail, bounds: DOMRect) => void;
+  onSavingChange: (saving: boolean) => void;
+}) {
   const [text, setText] = useState("");
+  const [query, setQuery] = useState("");
+  const [picking, setPicking] = useState(false);
   const [options, setOptions] = useState<EmojiOption[]>([]);
-  const [selected, setSelected] = useState<EmojiOption | null>(null);
-  const [includeText, setIncludeText] = useState(false);
+  const [selected, setSelected] = useState<EmojiOption>(() => findEmoji("gift")!);
   const [visibility, setVisibility] = useState<Audience>("public");
   const [visitor, setVisitor] = useState<Visitor | null>(null);
-  const [named, setNamed] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [status, setStatus] = useState("");
-  const input = useRef<HTMLTextAreaElement>(null);
+  const picker = useRef<HTMLButtonElement>(null);
+  const preview = useRef<HTMLDivElement>(null);
   const generation = useRef(0);
   const controller = useRef<AbortController | null>(null);
   const pending = useRef<{ key: string; id: string } | null>(null);
 
-  const identity = () => {
-    void ensureVisitor().then(setVisitor).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "Couldn’t create your visitor identity."));
-  };
+  useEffect(() => {
+    let active = true;
+    void ensureVisitor().then((identity) => { if (active) setVisitor(identity); }).catch((reason: unknown) => {
+      if (active) setError(reason instanceof Error ? reason.message : "Couldn’t create your visitor identity.");
+    });
+    return () => { active = false; };
+  }, []);
 
   // Invalidated in onChange itself, so a previous response cannot win the debounce gap.
-  const changeText = (value: string) => {
+  const search = (value: string) => {
     generation.current++;
     controller.current?.abort();
-    setText(value);
+    setQuery(value);
     setOptions(value.trim() ? localSuggestions(value).slice(0, 5) : []);
     setError("");
-    setStatus("");
   };
 
   useEffect(() => {
-    if (!text.trim()) return;
+    if (!query.trim() || !picking) return;
     const current = generation.current;
     const request = new AbortController();
     controller.current = request;
     const timeout = setTimeout(() => {
-      void suggestEmoji(text, request.signal).then(({ options: candidates }) => {
+      void suggestEmoji(query, request.signal).then(({ options: candidates }) => {
         if (!request.signal.aborted && current === generation.current) setOptions(candidates.slice(0, 5));
       }).catch(() => { /* Local suggestions remain usable if Jev is temporarily unavailable. */ });
     }, 250);
     return () => { clearTimeout(timeout); request.abort(); };
-  }, [text]);
-
-  useEffect(() => {
-    if (input.current) {
-      input.current.style.height = "auto";
-      input.current.style.height = `${Math.min(input.current.scrollHeight, 144)}px`;
-    }
-  }, [text]);
+  }, [query, picking]);
 
   const submit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (saving) return;
-    if (!selected) {
-      setError("Choose an emoji to leave.");
-      input.current?.focus();
-      return;
-    }
-    if (includeText && !text.trim()) {
-      setError("Write a message, or leave just the emoji.");
-      input.current?.focus();
-      return;
-    }
     setSaving(true);
+    onSavingChange(true);
     setError("");
-    const draft = { emojiId: selected.id, ...(includeText ? { message: text.trim() } : {}), visibility: includeText ? visibility : "public" as Audience, ...(named && displayName.trim() ? { displayName: displayName.trim() } : {}) };
+    const draft = { emojiId: selected.id, ...(text.trim() ? { message: text.trim() } : {}), visibility: text.trim() ? visibility : "public" as Audience, ...(displayName.trim() ? { displayName: displayName.trim() } : {}) };
     const key = JSON.stringify(draft);
     if (pending.current?.key !== key) pending.current = { key, id: crypto.randomUUID() };
     try {
       setVisitor(await ensureVisitor());
       const snapshot = await createGift({ ...draft, requestId: pending.current.id });
-      onGift(snapshot);
-      setStatus(`${selected.name} left. Thank you!`);
-      generation.current++;
-      controller.current?.abort();
-      setText("");
-      setOptions([]);
-      setSelected(null);
-      setIncludeText(false);
-      setVisibility("public");
+      if (!snapshot.createdGiftId) throw new Error("This gift has already been taken back. Change your draft to leave a new one.");
+      const gift = await getGift(snapshot.createdGiftId);
+      onGift(snapshot, gift, preview.current!.getBoundingClientRect());
       pending.current = null;
-      input.current?.focus();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Your gift couldn’t be left. Please try again.");
-    } finally { setSaving(false); }
+    } finally { setSaving(false); onSavingChange(false); }
   };
 
-  return <form className="house-composer" onSubmit={(event) => { void submit(event); }} aria-label="Leave a gift">
-    <div className="house-input-row">
-      <span className="house-selected" aria-hidden="true">{selected?.emoji ?? "+"}</span>
-      <label className="house-sr-only" htmlFor="gift-draft">Find an emoji or write a message</label>
-      <textarea ref={input} id="gift-draft" name="gift" rows={1} maxLength={600} placeholder="Leave a gift…" value={text} onFocus={identity} onChange={(event) => changeText(event.target.value)} aria-invalid={Boolean(error)} aria-describedby={error ? "gift-error" : undefined} disabled={saving} />
-      <button className="house-send" type="submit" disabled={saving} aria-label={saving ? "Leaving your gift" : "Leave gift"}>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
-      </button>
+  return <form className="house-composer" onSubmit={(event) => { void submit(event); }} aria-label="Leave a gift" onKeyDown={(event) => {
+    if (picking && event.key === "Escape") { event.stopPropagation(); event.nativeEvent.stopImmediatePropagation(); setPicking(false); picker.current?.focus(); }
+  }}>
+    <header className="gift-intro">
+      <h2>Leave your mark on my site.</h2>
+      <p>Choose an object to leave on the homepage, along with a message, an interesting link, a pun... anything you want!</p>
+      <p>Gifts are fun, and anonymous by default.</p>
+    </header>
+    <div ref={preview} className="gift-preview">
+      <div className="gift-preview-header">
+        <button ref={picker} type="button" className="object-window-icon gift-preview-icon" aria-label="Change gift object" aria-expanded={picking} aria-controls="gift-picker" disabled={saving} onClick={() => setPicking(!picking)}>{selected.emoji}</button>
+        <span>{selected.name}</span>
+        <button className="gift-change-object" type="button" disabled={saving} onClick={() => setPicking(!picking)}>Change object</button>
+      </div>
+      <div className="gift-preview-body">
+        {picking && <div id="gift-picker" className="gift-picker">
+          <label htmlFor="gift-search">Find an object</label>
+          <input id="gift-search" type="search" value={query} maxLength={600} disabled={saving} onChange={(event) => search(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") event.preventDefault(); }} placeholder="Popcorn, good luck, a little sunshine…" />
+          <div className="house-suggestions" role="group" aria-label="Choose an object">
+            {(query.trim() ? options : EMOJI_CATALOG).map((option) => <button type="button" key={option.id} aria-label={option.name} title={option.name} disabled={saving} aria-pressed={selected.id === option.id} onClick={() => { setSelected(option); setPicking(false); setError(""); picker.current?.focus(); }}><span aria-hidden="true">{option.emoji}</span></button>)}
+          </div>
+        </div>}
+        <label className="house-sr-only" htmlFor="gift-message">Your message, optional</label>
+        <textarea id="gift-message" name="message" rows={5} maxLength={2000} placeholder="A message, a link, a terrible pun… (optional)" value={text} onChange={(event) => setText(event.target.value)} disabled={saving} />
+        <label className="gift-from" htmlFor="gift-name"><span>From</span><input id="gift-name" aria-label="Your name, optional" name="nickname" autoComplete="nickname" type="text" placeholder={visitor?.name ?? "Anonymous animal"} value={displayName} maxLength={40} onChange={(event) => setDisplayName(event.target.value)} disabled={saving} /></label>
+        <label className="house-audience"><span>Message visible to</span><select value={visibility} disabled={saving} onChange={(event) => setVisibility(event.target.value as Audience)}><option value="public">Everyone</option><option value="private">Only Kaio & you</option></select></label>
+      </div>
     </div>
-    {options.length > 0 && <div className="house-suggestions" role="group" aria-label="Suggested emoji">
-      {options.map((option) => <button type="button" key={option.id} aria-label={option.name} title={option.name} aria-pressed={selected?.id === option.id} onClick={() => { setSelected(option); setError(""); }}><span aria-hidden="true">{option.emoji}</span></button>)}
-    </div>}
-    {selected && <div className="house-gift-options">
-      <label className="house-message-choice"><input type="checkbox" checked={includeText} disabled={saving} onChange={(event) => setIncludeText(event.target.checked)} /> Include the message</label>
-      {includeText && <label className="house-audience"><span className="house-sr-only">Message visible to</span><select value={visibility} disabled={saving} onChange={(event) => setVisibility(event.target.value as Audience)}><option value="public">Everyone</option><option value="private">Only Kaio & you</option></select></label>}
-      <button className="house-name-choice" type="button" aria-expanded={named} onClick={() => setNamed(!named)} disabled={saving}>{named ? "Use animal name" : `From ${visitor?.name ?? "an anonymous animal"}`}</button>
-      {named && <div className="house-name-input"><label className="house-sr-only" htmlFor="gift-name">Your name, optional</label><input id="gift-name" name="nickname" autoComplete="nickname" type="text" placeholder="Your name (optional)" value={displayName} maxLength={40} onChange={(event) => setDisplayName(event.target.value)} disabled={saving} /></div>}
-    </div>}
+    <button className="house-send" type="submit" disabled={saving}>{saving ? "Leaving your gift…" : "Leave gift"} <span aria-hidden="true">↗</span></button>
     <p className="house-error" id="gift-error" role="alert">{error}</p>
-    <p className="house-sr-only" role="status">{status}</p>
   </form>;
 }

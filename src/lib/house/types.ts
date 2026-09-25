@@ -12,6 +12,10 @@ export interface HouseSnapshot {
   revision: number;
   gifts: Gift[];
 }
+export interface CreatedGift extends HouseSnapshot {
+  /** Null when a retry refers to a gift that has already been removed. */
+  createdGiftId: string | null;
+}
 export interface Visitor {
   id: string;
   name: string;
