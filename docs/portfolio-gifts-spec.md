@@ -14,7 +14,7 @@ Visitors are not accounts. A returning browser gets a stable anonymous animal na
 
 A gift consists of one chosen emoji, optional text, an attribution name, and a creation date. The sender chooses whether included text is public or visible only to Kaio and the sender. The emoji remains in the public pile in either case.
 
-Visitors can reclaim gifts they created. Kaio needs an owner-only removal path for unwanted gifts. Visible presence counts, cursors, sign-in for visitors, and navigation through Kaio's original objects are outside this feature's first scope.
+Visitors can reclaim gifts they created. Kaio needs an owner-only removal path for unwanted gifts. Visible presence counts, cursors, and sign-in for visitors remain outside this feature's scope. The computer and briefcase open the existing Projects and Experience content in object windows.
 
 ## Composer
 
@@ -42,11 +42,19 @@ Invalidate old results immediately whenever the draft changes, cancel prior requ
 
 A tap or click opens the gift; dragging rearranges it. A small movement threshold distinguishes the two so releasing a dragged gift does not unexpectedly open a card.
 
-The selected emoji appears enlarged at the center of the screen above the homepage, associated with a compact card containing its permitted message, attribution, and date. This is a local viewing interaction: opening a gift must not move it in the shared house for everyone else. Keep its place reserved in the clump while a visual copy transitions into the overlay.
+The selected emoji sits at the upper-left corner of a draggable window containing its permitted message, attribution, and date. This is a local viewing interaction: opening a gift does not change shared membership. Hide its resting artwork while the window is open, preserving its local physics body and place in the clump.
 
 The card includes a reclaim action only when the server recognizes the current browser as the creator. Owner removal is separately authorized. Reclaiming removes the gift and its associated message and broadcasts the public removal. If another device removes a gift while its card is open, retain the already loaded card and local object until that visitor closes it, then fade and remove the object. A dragged gift is likewise retained until release. Server deletion is immediate; deleted private text is not fetched again or added to public caches.
 
-Use a native modal dialog or equivalent focus trapping, background inertness, Escape dismissal, and focus restoration. The emoji in the pile has an accessible name identifying it as a gift; visible attribution is confined to the card. No new adjacent author icon is introduced. Color is the requested resting visual distinction; focus and screen-reader semantics still communicate interactivity.
+Use a non-modal WinBox window: the page remains interactive and multiple objects can stay open together. Clicking the corner icon, minimize, ×, and Escape collapse the window back to its source icon; none of these actions reclaims a gift. Return keyboard focus to that icon, or to the composer if the gift has departed. The emoji in the pile has an accessible name identifying it as a gift; visible attribution is confined to the window. No new adjacent author icon is introduced. Color is the requested resting visual distinction; focus and screen-reader semantics still communicate interactivity.
+
+### Object windows
+
+[WinBox](https://github.com/nextapps-de/winbox) owns mouse/touch dragging and window stacking. Customize its template and stylesheet for thin borders, text-height blue title bars, paper bodies, and an oversized corner icon, following the TypeSafe reference and supplied wireframe. The title bar is the drag handle; the corner icon is a separate, keyboard-accessible collapse button. Keep the existing typefaces; do not introduce a taskbar, maximize control, or another window manager.
+
+`ObjectWindow` mounts React content into WinBox's body and loads the library only in the browser. Titlebar arrows provide keyboard movement. Windows stay within the viewport, with a scrollable body on narrow or short screens; reduced-motion users skip the collapse animation. The computer and briefcase reuse the existing content components. Other personal objects have empty window bodies until their content is defined.
+
+Browser checks: `bun scripts/verify-windows-browser.ts http://127.0.0.1:4321` verifies window behavior against a running local server; `bun scripts/verify-house-browser.ts http://127.0.0.1:4321` verifies gift membership and deletion with two local visitors.
 
 ## Browser identity and ownership
 
@@ -115,7 +123,7 @@ Retaining all gifts means crowding is a layout and performance constraint, not p
 2. Add Effect schemas and services for browser identity, public gift data, private message access, creation, and reclaiming. Establish migrations and a working local Durable Object boundary.
 3. Integrate debounced Jev suggestions behind a server endpoint with local fallback and stale-result protection.
 4. Synchronize public collection membership, refresh on reconnect, and preserve active inspection/dragging through deletion. Keep movement local.
-5. Verify desktop/mobile layout, click-versus-drag, keyboard completion of the entire flow, modal focus, reduced motion, and the existing color-sprite fix. Check actual private/public payloads and cross-visitor permissions, not just hidden UI controls.
+5. Verify desktop/mobile layout, click-versus-drag, keyboard completion of the entire flow, non-modal window focus/stacking, reduced motion, and the existing color-sprite fix. Check actual private/public payloads and cross-visitor permissions, not just hidden UI controls.
 
 Required cases include duplicate-submit retries, independent local arrangements, gift withdrawal while another visitor reads it, identity persistence across reloads/tabs, stale suggestion responses, disconnected reconnection, and attempts to reclaim another browser's gift or read its private message. Validate the existing CMS and scheduled handler after any deployment integration change.
 

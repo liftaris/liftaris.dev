@@ -1,0 +1,85 @@
+.winbox.object-window {
+  color: var(--blue, #1313ba);
+  background: var(--blue, #1313ba);
+  border: 1px solid var(--paper, #fffbed);
+  border-radius: 0;
+  box-shadow: 4px 4px 0 rgb(0 0 0 / .22);
+  font-family: var(--font-mono), monospace;
+  transform-origin: top left;
+}
+.object-window .wb-header {
+  overflow: visible;
+  color: var(--paper, #fffbed);
+}
+.object-window .wb-drag {
+  padding-left: 48px;
+  cursor: grab;
+  touch-action: none;
+}
+.object-window .wb-drag:active { cursor: grabbing; }
+.object-window .wb-title {
+  font: inherit;
+  font-size: 12px;
+  line-height: inherit;
+  padding-right: 8px;
+}
+.object-window-icon {
+  position: absolute;
+  bottom: 0;
+  left: -24px;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-size: 60px;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  transform: translateZ(0);
+}
+.object-window[data-monochrome="true"] .object-window-icon { filter: grayscale(1) brightness(1.6); }
+.object-window .wb-control { display: flex; }
+.object-window .wb-control button {
+  width: 28px;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid rgb(255 251 237 / .5);
+  border-radius: 0;
+  color: inherit;
+  background: none;
+  font: inherit;
+  font-size: 16px;
+  line-height: 1;
+  text-align: center;
+}
+.object-window .wb-body {
+  background: var(--paper, #fffbed);
+  color: var(--blue, #1313ba);
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--blue) var(--paper);
+}
+.object-window-content { padding: 28px 24px; min-height: 100%; overflow-wrap: anywhere; }
+.object-window :focus-visible { outline: 2px solid currentColor; outline-offset: -4px; }
+.object-window .wb-body :focus-visible { outline-offset: 3px; }
+.object-window button:disabled { opacity: .65; cursor: wait; }
+.object-window .pane { animation: none; }
+.object-window .card, .object-window .row { grid-template-columns: 1fr; gap: 12px; border-color: rgb(19 19 186 / .2); }
+.object-window .projectTitleRow { flex-wrap: wrap; }
+.object-window .card h3, .object-window .row h3 { font-size: clamp(26px, 4vw, 38px); line-height: 1.05; }
+.object-window .links a, .object-window .chips span { border-color: rgb(19 19 186 / .35); }
+@media (hover: hover) {
+  .object-window .wb-control button:hover { background: rgb(255 251 237 / .16); }
+}
+@media (max-width: 480px) {
+  .object-window-content { padding: 24px 16px; }
+}
+@media (forced-colors: active) {
+  .winbox.object-window { border-color: CanvasText; }
+  .object-window :focus-visible { outline-color: Highlight; }
+}

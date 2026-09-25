@@ -77,15 +77,37 @@ try {
   await until(visitor, `!!${node(inspected)}`);
   browser(visitor, "focus", `[data-object="${inspected}"]`);
   browser(visitor, "press", "Enter");
-  await until(visitor, "document.querySelector('dialog[open] .house-gift-message')?.textContent === 'retained public card'");
+  await until(visitor, "document.querySelector('.object-window .house-gift-message')?.textContent === 'retained public card'");
   remove(inspected);
   await Bun.sleep(400);
-  assert(evaluate<boolean>(visitor, `!!document.querySelector('dialog[open]') && !!${node(inspected)} && document.querySelector('.house-gift-message')?.textContent === 'retained public card'`));
+  assert(evaluate<boolean>(visitor, `!!document.querySelector('.object-window') && !!${node(inspected)} && document.querySelector('.house-gift-message')?.textContent === 'retained public card'`));
   evaluate(visitor, `window.departures=[];document.querySelector('.house-world').addEventListener('animationstart',event=>{if(event.target.dataset.removing==='true')window.departures.push(event.target.dataset.object)});true`);
   browser(visitor, "click", "[aria-label='Close gift']");
   await until(visitor, `!${node(inspected)}`);
   assert(evaluate<boolean>(visitor, `window.departures.includes(${quote(inspected)}) && document.activeElement?.id==='gift-draft'`));
   console.log("PASS inspection survives remote deletion, then fades out and restores focus");
+
+  for (const outcome of ["success", "404", "focus moved"] as const) {
+    const reclaimed = create("keyboard reclaim");
+    await until(sender, `!!${node(reclaimed)}`);
+    browser(sender, "focus", `[data-object="${reclaimed}"]`);
+    browser(sender, "press", "Enter");
+    await until(sender, "!!document.querySelector('.object-window .house-reclaim')");
+    if (outcome === "404") {
+      remove(reclaimed);
+      await Bun.sleep(400);
+    }
+    browser(sender, "focus", ".object-window .house-reclaim");
+    if (outcome === "focus moved") {
+      browser(sender, "focus", "[data-object=octopus]");
+      evaluate(sender, "document.querySelector('.house-reclaim').click()");
+    } else browser(sender, "press", "Enter");
+    await until(sender, `!document.querySelector('.object-window') && !${node(reclaimed)}`);
+    created.delete(reclaimed);
+    if (outcome === "focus moved") assert.equal(evaluate<string>(sender, "document.activeElement?.dataset.object"), "octopus", "Reclaim must not steal focus from outside its window");
+    else assert.equal(evaluate<string>(sender, "document.activeElement?.id"), "gift-draft", `Keyboard reclaim restores focus after ${outcome}`);
+    console.log(`PASS reclaim focus after ${outcome}`);
+  }
 
   const held = create("held gift");
   await until(visitor, `!!${node(held)}`);
@@ -100,7 +122,7 @@ try {
   assert(evaluate<boolean>(visitor, `${node(held)}?.dataset.grabbed==='true'`));
   browser(visitor, "press", "Enter");
   await until(visitor, `!${node(held)}`);
-  assert(!evaluate<boolean>(visitor, "!!document.querySelector('dialog[open]')"));
+  assert(!evaluate<boolean>(visitor, "!!document.querySelector('.object-window')"));
   remove(addition);
   console.log("PASS membership changes preserve a grab; deleted held gift departs on release");
 
@@ -131,7 +153,7 @@ try {
   await until(sender, "document.querySelector('.house-gift-message')?.textContent === 'already authorized private card'");
   remove(privateId);
   await Bun.sleep(400);
-  assert(evaluate<boolean>(sender, `!!document.querySelector('dialog[open]') && !!${node(privateId)} && document.querySelector('.house-gift-message')?.textContent === 'already authorized private card'`));
+  assert(evaluate<boolean>(sender, `!!document.querySelector('.object-window') && !!${node(privateId)} && document.querySelector('.house-gift-message')?.textContent === 'already authorized private card'`));
   browser(sender, "click", "[aria-label='Close gift']");
   await until(sender, `!${node(privateId)}`);
   console.log("PASS loaded private detail survives deletion until close");

@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
 import { createSceneEngine } from "../clump/matter-engine";
 import { OBJECTS } from "../clump/model";
-import type { Point, SceneEngine } from "../clump/model";
+import type { ObjectSpec, Point, SceneEngine } from "../clump/model";
 import { giftObjects, worldSize } from "../../lib/house/emoji";
 import type { Gift } from "../../lib/house/types";
 import { reconcileGifts, retiringGiftIds } from "./gift-presence";
@@ -10,10 +10,10 @@ import { reconcileGifts, retiringGiftIds } from "./gift-presence";
 type Grab = { id: string; point: Point; origin: Point; moved: boolean; pointerId?: number };
 const INITIAL_SIZE = { width: 500, height: 600 };
 
-export function HouseClump({ gifts, inspectedId, onOpen }: {
+export function HouseClump({ gifts, inspectedIds, onOpen }: {
   gifts: readonly Gift[];
-  inspectedId: string | null;
-  onOpen: (gift: Gift, origin: DOMRect) => void;
+  inspectedIds: readonly string[];
+  onOpen: (object: ObjectSpec, source: HTMLButtonElement, gift?: Gift) => void;
 }) {
   const viewport = useRef<HTMLDivElement>(null);
   const world = useRef<HTMLDivElement>(null);
@@ -29,7 +29,7 @@ export function HouseClump({ gifts, inspectedId, onOpen }: {
   const [size, setSize] = useState(INITIAL_SIZE);
   const bounds = useRef(INITIAL_SIZE);
   const objects = useMemo(() => [...OBJECTS, ...giftObjects(displayed)], [displayed]);
-  const retiring = retiringGiftIds(displayed, gifts, [inspectedId, grabId]);
+  const retiring = retiringGiftIds(displayed, gifts, [...inspectedIds, grabId]);
   const liveIds = new Set(gifts.map((gift) => gift.id));
 
   useLayoutEffect(() => {
@@ -203,11 +203,12 @@ export function HouseClump({ gifts, inspectedId, onOpen }: {
         {objects.map((object) => {
           const gift = displayed.find((item) => item.id === object.id);
           const removing = retiring.has(object.id);
-          return <button type="button" key={object.id} className="house-object" data-object={object.id} data-gift={Boolean(gift)} data-grabbed={grabId === object.id} data-removing={removing}
+          const opened = inspectedIds.includes(object.id);
+          return <button type="button" key={object.id} className="house-object" data-object={object.id} data-gift={Boolean(gift)} data-grabbed={grabId === object.id} data-removing={removing} data-window-open={opened}
             ref={(element) => { if (element) nodes.current.set(object.id, element); else nodes.current.delete(object.id); }}
             style={{ width: Math.max(44, object.width), height: Math.max(44, object.height), fontSize: Math.max(object.width, object.height) * .87 }}
-            aria-disabled={removing || undefined} tabIndex={removing ? -1 : 0}
-            aria-label={gift ? `${object.name}, gift from ${gift.authorName}. Open gift or use arrow keys to move.` : `${object.name}. Use arrow keys to move.`} aria-describedby="house-movement-help"
+            aria-disabled={removing || undefined} tabIndex={removing || opened ? -1 : 0} aria-expanded={opened} aria-haspopup="dialog"
+            aria-label={gift ? `${object.name}, gift from ${gift.authorName}. Open gift or use arrow keys to move.` : `${object.name}. Open window or use arrow keys to move.`} aria-describedby="house-movement-help"
             onAnimationEnd={(event) => {
               if (event.target !== event.currentTarget || event.animationName !== "house-depart" || !removing) return;
               if (document.activeElement === event.currentTarget) document.getElementById("gift-draft")?.focus({ preventScroll: true });
@@ -221,12 +222,12 @@ export function HouseClump({ gifts, inspectedId, onOpen }: {
             onBlur={() => { if (grabbed.current?.id === object.id && grabbed.current.pointerId === undefined) finish(); }}
             onClick={(event) => {
               const suppressed = clickSuppressed.current;
-              if (gift && liveIds.has(gift.id) && !(suppressed?.id === gift.id && performance.now() < suppressed.until)) onOpen(gift, event.currentTarget.getBoundingClientRect());
+              if (!opened && !removing && (!gift || liveIds.has(gift.id)) && !(suppressed?.id === object.id && performance.now() < suppressed.until)) onOpen(object, event.currentTarget, gift);
             }}
           ><span className="house-object-art" aria-hidden="true">{object.emoji}</span></button>;
         })}
       </div>
     </div>
-    <p id="house-movement-help" className="house-sr-only">Drag to move things in your own arrangement. With a keyboard, arrows move, Q and E turn, Enter places, and Escape cancels. Press Enter on a gift to open it.</p>
+    <p id="house-movement-help" className="house-sr-only">Drag to move things in your own arrangement. With a keyboard, arrows move, Q and E turn, Enter places, and Escape cancels. Press Enter on a thing to open its window.</p>
   </div>;
 }
