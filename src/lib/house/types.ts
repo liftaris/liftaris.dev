@@ -9,7 +9,6 @@ export interface Gift {
   message: string | null;
 }
 export interface HouseSnapshot {
-  revision: number;
   gifts: Gift[];
 }
 export interface CreatedGift extends HouseSnapshot {
@@ -25,6 +24,7 @@ export interface Viewer {
   owner: boolean;
 }
 export interface GiftDetail extends Gift {
+  canEdit: boolean;
   canReclaim: boolean;
   canRemove: boolean;
 }
@@ -36,6 +36,8 @@ export interface CreateGift {
   /** Empty means the visitor's assigned animal name. */
   displayName?: string;
 }
+
+export type UpdateGift = Omit<CreateGift, "requestId">;
 
 export interface EmojiOption {
   id: string;

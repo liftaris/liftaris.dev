@@ -22,25 +22,34 @@ A local `.dev.vars` file can hold Worker secrets; it is ignored by Git.
 ## Homepage gifts
 
 The homepage contains the shared Matter.js clump. Visitors can leave emoji gifts,
-optionally attach a public or private message, and take back their own gifts.
-Jev suggests emoji while they type. Anonymous animal identities use Better Auth
-and localStorage with a 100-year bearer lifetime; clearing storage loses ownership.
-Gift additions and withdrawals synchronize through PartySync. Movement and physics
-stay local to each visitor, with a fresh arrangement on reload. A remotely deleted
-gift stays available while inspected or dragged, then fades away on close or release.
+optionally attach a public or private message, and edit or take back their own gifts.
+Jev suggests emoji while they type. Visitors receive an automatic native EmDash
+account with an animal name, without a signup form. Native HttpOnly session cookies
+authorize ownership; names and public gift IDs do not. Losing that session can
+lose access to earlier gifts. Legacy localStorage bearer tokens are not converted
+automatically.
 
-The gift backend uses Effect, a SQLite Durable Object, and a separate visitor D1
-database. Set `VISITOR_AUTH_SECRET` and `JEV_API_KEY` in ignored `.dev.vars`, then
-run `bun run db:visitor:local`. Set `HOUSE_OWNER_ID` to your EmDash user ID for
-private-message access and moderation while signed into the CMS.
+Gifts are EmDash content in the existing CMS `DB`. The Effect-backed API uses
+ordinary HTTP reads and mutations: no realtime connection, shared physics, or
+separate visitor auth database. Movement stays local, with a fresh arrangement
+on reload. Set `JEV_API_KEY` in ignored `.dev.vars` for suggestions, and set
+`HOUSE_OWNER_ID` to the exact EmDash user ID allowed to administer the CMS, read
+private messages, and moderate gifts. After setup, this is required for CMS admin
+access; empty configuration fails closed. The signed-in owner's ID is available
+at `/_emdash/api/auth/me`. No visitor database migration or auth secret is needed.
 
 See the [gift specification](docs/portfolio-gifts-spec.md) and
 [deployment guide](docs/portfolio-deployment.md). GitHub branch previews use the
 `previews` bindings in `wrangler.jsonc`. Preview and production share the same
-EmDash database and media library; visitor identities, runtime sessions, and House
-state remain separate. No second CMS setup or content copy is needed. Production
-still needs a real visitor database ID and Worker secrets before deployment; its
-checked-in visitor database ID is a local development sentinel.
+EmDash database and media library, now including native visitor users and gifts.
+The `SESSION` KV remains environment-specific. Preview writes affect shared live
+data; it is not a disposable CMS sandbox. No second CMS setup or content copy is
+needed.
+
+**No legacy migration is needed for this rollout.** Existing local gifts are
+development tests; preview has no gifts, and production has not shipped the gift
+system. Native CMS gifts start fresh. Legacy storage remains untouched; see the
+[retirement safeguards](docs/legacy-gift-retirement.md) before deleting resources.
 
 ## Portfolio interaction lab
 
@@ -108,6 +117,11 @@ images in the media library.
 
 `wrangler.jsonc` contains the production Worker, custom domains, D1, R2, session
 KV, and a Cron Trigger for EmDash scheduled publishing and maintenance.
+The historical `house-v1` migration and inert `House` export preserve old storage;
+the application does not bind or call it. Do not remove the history or add a
+class-deletion migration as a cleanup shortcut.
+
+Only deploy after approving the legacy-data cutover and the intended target:
 
 ```bash
 bunx wrangler login

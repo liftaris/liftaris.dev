@@ -1,19 +1,11 @@
 import type { APIContext } from "astro";
-import { env } from "cloudflare:workers";
 import { Effect } from "effect";
-import type { Viewer } from "../../lib/house/types";
-import { failure, HouseError, type HouseResult } from "./errors";
-import { visitorAuth, visitorHeaders } from "./visitor-auth";
-import { isHouseOwner } from "./owner-policy";
-
-export const house = () => env.HOUSE.getByName("home");
+import { failure, HouseError } from "./errors";
+import { getViewer, visitorDb } from "./visitor";
+import { CmsHouseStore } from "./cms-store";
 
 export function json(value: unknown, status = 200): Response {
   return Response.json(value, { status, headers: { "Cache-Control": "no-store", Vary: "Authorization, Cookie" } });
-}
-
-export function response<T>(result: HouseResult<T>): Response {
-  return result.ok ? json(result.value) : json({ error: result.error }, result.status);
 }
 
 export function sameOrigin(request: Request): void {
@@ -21,16 +13,23 @@ export function sameOrigin(request: Request): void {
   if (origin !== new URL(request.url).origin) throw failure(403, "This action must come from this portfolio.");
 }
 
-export const viewer = Effect.fn("House.viewer")(function*(context: APIContext) {
-  const owner = isHouseOwner(env.HOUSE_OWNER_ID, context.locals.user?.id);
-  if (!context.request.headers.has("Authorization")) return { visitor: null, owner } satisfies Viewer;
-  const session = yield* Effect.tryPromise({
-    try: () => visitorAuth(env, context.url.origin).api.getSession({ headers: visitorHeaders(context.request) }),
-    catch: () => failure(503, "Your visitor identity could not be checked. Try again."),
-  });
-  if (!session) return yield* failure(401, "This visitor identity is no longer available in this browser.");
-  return { visitor: { id: session.user.id, name: session.user.name }, owner } satisfies Viewer;
-});
+export function houseResponse(context: APIContext, ownerId: string | undefined): Promise<Response> {
+  context.cache.set(false);
+  return run(Effect.gen(function*() {
+    const { request, params } = context;
+    if (!["GET", "POST", "PATCH", "DELETE"].includes(request.method)) return json({ error: "Method not allowed." }, 405);
+    if (request.method !== "GET") yield* Effect.try({ try: () => sameOrigin(request), catch: () => failure(403, "This action must come from this portfolio.") });
+    const store = new CmsHouseStore(yield* call(() => visitorDb(context)));
+    yield* call(() => store.initialize());
+    if (request.method === "GET" && !params.id) return json(yield* call(() => store.snapshot()));
+    const identity = yield* call(() => getViewer(context, ownerId));
+    if (request.method === "GET") return json(yield* call(() => store.detail(params.id!, identity)));
+    if (request.method === "DELETE") return json(yield* call(() => store.remove(params.id!, identity)));
+    const input = yield* readBody(request);
+    if (request.method === "PATCH") return json(yield* call(() => store.update(params.id!, input, identity)));
+    return json(yield* call(() => store.create(input, identity)));
+  }));
+}
 
 export function readBody(request: Request): Effect.Effect<unknown, HouseError> {
   return Effect.tryPromise({
@@ -66,5 +65,5 @@ export function run(program: Effect.Effect<Response, HouseError>): Promise<Respo
 }
 
 export const call = <A>(task: () => Promise<A>) => Effect.tryPromise({
-  try: task, catch: () => failure(503, "The house is temporarily unavailable. Try again."),
+  try: task, catch: (error) => error instanceof HouseError ? error : failure(503, "The house is temporarily unavailable. Try again."),
 });

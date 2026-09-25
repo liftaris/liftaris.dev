@@ -23,6 +23,7 @@ try {
   assert.equal((await fetch(url, { redirect: "manual" })).status, 200);
   browser("open", url.href);
   await until("!!document.querySelector('.house[data-ready=true]')");
+  assert.equal(evaluate<string>("location.origin"), url.origin, "Refusing an off-origin browser session");
   assert(evaluate<boolean>("!!document.querySelector('[data-object=leave-gift]')"), "A present object is the gift entrypoint");
   assert(!evaluate<boolean>("!!document.querySelector('.house-composer')"), "No inline composer on the homepage");
   browser("focus", "[data-object=leave-gift]");
@@ -117,8 +118,8 @@ try {
   assert(evaluate<boolean>(`(async()=>{
     const id=window.createdGifts[1];
     const publicScene=await window.nativeFetch('/api/house').then(r=>r.json());
-    const stranger=await window.nativeFetch('/api/house/gifts/'+id).then(r=>r.json());
-    return publicScene.gifts.find(g=>g.id===id).message===null && stranger.message===null && !stranger.canReclaim;
+    const stranger=await window.nativeFetch('/api/house/gifts/'+id,{credentials:'omit',cache:'no-store'}).then(r=>r.json());
+    return publicScene.gifts.find(g=>g.id===id).message===null && stranger.message===null && !stranger.canReclaim && !stranger.canEdit;
   })()`), "Private text and ownership are not exposed to other visitors");
   browser("click", "[aria-label='Close gift']");
   await until("!document.querySelector('.object-window')");
@@ -152,9 +153,11 @@ try {
   try {
     assert(evaluate<boolean>(`(async()=>{
       for(const id of new Set(window.createdGifts ?? [])) {
-        const r=await window.nativeFetch('/api/house/gifts/'+id,{method:'DELETE',headers:{Authorization:'Bearer '+localStorage.getItem('kaio.house.visitor')}});
+        if(location.origin!==${JSON.stringify(url.origin)})throw Error('Refusing off-origin cleanup');
+        const r=await window.nativeFetch('/api/house/gifts/'+id,{method:'DELETE',credentials:'same-origin',redirect:'error'});
         if(!r.ok)throw Error('Cleanup failed: '+r.status);
         if((await r.json()).gifts.some(g=>g.id===id))return false;
+        if((await window.nativeFetch('/api/house/gifts/'+id,{credentials:'same-origin',cache:'no-store',redirect:'error'})).status!==404)return false;
       }return true;
     })()`));
   } catch (error) { console.error("Gift cleanup failed", error); process.exitCode = 1; }

@@ -1,6 +1,10 @@
 # The shared house: homepage clump and visitor gifts
 
-Implementation specification, September 24, 2026. Scene 01, the clump, with object-sized collision bodies is integrated into the homepage. The gift UI, Better Auth anonymous visitors, Effect services, SQLite House Durable Object, Jev suggestions, and Alchemy preview stack are implemented. See [deployment setup](portfolio-deployment.md) for hosted bindings, secrets, and local verification commands.
+Current architecture: native EmDash accounts, CMS-stored gifts, and HTTP-only
+interactions. Scene 01, the clump with object-sized collision bodies, remains the
+homepage experience. See [deployment setup](portfolio-deployment.md) and the
+[legacy-data cutover gate](legacy-gift-retirement.md). This branch does not deploy
+itself or automatically migrate old identities, ownership, or House gifts.
 
 ## Confirmed experience
 
@@ -10,7 +14,11 @@ Personal objects remain in the clump. Visitors can leave emoji gifts that join t
 
 Use the prototype's object-sized footprints rather than small peg colliders. Gifts appear immediately after successful submission, with no approval queue. Every gift remains until its sender or Kaio removes it: no automatic expiry or archival.
 
-Visitors are not accounts. A returning browser gets a stable anonymous animal name by default, in the spirit of Google Docs. A visitor may use a chosen display name instead. Those names are attribution, not verified identities.
+Visitors receive real native EmDash accounts automatically, without a signup
+form. A returning authenticated browser keeps its anonymous animal name, in the
+spirit of Google Docs. A visitor may use a chosen display name for attribution;
+names are neither verified identities nor proof of ownership. Anonymous accounts
+must not receive CMS editorial or administrative permissions.
 
 A gift consists of one chosen emoji, optional text, an attribution name, and a creation date. The sender chooses whether included text is public or visible only to Kaio and the sender. The emoji remains in the public pile in either case.
 
@@ -48,7 +56,12 @@ A tap or click opens the gift; dragging rearranges it. A small movement threshol
 
 The selected emoji sits at the upper-left corner of a draggable window containing its permitted message, attribution, and date. This is a local viewing interaction: opening a gift does not change shared membership. Hide its resting artwork while the window is open, preserving its local physics body and place in the clump.
 
-The card includes a reclaim action only when the server recognizes the current browser as the creator. Owner removal is separately authorized. Reclaiming removes the gift and its associated message and broadcasts the public removal. If another device removes a gift while its card is open, retain the already loaded card and local object until that visitor closes it, then fade and remove the object. A dragged gift is likewise retained until release. Server deletion is immediate; deleted private text is not fetched again or added to public caches.
+The card includes a reclaim action only when the server recognizes the current
+native user as the creator. Owner removal is separately authorized. Reclaiming
+removes the gift and its associated message through HTTP, then updates the local
+view. There is no broadcast to other browsers: their view can remain stale until
+another read or reload. Missing-gift responses must be handled without exposing
+deleted private text or disrupting an active local interaction.
 
 Use a non-modal WinBox window: the page remains interactive and multiple objects can stay open together. Clicking the corner icon, minimize, ×, and Escape collapse the window back to its source icon; none of these actions reclaims a gift. Return keyboard focus to that icon, or to the composer if the gift has departed. The emoji in the pile has an accessible name identifying it as a gift; visible attribution is confined to the window. No new adjacent author icon is introduced. Color is the requested resting visual distinction; focus and screen-reader semantics still communicate interactivity.
 
@@ -58,55 +71,100 @@ Use a non-modal WinBox window: the page remains interactive and multiple objects
 
 `ObjectWindow` mounts React content into WinBox's body and loads the library only in the browser. Titlebar arrows provide keyboard movement. Windows stay within the viewport, with a scrollable body on narrow or short screens; reduced-motion users skip the collapse animation. The computer and briefcase reuse the existing content components. Other personal objects have empty window bodies until their content is defined.
 
-Browser checks: `bun scripts/verify-windows-browser.ts http://127.0.0.1:4321` verifies window behavior against a running local server; `bun scripts/verify-house-browser.ts http://127.0.0.1:4321` verifies gift membership and deletion with two local visitors.
+Check window behavior and HTTP gift flows against a disposable local server, not
+the shared hosted CMS. Realtime-reconnect checks from the prior architecture are
+not acceptance criteria for this version.
 
 ## Browser identity and ownership
 
-Better Auth's anonymous plugin creates the visitor and generates an animal name. The bearer session token is saved in localStorage. Public gift IDs and animal names do not grant ownership. Returning visits and other tabs on the same origin reuse the browser identity; Web Locks serialize initialization across supported browsers. Identity is created when the visitor first engages with the composer or places an object, rather than registering every passive page view.
+EmDash's native user repository and Astro/EmDash sessions establish the visitor
+identity with an animal name.
+Identity is established when needed for the gift interaction, not through a
+separate Better Auth database or a signup form. Preserve an existing valid CMS
+session instead of replacing it with an anonymous account. Bootstrap must not
+bypass first-admin setup or grant the first passive visitor administrative access.
 
-Ownership is scoped to the browser profile and site origin, not the physical device. A different browser, private session, or cleared storage creates a new visitor. No cross-device recovery or sign-in is implied. If storage is unavailable, do not quietly claim that the gift will remain reclaimable on a future visit.
+Ownership is the gift's native EmDash author ID, authorized by the current native
+session. HttpOnly cookies carry the credential; no bearer token belongs in
+localStorage, URLs, rendered attributes, or analytics. A different origin/profile,
+cookie expiry, or cleared site data can lose access. Do not promise permanent
+ownership, a 100-year lifetime, or cross-device recovery without a supported
+native authentication flow.
 
-The bearer credential authorizes creation, reclaiming, and access to the sender's private messages. It travels in an Authorization header, never a URL, rendered attribute, public payload, or analytics event. Gift attribution is a snapshot, so choosing a name for a later gift does not retroactively identify older anonymous gifts. Visitor routes strip incoming and outgoing cookies; clearing localStorage does not silently restore visitor identity from a cookie. EmDash owner cookies are handled separately.
+Cookie-authorized mutations require same-origin/CSRF checks. Gift attribution is
+a snapshot: choosing a different display name later does not change ownership or
+retroactively identify older gifts. The public gift API remains narrower than the
+CMS admin API; an anonymous account must not gain collection-writing privileges
+outside the authorized gift commands.
 
-### Anonymous identity library research
+### Legacy identity cutoff
 
-**Better Auth is the closest library fit.** Its [Anonymous plugin](https://better-auth.com/docs/plugins/anonymous) creates an identity and session without asking visitors for an email, password, or OAuth sign-in. Its `generateName` hook can produce animal aliases. Internally it creates a user record and a generated placeholder email; the public experience remains a visitor with no account UI. It is [MIT licensed](https://github.com/better-auth/better-auth), has [official Astro integration](https://better-auth.com/docs/integrations/astro), and [native D1 support](https://better-auth.com/blog/1-5#cloudflare-d1-support).
-
-The [Bearer plugin](https://better-auth.com/docs/plugins/bearer) supports localStorage tokens and Authorization headers, matching the user's storage preference. Conventional HttpOnly cookie sessions are the simpler default library integration and keep the credential inaccessible to page JavaScript; choosing them would be a deliberate change from the user's localStorage preference. Neither storage method provides recovery after the only credential is removed.
-
-The user accepted losing ownership when browser storage is cleared and requested no practical expiry. Better Auth requires a finite date: stored bearer sessions last 100 years, renewed near expiry through supported database hooks. Its temporary cookie serializer limits Max-Age to 400 days; that internal cookie uses the shorter lifetime and is discarded by the visitor route. Regression tests cover the stored 100-year lifetime and renewal. No recovery code, sign-in flow, or account upgrade UI is included.
-
-Better Auth handles visitor identities/sessions in the separate `VISITOR_DB` D1 database; the House Durable Object stores gifts. Object positions and physics remain local to each page. Visitor routes and identity resolution remain separate from EmDash's owner authentication and do not overwrite the CMS's `locals.user`. Effect resolves the authenticated visitor and configured CMS owner for each protected command.
-
-[Supabase anonymous auth](https://supabase.com/docs/guides/auth/auth-anonymous) and [Firebase anonymous auth](https://firebase.google.com/docs/auth/web/anonymous-auth) were also considered. Better Auth keeps the implementation on Cloudflare.
+Old Better Auth users and House gifts remain in their original storage until a
+separate migration is approved and verified. Native cookies do not recover old
+localStorage bearer ownership. A credential-verified identity bridge or an
+explicitly approved legacy-auth cutoff is required before claiming continuity.
+Names and submitted old IDs cannot serve as the bridge. See the retirement notes;
+this refactor provides neither an importer nor permission to delete old data.
 
 ## Public and private data
 
-Public gift data contains its opaque ID, emoji ID, displayed author name, server-created date, and public text when applicable. Private text never appears in the page HTML, hydration data, public snapshots, WebSocket events, or a shared cache.
+Public gift data contains its opaque ID, emoji ID, displayed author name,
+server-created date, and public text when applicable. Private text never appears
+in page HTML, hydration data, public snapshots, generic public CMS responses,
+search results, or shared caches.
 
-Retrieve private text through an authorized, non-cacheable endpoint. The sender proves ownership with the chosen visitor credential; Kaio uses the existing EmDash session plus an explicit configured owner identity. Being another authenticated CMS user is not sufficient. This does not introduce sign-in for portfolio visitors.
+Retrieve private text through an authorized, non-cacheable endpoint. Both sender
+and owner use native EmDash sessions; sender access compares the stored author ID,
+and owner access additionally matches the exact configured `HOUSE_OWNER_ID`.
+Being another authenticated CMS user is not sufficient. Empty owner configuration
+grants nobody owner privileges. This does not introduce signup UI for visitors.
 
-The installed EmDash middleware performs soft authentication on public routes, providing an integration point for the owner view. Verify cookie scope, owner checks, and API behavior during implementation. Cookie-authorized owner mutations retain origin/CSRF protection. Render visitor names and messages as plain text.
+EmDash middleware provides native authentication on public routes. Verify cookie
+scope, owner checks, first-admin protection, and generic CMS API exposure. Restrict
+editorial access to the gift collection so a secondary CMS account cannot bypass
+gift privacy through admin routes. Render visitor names and messages as plain text.
 
 ## State, storage, and concurrent visitors
 
-One `House` Durable Object coordinates this portfolio's shared scene and stores its authoritative records in its own SQLite-backed storage. Keep EmDash's existing D1 database for CMS content. D1 and Durable Object SQLite are separate storage choices; the gift feature does not need duplicate writes to both. [Cloudflare storage comparison](https://developers.cloudflare.com/durable-objects/best-practices/access-durable-objects-storage/#sql-in-durable-objects-vs-d1).
+EmDash's `gifts` collection in the existing `DB` is authoritative. Use native
+content records and native author IDs, not a parallel custom gift store or a
+Durable Object copy. The HTTP service validates commands, enforces ownership and
+privacy, and projects only the fields each caller is allowed to read.
 
-Records include gifts, optional messages, a monotonic collection revision, rate limits, and creation receipts. Identity credentials live in separate visitor auth storage. Original portfolio objects and visitor gifts have distinct kinds, so a reclaim command cannot delete a built-in object. Gift creation and deletion are transactional. Creation receipts retain a payload hash after withdrawal so retrying a lost response cannot resurrect a removed gift or retain its deleted message.
+Original portfolio objects and visitor gifts have distinct kinds, so reclaiming
+cannot delete a built-in object. Preserve atomic create/delete semantics and safe
+duplicate-submit behavior without introducing another identity service or a
+realtime replication system. Deleted private text must not survive in public
+responses or retry payloads.
 
-All visitors can rearrange their own local clump. Only collection membership is shared: new gifts and withdrawals eventually propagate to other visitors. There are no placement commands, shared poses, movement conflicts, live multiplayer physics, presence counts, or cursors.
+All visitors can rearrange their own local clump. The database stores shared gift
+membership, not poses. Fetch the collection through ordinary HTTP and refresh the
+current browser after its successful mutations. Other browsers see changes on a
+subsequent read or reload, not a push. No WebSockets, SSE, polling loop, presence
+counts, cursors, placement commands, or shared physics are needed.
 
 Each local scene starts at 500 × 600 and grows with the pile; a scrollable viewport preserves access to gifts as it grows. Membership reconciliation adds/removes only the affected bodies, without rewriting existing transforms, scaling the arrangement, shrinking the stage, or canceling an active grab. Reloading starts a fresh local arrangement.
 
-Pinned experimental `partysync@2.1.0` runs over PartyServer hibernation WebSockets and PartySocket. The server emits one permanent collection record containing the public gift snapshot, assembled from individual SQL rows in JavaScript rather than a size-limited SQLite aggregate. Replacing this whole row also replaces collection membership, so missed deletions do not survive PartySync’s incremental record merge. Reconnect requests the authoritative collection; returning to the foreground starts a fresh connection even if the old socket appears open, and clients ignore older revisions. WebSocket clients can only request this channel, never execute actions, submit updates, or query private tables. Creation and reclaiming remain authenticated HTTP commands. Send private message bodies through their separate authorized endpoint, not the shared room broadcast. [Cloudflare WebSockets](https://developers.cloudflare.com/durable-objects/best-practices/websockets/).
+PartySync, PartyServer, PartySocket, and the active House service are retired.
+Keep only the inert class export and deployment history needed to retain legacy
+storage pending migration. Do not build a notification relay as a replacement.
 
 ## Effect and Alchemy boundary
 
 Effect owns command validation, authorization, TypeSafe calls, storage services, concurrency errors, and retry/cancellation boundaries. Matter retains its imperative numerical loop and transform rendering.
 
-Alchemy describes the House Durable Object, Worker integration, bindings, migrations, and secrets. Hosted previews share production's EmDash CMS database and media library, while visitor, session, and House state remain separate. Do not clone or adopt the shared CMS resources, run another first-admin setup, or use preview CMS access for destructive testing. Preserve the EmDash request handler, scheduled publishing handler, DB/MEDIA/SESSION bindings, media access, custom domains, and image plugin. Only production runs the CMS publishing cron. The current Alchemy Astro integration supplies its own adapter, so adopting it requires deliberate integration rather than adding a second adapter. [Alchemy Astro integration](https://alchemy.run/cloudflare/frontend/astro/).
+Wrangler describes the active Worker, `DB` / `MEDIA` / `SESSION`, setup and Jev
+secrets, and owner ID. Hosted previews share production CMS users, gifts, content,
+and media; only their session KV binding stays environment-specific. Do not run a
+second setup or use preview for destructive tests. Preserve EmDash's request and
+scheduled handlers, custom domains, media access, and image plugin. Only production
+runs the publishing cron.
 
-Pinned dependencies are Effect 4.0.0-rc.117, Alchemy 2.0.0-beta.79, Better Auth 1.7.5, and TypeSafe SDK 0.6.0. The Alchemy stack consumes the current adapter's prebuilt Worker, preserving EmDash's request and scheduled handlers without changing production CMS ownership.
+The Alchemy stack still consumes the prebuilt Worker and references CMS/media
+without managing their lifecycle. Its temporary unbound `Visitors` declaration
+and inert `HOUSE` binding are preservation holds, not app dependencies. Removing
+them without the [staged retirement](legacy-gift-retirement.md) can destroy legacy
+data. Do not plan/deploy this transitional stack as a build check.
 
 ## Confirmed product decisions
 
@@ -117,28 +175,27 @@ Pinned dependencies are Effect 4.0.0-rc.117, Alchemy 2.0.0-beta.79, Better Auth 
 | Included-message audience | Public by default; sender can choose Kaio and sender only |
 | Publishing | Immediate; Kaio can remove unwanted gifts |
 | Retention | Keep every gift until its sender or Kaio removes it |
-| Shared membership | Additions and deletions sync; movement and physics stay local |
+| Shared membership | CMS-backed HTTP snapshots; no realtime sync; movement and physics stay local |
 
 Retaining all gifts means crowding is a layout and performance constraint, not permission to hide or expire older gifts. Prototype growth with larger piles and choose a spatial treatment that preserves access to every gift. Any later capacity limit or archival policy is a separate product decision.
 
-## Implementation sequence and verification
+## Verification requirements
 
-1. Integrate the selected clump into the existing blue homepage, with site-scoped styles and the minimal composer/card flow. Keep the lab available for tuning. Parameterize the engine's object collection so gifts can be added and removed without rebuilding the whole scene.
-2. Add Effect schemas and services for browser identity, public gift data, private message access, creation, and reclaiming. Establish migrations and a working local Durable Object boundary.
-3. Integrate debounced Jev suggestions behind a server endpoint with local fallback and stale-result protection.
-4. Synchronize public collection membership, refresh on reconnect, and preserve active inspection/dragging through deletion. Keep movement local.
-5. Verify desktop/mobile layout, click-versus-drag, keyboard completion of the entire flow, non-modal window focus/stacking, reduced motion, and the existing color-sprite fix. Check actual private/public payloads and cross-visitor permissions, not just hidden UI controls.
+- Native anonymous user/session creation, cookie security, restoration across
+  reloads, existing CMS session preservation, and protected first-admin setup.
+- Real CMS gift persistence and author linkage, private/public projection, exact
+  owner authorization, CSRF rejection, and denial of other users' reclaim/detail
+  requests, including direct generic CMS API attempts.
+- Safe submit/retry and delete behavior, no deleted private text in responses,
+  independent local arrangements, and HTTP-only network traffic.
+- Debounced Jev suggestions with local fallback, cancellation and stale-result
+  protection; credentials and drafts must not leak into public records.
+- Desktop/mobile layout, click-versus-drag, keyboard completion, window focus and
+  stacking, reduced motion, and no new horizontal overflow.
+- Existing CMS pages, media, request/scheduled handlers, and static preview-config
+  checks. Passing old Better Auth/socket tests is not evidence for this version.
 
-Required cases include duplicate-submit retries, independent local arrangements, gift withdrawal while another visitor reads it, identity persistence across reloads/tabs, stale suggestion responses, disconnected reconnection, and attempts to reclaim another browser's gift or read its private message. Validate the existing CMS and scheduled handler after any deployment integration change.
-
-## Initial implementation verification (before collection-only sync)
-
-The 47-test suite passes, including real Better Auth session creation/restoration/renewal against the checked-in SQLite schema, exact CMS owner identity matching, privacy, reclaim authorization, transactional rollback, idempotency, revision conflicts, and dynamic gift physics.
-
-Live local API checks used two anonymous visitors and the actual Durable Object. They verified the stored 100-year lifetime, cookie-free visitor responses, private detail access, public snapshot/socket redaction, unauthorized removal rejection, duplicate creation, withdrawal retry, placement conflicts, and Jev suggestions using the supplied key.
-
-Chromium checks covered desktop/mobile creation, public/private cards, reclaiming, modal focus, reduced motion, keyboard placement, real touch dragging, and another browser receiving the accepted pose. Responsive and short-window checks found no horizontal overflow or covered composer. Authoritative placements interpolate for 360 ms; grabbing during interpolation starts from the visible pose. Reduced motion skips that interpolation. The dialog artwork moves independently of its scrollable message body.
-
-Owner policy and owner operations pass isolated tests. A full signed-in EmDash owner browser check was not performed: automatic approval review rejected obtaining a local CMS session cookie for that test. The local `HOUSE_OWNER_ID` was subsequently configured from the existing local CMS administrator record using a read-only ID lookup, without obtaining a session cookie. Hosted environments need their own exact administrator ID. This test limitation does not affect visitor creation, private access to their own messages, or reclaiming.
-
-The compiled production Worker also passed the two-visitor integration checks under local Wrangler. Its local upstream must be explicit when testing with production custom-domain routes, otherwise Wrangler can forward a canonical-host redirect. Tests used `--local-upstream 127.0.0.1:8787 --upstream-protocol http`, and rejected redirects.
+Exercise mutations only on disposable local storage. Hosted checks require
+separate approval because preview shares the live CMS. Legacy migration must
+verify actual source/import counts and ownership mappings; retaining resources
+alone is not migration verification.

@@ -1,5 +1,7 @@
 import type { APIRoute } from "astro";
-import { Effect } from "effect";
-import { json, run, viewer } from "../../../server/house/http";
+import { env } from "cloudflare:workers";
+import { visitorResponse } from "../../../server/house/visitor";
 
-export const GET: APIRoute = (context) => run(viewer(context).pipe(Effect.map((value) => json(value))));
+export const prerender = false;
+export const GET: APIRoute = (context) => visitorResponse(context, env.HOUSE_OWNER_ID);
+export const POST: APIRoute = (context) => visitorResponse(context, env.HOUSE_OWNER_ID);

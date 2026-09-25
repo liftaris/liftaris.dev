@@ -22,26 +22,16 @@
       "binding": "DB",
       "database_name": "liftaris-emdash",
       "database_id": "0e886ca8-384e-4090-8035-c187268c7da7"
-    },
-    {
-      "binding": "VISITOR_DB",
-      "database_name": "liftaris-visitors",
-      // Local-only sentinel. Provision a separate production D1 database and
-      // replace this ID before deploying this Wrangler-owned Worker.
-      "database_id": "00000000-0000-0000-0000-000000000001",
-      "migrations_dir": "migrations/visitor-auth"
     }
   ],
-  "durable_objects": {
-    "bindings": [
-      { "name": "HOUSE", "class_name": "House" }
-    ]
-  },
+  // Historical namespace only: keep the inert House export and migration.
+  // No runtime binding or deleted_classes migration; legacy data is not migrated.
+  // See docs/legacy-gift-retirement.md before changing this history.
   "migrations": [
     { "tag": "house-v1", "new_sqlite_classes": ["House"] }
   ],
   "vars": {
-    "HOUSE_OWNER_ID": ""
+    "HOUSE_OWNER_ID": "01M366VZ20X87M0WMW2Y846Z0Y"
   },
   "r2_buckets": [
     {
@@ -69,12 +59,11 @@
     "unsafe": {
       "bindings": [
         { "name": "EMDASH_SETUP_KEY", "type": "inherit" },
-        { "name": "VISITOR_AUTH_SECRET", "type": "inherit" },
         { "name": "JEV_API_KEY", "type": "inherit" }
       ]
     },
     "vars": {
-      "HOUSE_OWNER_ID": ""
+      "HOUSE_OWNER_ID": "01M366VZ20X87M0WMW2Y846Z0Y"
     },
     "kv_namespaces": [
       {
@@ -88,12 +77,6 @@
         // One CMS and media library serve production and branch previews.
         "database_name": "liftaris-emdash",
         "database_id": "0e886ca8-384e-4090-8035-c187268c7da7"
-      },
-      {
-        "binding": "VISITOR_DB",
-        "database_name": "liftaris-preview-visitors",
-        "database_id": "c9850c71-4143-4490-ab8d-28d487c4fb00",
-        "migrations_dir": "migrations/visitor-auth"
       }
     ],
     "r2_buckets": [
@@ -101,17 +84,11 @@
         "binding": "MEDIA",
         "bucket_name": "liftaris-emdash-media"
       }
-    ],
-    "durable_objects": {
-      "bindings": [
-        { "name": "HOUSE", "class_name": "House" }
-      ]
-    }
+    ]
   },
   "secrets": {
     "required": [
       "EMDASH_SETUP_KEY",
-      "VISITOR_AUTH_SECRET",
       "JEV_API_KEY"
     ]
   }

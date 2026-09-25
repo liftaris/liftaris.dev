@@ -9,6 +9,7 @@ type ObjectWindowProps = {
   title: string;
   icon: string;
   source: HTMLButtonElement;
+  fallbackSource?: () => HTMLButtonElement | null;
   origin: DOMRect;
   monochrome?: boolean;
   closeLabel?: string;
@@ -21,7 +22,7 @@ type ObjectWindowProps = {
   children?: ReactNode;
 };
 
-export function ObjectWindow({ title, icon, source, origin, monochrome = false, closeLabel = "Close window", width = 480, height = 380, canClose = true, initialBounds, onReady, onClose, children }: ObjectWindowProps) {
+export function ObjectWindow({ title, icon, source, fallbackSource, origin, monochrome = false, closeLabel = "Close window", width = 480, height = 380, canClose = true, initialBounds, onReady, onClose, children }: ObjectWindowProps) {
   const [body, setBody] = useState<HTMLElement | null>(null);
   const [error, setError] = useState(false);
   const close = useRef(onClose);
@@ -30,6 +31,8 @@ export function ObjectWindow({ title, icon, source, origin, monochrome = false, 
   closeAllowed.current = canClose;
   const ready = useRef(onReady);
   ready.current = onReady;
+  const fallback = useRef(fallbackSource);
+  fallback.current = fallbackSource;
   useLayoutEffect(() => { if (body) ready.current?.(); }, [body]);
 
   // Capture focus before React removes portal children on parent-driven close.
@@ -38,6 +41,7 @@ export function ObjectWindow({ title, icon, source, origin, monochrome = false, 
     let instance: WinBox | undefined;
     let restoreFocus = false;
     let detach = () => {};
+    const returnTarget = () => source.isConnected && source.dataset.removing !== "true" ? source : fallback.current?.();
     // WinBox's template accesses document when the module loads.
     void import("winbox/src/js/winbox.js").then(({ default: WinBox }) => {
       if (disposed) return;
@@ -68,7 +72,7 @@ export function ObjectWindow({ title, icon, source, origin, monochrome = false, 
           const finish = () => { if (!disposed) close.current(); };
           if (matchMedia("(prefers-reduced-motion: reduce)").matches) finish();
           else {
-            const target = source.getBoundingClientRect();
+            const target = returnTarget()?.getBoundingClientRect() ?? origin;
             const rect = frame.getBoundingClientRect();
             frame.style.pointerEvents = "none";
             void frame.animate([
@@ -155,10 +159,7 @@ export function ObjectWindow({ title, icon, source, origin, monochrome = false, 
       disposed = true;
       detach();
       instance?.close(true);
-      if (restoreFocus) {
-        if (source.isConnected && source.dataset.removing !== "true") source.focus({ preventScroll: true });
-        else document.querySelector<HTMLButtonElement>('[data-object="leave-gift"]')?.focus({ preventScroll: true });
-      }
+      if (restoreFocus) returnTarget()?.focus({ preventScroll: true });
     };
   }, [title, icon, source, origin, monochrome, closeLabel, width, height, initialBounds]);
 

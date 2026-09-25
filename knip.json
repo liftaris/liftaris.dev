@@ -13,6 +13,7 @@
   ],
   "ignore": [
     "**/*.test.{ts,tsx}",
+    "src/server/house/cms-test-db.ts",
     "**/*.config.{js,mjs,ts}"
   ],
   "ignoreDependencies": [

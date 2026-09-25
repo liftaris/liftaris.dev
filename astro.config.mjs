@@ -10,6 +10,12 @@ export default defineConfig({
   site: "https://www.liftaris.dev",
   output: "server",
   adapter: cloudflare({ imageService: "passthrough" }),
+  session: {
+    // Astro forces HttpOnly and defaults Secure to true in production. Keep the
+    // native owner cookie browser-scoped; only visitor bootstrap adds Max-Age
+    // and a per-key TTL, so visiting the house never extends an admin session.
+    cookie: { name: "astro-session", path: "/", sameSite: "lax" },
+  },
   redirects: {
     "/work": { destination: "/experience", status: 307 },
     "/posts": { destination: "/", status: 307 },

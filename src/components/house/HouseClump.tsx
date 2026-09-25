@@ -6,6 +6,7 @@ import type { ObjectSpec, Point, SceneEngine } from "../clump/model";
 import { giftObjects, worldSize } from "../../lib/house/emoji";
 import type { Gift } from "../../lib/house/types";
 import { reconcileGifts, retiringGiftIds } from "./gift-presence";
+import { PORTFOLIO_FOLDER_OBJECT } from "./folders";
 
 type Grab = { id: string; point: Point; origin: Point; moved: boolean; pointerId?: number };
 const INITIAL_SIZE = { width: 500, height: 600 };
@@ -29,7 +30,7 @@ export function HouseClump({ gifts, inspectedIds, onOpen }: {
   const [scale, setScale] = useState(1);
   const [size, setSize] = useState(INITIAL_SIZE);
   const bounds = useRef(INITIAL_SIZE);
-  const objects = useMemo(() => [...OBJECTS, GIFT_ENTRY, ...giftObjects(displayed)], [displayed]);
+  const objects = useMemo(() => [...OBJECTS, PORTFOLIO_FOLDER_OBJECT, GIFT_ENTRY, ...giftObjects(displayed)], [displayed]);
   const retiring = retiringGiftIds(displayed, gifts, [...inspectedIds, grabId]);
   const liveIds = new Set(gifts.map((gift) => gift.id));
 

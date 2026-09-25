@@ -4,8 +4,9 @@ import { createGift, ensureVisitor, getGift, suggestEmoji } from "../../lib/hous
 import { EMOJI_CATALOG, findEmoji, localSuggestions } from "../../lib/house/emoji";
 import type { Audience, EmojiOption, GiftDetail, HouseSnapshot, Visitor } from "../../lib/house/types";
 
-export function GiftComposer({ onGift, onSavingChange }: {
-  onGift: (snapshot: HouseSnapshot, gift: GiftDetail, bounds: DOMRect) => void;
+export function GiftComposer({ onGift, onSnapshot, onSavingChange }: {
+  onGift: (gift: GiftDetail, bounds: DOMRect) => void;
+  onSnapshot: (snapshot: HouseSnapshot) => void;
   onSavingChange: (saving: boolean) => void;
 }) {
   const [text, setText] = useState("");
@@ -66,9 +67,10 @@ export function GiftComposer({ onGift, onSavingChange }: {
     try {
       setVisitor(await ensureVisitor());
       const snapshot = await createGift({ ...draft, requestId: pending.current.id });
+      onSnapshot(snapshot);
       if (!snapshot.createdGiftId) throw new Error("This gift has already been taken back. Change your draft to leave a new one.");
       const gift = await getGift(snapshot.createdGiftId);
-      onGift(snapshot, gift, preview.current!.getBoundingClientRect());
+      onGift(gift, preview.current!.getBoundingClientRect());
       pending.current = null;
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Your gift couldn’t be left. Please try again.");

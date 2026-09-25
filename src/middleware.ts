@@ -1,5 +1,6 @@
 import { defineMiddleware } from "astro:middleware";
 import { env } from "cloudflare:workers";
+import { cmsVisitorGuard, visitorDb } from "./server/house/visitor";
 
 // Protect first-admin registration on the public site until the owner creates
 // their passkey. Afterwards EmDash's normal session authentication takes over.
@@ -10,11 +11,24 @@ export const onRequest = defineMiddleware(async (context, next) => {
     canonical.protocol = "https:";
     return context.redirect(canonical.href, 308);
   }
-  if (import.meta.env.DEV || !context.url.pathname.startsWith("/_emdash/")) return next();
-  const option = await context.locals.emdash?.db
-    .selectFrom("options").select("value")
-    .where("name", "=", "emdash:setup_complete").executeTakeFirst();
-  if (option && [true, "true"].includes(JSON.parse(option.value))) return next();
+  let cmsPath: boolean;
+  try { cmsPath = decodeURIComponent(context.url.pathname).replace(/\/{2,}/g, "/").startsWith("/_emdash"); }
+  catch { return new Response("Invalid path.", { status: 400 }); }
+  const guardedNext = async () => await cmsVisitorGuard(context, env.HOUSE_OWNER_ID) ?? next();
+  if (!cmsPath) return guardedNext();
+  context.cache.set(false);
+  // Only the initial setup flow bypasses the owner perimeter, behind the
+  // pre-existing private setup key. DEV is not an auth bypass after setup.
+  let setupComplete = false;
+  try {
+    const option = await (await visitorDb(context)).selectFrom("options").select("value")
+      .where("name", "=", "emdash:setup_complete").executeTakeFirst();
+    setupComplete = !!option && ["true", '"true"'].includes(option.value);
+  } catch {
+    return new Response("CMS setup could not be checked. Try again.", { status: 503, headers: { "Cache-Control": "no-store" } });
+  }
+  if (setupComplete) return guardedNext();
+  if (import.meta.env.DEV) return next();
 
   const secret = env.EMDASH_SETUP_KEY;
   const provided = context.url.searchParams.get("setup_key") || context.cookies.get("liftaris_setup")?.value;
