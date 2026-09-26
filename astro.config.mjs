@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 export default defineConfig({
   site: "https://www.liftaris.dev",
   output: "server",
-  adapter: cloudflare({ imageService: "passthrough" }),
+  adapter: cloudflare({ imageService: "cloudflare-binding" }),
   session: {
     // Astro forces HttpOnly and defaults Secure to true in production. Keep the
     // native owner cookie browser-scoped; only visitor bootstrap adds Max-Age

@@ -38,6 +38,9 @@
       "bucket_name": "liftaris-emdash-media"
     }
   ],
+  "images": {
+    "binding": "IMAGES"
+  },
   "triggers": {
     "crons": [
       "* * * * *"
@@ -84,7 +87,10 @@
         "binding": "MEDIA",
         "bucket_name": "liftaris-emdash-media-preview"
       }
-    ]
+    ],
+    "images": {
+      "binding": "IMAGES"
+    }
   },
   "secrets": {
     "required": [
