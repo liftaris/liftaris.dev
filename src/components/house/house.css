@@ -42,6 +42,8 @@
   -webkit-tap-highlight-color: transparent;
   line-height: 1;
 }
+.house-object[data-shape="circle"] { border-radius: 50%; }
+.house-object[data-has-bg="true"] { overflow: hidden; }
 .house-object[data-grabbed="true"] { z-index: 3; cursor: grabbing; }
 .house-object[data-window-open="true"] { opacity: 0; pointer-events: none; }
 /* Transform/visibility belong to the local renderer, not React snapshots. */

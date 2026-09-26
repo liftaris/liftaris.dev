@@ -3,12 +3,16 @@ import { sql, type Kysely } from "kysely";
 import { DEFAULT_THINGS } from "../../components/house/folders";
 
 const giftSchemaVersion = 2;
-const thingsSchemaVersion = 3;
+const thingsSchemaVersion = 4;
 
 export const thingFields: readonly CreateFieldInput[] = [
   { slug: "name", label: "Name", type: "string", required: true, searchable: true },
   { slug: "emoji", label: "Icon (Emoji)", type: "string", required: false, defaultValue: "📦" },
   { slug: "image", label: "Icon Image / GIF", type: "image", required: false, searchable: false },
+  { slug: "background_image", label: "Background Image", type: "image", required: false, searchable: false },
+  { slug: "background_size", label: "Background Size", type: "select", defaultValue: "cover", validation: { options: ["cover", "contain", "auto", "100% 100%", "50%", "75%", "150%", "200%"] }, searchable: false },
+  { slug: "background_position", label: "Background Position", type: "select", defaultValue: "center", validation: { options: ["center", "top", "bottom", "left", "right", "top left", "top right", "bottom left", "bottom right"] }, searchable: false },
+  { slug: "background_repeat", label: "Background Repeat (Tile)", type: "select", defaultValue: "no-repeat", validation: { options: ["no-repeat", "repeat", "repeat-x", "repeat-y", "round", "space"] }, searchable: false },
   { slug: "kind", label: "Kind", type: "select", defaultValue: "object", validation: { options: ["object", "folder", "link", "action"] }, searchable: true },
   { slug: "desktop", label: "Show on desktop", type: "boolean", defaultValue: false, searchable: false },
   { slug: "parent_id", label: "Parent folder", type: "string", searchable: false },
@@ -71,10 +75,13 @@ export async function initializeThingsCollection(db: Kysely<Database>): Promise<
       if (exists.rows.length === 0) {
         await sql`INSERT INTO ec_things (
           id, slug, status, author_id, created_at, updated_at, published_at, version, locale, translation_group,
-          name, emoji, image, kind, desktop, parent_id, action, href, tint_when_visited, shape, anchor, width, height, sort_order
+          name, emoji, image, background_image, background_size, background_position, background_repeat,
+          kind, desktop, parent_id, action, href, tint_when_visited, shape, anchor, width, height, sort_order
         ) VALUES (
           ${item.id}, ${item.id}, 'published', ${authorId}, ${now}, ${now}, ${now}, 1, 'en', ${item.id},
-          ${item.name}, ${item.emoji}, ${item.image ?? null}, ${item.kind}, ${item.desktop ? 1 : 0}, ${item.parent_id ?? null}, ${item.action ?? "none"}, ${item.href ?? null},
+          ${item.name}, ${item.emoji}, ${item.image ?? null},
+          ${item.background_image ?? null}, ${item.background_size ?? null}, ${item.background_position ?? null}, ${item.background_repeat ?? null},
+          ${item.kind}, ${item.desktop ? 1 : 0}, ${item.parent_id ?? null}, ${item.action ?? "none"}, ${item.href ?? null},
           ${item.tint_when_visited ? 1 : 0}, ${item.shape}, ${item.anchor ? 1 : 0}, ${item.width}, ${item.height}, ${item.sort_order}
         )`.execute(db);
       } else {

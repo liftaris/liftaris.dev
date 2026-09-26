@@ -47,11 +47,32 @@ try {
         imageUrl = emojiVal;
       }
 
+      let bgImageUrl: string | null = null;
+      if (typeof data.background_image === "string" && data.background_image) {
+        bgImageUrl = data.background_image;
+      } else if (data.background_image && typeof data.background_image === "object") {
+        const bgObj = data.background_image as Record<string, unknown>;
+        if (typeof bgObj.src === "string" && bgObj.src) {
+          bgImageUrl = bgObj.src;
+        } else if (typeof bgObj.previewUrl === "string" && bgObj.previewUrl) {
+          bgImageUrl = bgObj.previewUrl;
+        } else if (typeof bgObj.url === "string" && bgObj.url) {
+          bgImageUrl = bgObj.url;
+        } else if (typeof bgObj.id === "string" && bgObj.id) {
+          const key = (bgObj.meta as Record<string, unknown> | undefined)?.storageKey || bgObj.id;
+          bgImageUrl = `/_emdash/api/media/file/${key}`;
+        }
+      }
+
       return {
         id: entry.id,
         name: String(data.name ?? ""),
         emoji: emojiVal,
         image: imageUrl,
+        background_image: bgImageUrl,
+        background_size: data.background_size ? String(data.background_size) : undefined,
+        background_position: data.background_position ? String(data.background_position) : undefined,
+        background_repeat: data.background_repeat ? String(data.background_repeat) : undefined,
         kind,
         desktop: Boolean(data.desktop),
         parent_id: data.parent_id ? String(data.parent_id) : null,

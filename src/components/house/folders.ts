@@ -81,6 +81,11 @@ export function buildFolder(
         name: child.name,
         emoji: child.emoji,
         image: isImg,
+        background_image: child.background_image,
+        background_size: child.background_size,
+        background_position: child.background_position,
+        background_repeat: child.background_repeat,
+        shape: child.shape,
         href: child.href ?? "#",
       });
     } else {
@@ -96,6 +101,11 @@ export function buildFolder(
         name: displayName,
         emoji: child.emoji,
         image: child.image,
+        background_image: child.background_image,
+        background_size: child.background_size,
+        background_position: child.background_position,
+        background_repeat: child.background_repeat,
+        shape: child.shape,
         value: child,
       });
     }

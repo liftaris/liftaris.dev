@@ -1,7 +1,7 @@
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
 import { createSceneEngine } from "../clump/matter-engine";
-import { isImageUrl, OBJECTS } from "../clump/model";
+import { getBackgroundStyle, isImageUrl, OBJECTS } from "../clump/model";
 import type { ObjectSpec, Point, SceneEngine } from "../clump/model";
 import { giftObjects, worldSize } from "../../lib/house/emoji";
 import type { Gift } from "../../lib/house/types";
@@ -259,9 +259,10 @@ export function HouseClump({ gifts, inspectedIds, visitedIds = EMPTY_VISITED, th
           const visited = !isFolder && shouldTint && visitedIds.has(object.id);
           const iconImage = ("image" in object && (object as { image?: string | null }).image)
             || (isImageUrl(object.emoji) ? object.emoji : null);
-          return <button type="button" key={object.id} className="house-object" data-object={object.id} data-gift={Boolean(gift)} data-visited={visited} data-grabbed={grabId === object.id} data-removing={removing} data-window-open={opened}
+          const bgStyle = getBackgroundStyle(object);
+          return <button type="button" key={object.id} className="house-object" data-object={object.id} data-shape={object.shape === "circle" ? "circle" : undefined} data-has-bg={bgStyle ? true : undefined} data-gift={Boolean(gift)} data-visited={visited} data-grabbed={grabId === object.id} data-removing={removing} data-window-open={opened}
             ref={(element) => { if (element) nodes.current.set(object.id, element); else nodes.current.delete(object.id); }}
-            style={{ width: Math.max(44, object.width), height: Math.max(44, object.height), fontSize: Math.max(object.width, object.height) * .87 }}
+            style={{ width: Math.max(44, object.width), height: Math.max(44, object.height), fontSize: Math.max(object.width, object.height) * .87, ...bgStyle }}
             aria-disabled={removing || undefined} tabIndex={removing || opened ? -1 : 0} aria-expanded={opened} aria-haspopup="dialog"
             aria-label={gift ? `${object.name}, gift${gift.authorName === null ? "" : ` from ${gift.authorName}`}. Open gift or use arrow keys to move.` : `${object.name}. Open window or use arrow keys to move.`} aria-describedby="house-movement-help"
             onAnimationEnd={(event) => {

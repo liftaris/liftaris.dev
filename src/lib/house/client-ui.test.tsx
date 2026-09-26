@@ -136,3 +136,123 @@ test("Folder renders <img> for items and links with image icons", () => {
   expect(html).toContain('<span class="folder-entry-art" aria-hidden="true">📝</span>');
 });
 
+test("getBackgroundStyle converts background properties into expected CSS rules", () => {
+  const { getBackgroundStyle } = require("../../components/clump/model");
+
+  expect(getBackgroundStyle(null)).toBeUndefined();
+  expect(getBackgroundStyle(undefined)).toBeUndefined();
+  expect(getBackgroundStyle({})).toBeUndefined();
+  expect(getBackgroundStyle({ background_image: "" })).toBeUndefined();
+
+  // Basic cover with default center and no-repeat
+  const cover = getBackgroundStyle({ background_image: "https://example.com/wallpaper.jpg" });
+  expect(cover).toEqual({
+    backgroundImage: 'url("https://example.com/wallpaper.jpg")',
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
+  });
+
+  // Scale (maps to contain) and custom positioning
+  const scale = getBackgroundStyle({
+    background_image: "/assets/banner.png",
+    background_size: "scale",
+    background_position: "top left",
+    background_repeat: "no-repeat",
+  });
+  expect(scale).toEqual({
+    backgroundImage: 'url("/assets/banner.png")',
+    backgroundSize: "contain",
+    backgroundPosition: "top left",
+    backgroundRepeat: "no-repeat",
+  });
+
+  // Tile (maps to repeat with auto size if not specified)
+  const tile = getBackgroundStyle({
+    background_image: "/assets/grid.svg",
+    background_repeat: "tile",
+  });
+  expect(tile).toEqual({
+    backgroundImage: 'url("/assets/grid.svg")',
+    backgroundSize: "auto",
+    backgroundPosition: "center",
+    backgroundRepeat: "repeat",
+  });
+
+  // Explicit size and repeat-x
+  const repeatX = getBackgroundStyle({
+    background_image: "linear-gradient(to right, red, blue)",
+    background_size: "100% 4px",
+    background_position: "bottom",
+    background_repeat: "repeat-x",
+  });
+  expect(repeatX).toEqual({
+    backgroundImage: "linear-gradient(to right, red, blue)",
+    backgroundSize: "100% 4px",
+    backgroundPosition: "bottom",
+    backgroundRepeat: "repeat-x",
+  });
+});
+
+test("HouseClump applies background style and data-has-bg to desktop objects", () => {
+  const customThings = [
+    {
+      id: "bg-thing",
+      name: "Tiled Thing",
+      emoji: "🎨",
+      background_image: "https://example.com/tile.png",
+      background_repeat: "repeat",
+      background_size: "auto",
+      background_position: "center",
+      width: 60,
+      height: 60,
+      shape: "circle" as const,
+    },
+  ];
+  const scene = renderToStaticMarkup(
+    <HouseClump gifts={[]} inspectedIds={[]} desktopObjects={customThings} onOpen={() => {}} />
+  );
+
+  expect(scene).toContain('data-object="bg-thing"');
+  expect(scene).toContain('data-has-bg="true"');
+  expect(scene).toContain('data-shape="circle"');
+  expect(scene).toContain("background-image:url(&quot;https://example.com/tile.png&quot;)");
+  expect(scene).toContain("background-repeat:repeat");
+});
+
+test("FolderContent applies background styles to folder and folder entries", () => {
+  const { FolderContent } = require("../../components/folder/Folder");
+  const folderSpec = {
+    id: "wallpaper-folder",
+    name: "Wallpaper Folder",
+    emoji: "📁",
+    kind: "folder" as const,
+    background_image: "/images/folder-bg.webp",
+    background_size: "cover",
+    background_position: "center",
+    background_repeat: "no-repeat",
+    items: [
+      {
+        kind: "item" as const,
+        id: "entry-with-bg",
+        name: "Pattern Entry",
+        emoji: "⭐",
+        background_image: "/images/star-pattern.png",
+        background_repeat: "tile",
+        value: { id: "entry-with-bg" },
+      },
+    ],
+  };
+
+  const html = renderToStaticMarkup(<FolderContent folder={folderSpec} />);
+
+  // Folder ul receives folder background
+  expect(html).toContain('data-has-bg="true"');
+  expect(html).toContain("background-image:url(&quot;/images/folder-bg.webp&quot;)");
+  expect(html).toContain("background-size:cover");
+
+  // Entry artwork receives entry background
+  expect(html).toContain("background-image:url(&quot;/images/star-pattern.png&quot;)");
+  expect(html).toContain("background-repeat:repeat");
+});
+

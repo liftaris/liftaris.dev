@@ -4,7 +4,16 @@ export type Point = { x: number; y: number };
 export type Size = { width: number; height: number };
 export type Pose = Point & { id: string; angle: number };
 
-export interface ObjectSpec extends Size {
+import type { CSSProperties } from "react";
+
+export interface BackgroundProps {
+  background_image?: string | null;
+  background_size?: string | null;
+  background_position?: string | null;
+  background_repeat?: string | null;
+}
+
+export interface ObjectSpec extends Size, BackgroundProps {
   id: string;
   name: string;
   emoji: string;
@@ -12,6 +21,47 @@ export interface ObjectSpec extends Size {
   shape: "circle" | "rectangle";
   anchor?: boolean;
   tint_when_visited?: boolean;
+}
+
+export function getBackgroundStyle(props?: BackgroundProps | null): CSSProperties | undefined {
+  if (!props?.background_image) return undefined;
+  const image = props.background_image.trim();
+  if (!image) return undefined;
+
+  const bgImage = image.startsWith("url(") || image.startsWith("linear-gradient(")
+    ? image
+    : `url("${image}")`;
+
+  const rawRepeat = props.background_repeat?.toLowerCase().trim();
+  const isTile = rawRepeat === "tile" || rawRepeat === "repeat";
+  const bgRepeat = isTile
+    ? "repeat"
+    : rawRepeat === "repeat-x" || rawRepeat === "tile-x"
+      ? "repeat-x"
+      : rawRepeat === "repeat-y" || rawRepeat === "tile-y"
+        ? "repeat-y"
+        : rawRepeat === "round"
+          ? "round"
+          : rawRepeat === "space"
+            ? "space"
+            : rawRepeat || "no-repeat";
+
+  const rawSize = props.background_size?.trim();
+  const bgSize = rawSize === "tile"
+    ? "auto"
+    : rawSize === "scale"
+      ? "contain"
+      : rawSize || (isTile ? "auto" : "cover");
+
+  const rawPos = props.background_position?.trim();
+  const bgPos = rawPos || "center";
+
+  return {
+    backgroundImage: bgImage,
+    backgroundSize: bgSize,
+    backgroundPosition: bgPos,
+    backgroundRepeat: bgRepeat,
+  };
 }
 
 export function isImageUrl(value?: string | null): boolean {

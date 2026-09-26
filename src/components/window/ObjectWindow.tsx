@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from "react";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type WinBox from "winbox/src/js/winbox.js";
 import { isImageUrl } from "../clump/model";
@@ -18,12 +18,13 @@ type ObjectWindowProps = {
   height?: number;
   canClose?: boolean;
   initialBounds?: DOMRect;
+  backgroundStyle?: CSSProperties;
   onReady?: () => void;
   onClose: () => void;
   children?: ReactNode;
 };
 
-export function ObjectWindow({ title, icon, source, fallbackSource, origin, monochrome = false, closeLabel = "Close window", width = 480, height = 380, canClose = true, initialBounds, onReady, onClose, children }: ObjectWindowProps) {
+export function ObjectWindow({ title, icon, source, fallbackSource, origin, monochrome = false, closeLabel = "Close window", width = 480, height = 380, canClose = true, initialBounds, backgroundStyle, onReady, onClose, children }: ObjectWindowProps) {
   const [body, setBody] = useState<HTMLElement | null>(null);
   const [error, setError] = useState(false);
   const initial = useRef({ source, origin, width, height, initialBounds });
@@ -189,5 +190,5 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
   }, []);
 
   if (error) return <p role="alert">Couldn’t load this window. <button type="button" onClick={onClose}>Return to icon</button></p>;
-  return body ? createPortal(<div className="object-window-content">{children}</div>, body) : null;
+  return body ? createPortal(<div className="object-window-content" style={backgroundStyle}>{children}</div>, body) : null;
 }

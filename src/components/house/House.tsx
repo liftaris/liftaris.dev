@@ -6,6 +6,7 @@ import { giftObjects } from "../../lib/house/emoji";
 import { GiftComposer } from "./GiftComposer";
 import { GiftDialog } from "./GiftDialog";
 import { HouseClump } from "./HouseClump";
+import { getBackgroundStyle } from "../clump/model";
 import { ObjectWindow } from "../window/ObjectWindow";
 import { Folder, type FolderSpec } from "../folder/Folder";
 import {
@@ -210,9 +211,10 @@ export function House({
       const composing = action === "leave-gift" || item.object.id === "leave-gift";
       const title = view === "projects" ? "Projects" : view === "experience" ? "Experience" : item.object.name;
       const icon = ("image" in item.object && (item.object as { image?: string | null }).image) || item.object.emoji;
+      const bgStyle = getBackgroundStyle("background_image" in item.object ? item.object : undefined);
       return <ObjectWindow key={item.object.id} title={title} icon={icon} origin={item.origin} source={item.source} fallbackSource={fallbackSource}
         width={post ? 780 : composing ? 640 : undefined} height={post ? 720 : composing ? 660 : undefined} canClose={!composing || !savingGift}
-        initialBounds={item.previewBounds} onReady={item.onReady}
+        initialBounds={item.previewBounds} backgroundStyle={bgStyle} onReady={item.onReady}
         monochrome={!item.gift} closeLabel={item.gift ? "Close gift" : undefined} onClose={() => close(item.object.id)}>
         {item.gift ? <GiftDialog gift={item.gift} initialDetail={item.detail} onClose={() => close(item.object.id)} onDetail={refreshDetail} mutate={mutate} /> : composing ? <GiftComposer onGift={(gift, bounds, form) => receiveGift(item, gift, bounds, form)} mutate={mutate} onSavingChange={setSavingGift} /> : post ? <PostReader post={post} /> : view ? <Stage view={view} /> : null}
       </ObjectWindow>;

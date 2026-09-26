@@ -50,7 +50,10 @@
   pointer-events: none;
   user-select: none;
 }
-.folder[data-monochrome="true"] .folder-entry-art:not(:has(.folder-entry-image)) { filter: grayscale(1); }
+.folder[data-has-bg="true"] { border-radius: 4px; }
+.folder-entry-art[data-has-bg="true"] { border-radius: 8px; overflow: hidden; }
+.folder-entry-art[data-shape="circle"] { border-radius: 50%; }
+.folder[data-monochrome="true"] .folder-entry-art:not(:has(.folder-entry-image)):not([data-has-bg="true"]) { filter: grayscale(1); }
 .folder-entry[data-visited="true"] .folder-entry-art {
   filter: grayscale(1) sepia(1) hue-rotate(240deg) saturate(5) brightness(0.38);
   opacity: 1;

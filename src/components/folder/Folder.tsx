@@ -1,9 +1,15 @@
 import type { ComponentProps } from "react";
-import { isImageUrl } from "../clump/model";
+import { getBackgroundStyle, isImageUrl, type BackgroundProps } from "../clump/model";
 import { ObjectWindow } from "../window/ObjectWindow";
 import "./folder.css";
 
-type FolderIcon = { id: string; name: string; emoji: string; image?: string | null };
+type FolderIcon = BackgroundProps & {
+  id: string;
+  name: string;
+  emoji: string;
+  image?: string | null;
+  shape?: "circle" | "rectangle";
+};
 export type FolderSpec<T> = FolderIcon & { kind: "folder"; items: readonly FolderEntry<T>[] };
 export type FolderEntry<T> = FolderSpec<T> | (FolderIcon & (
   | { kind: "item"; value: T }
@@ -41,17 +47,19 @@ export function FolderContent<T>({
   onOpen,
   onOpenFolder,
 }: FolderContentProps<T>) {
+  const folderBg = getBackgroundStyle(folder);
   return (
     <>
-      <ul className="folder" aria-label={`${folder.name} contents`} data-monochrome={monochrome}>
+      <ul className="folder" style={folderBg} data-has-bg={folderBg ? true : undefined} aria-label={`${folder.name} contents`} data-monochrome={monochrome}>
         {folder.items.map((entry) => {
           const isFolder = entry.kind === "folder" || entry.id === "lab-folder" || entry.id.endsWith("-folder");
           const shouldTint = thingsConfig?.[entry.id]?.tint_when_visited ?? true;
           const visited = !isFolder && shouldTint && (visitedIds?.has(entry.id) ?? false);
           const iconImage = entry.image || (isImageUrl(entry.emoji) ? entry.emoji : null);
+          const entryBg = getBackgroundStyle(entry);
           const artwork = (
             <>
-              <span className="folder-entry-art" aria-hidden="true">
+              <span className="folder-entry-art" style={entryBg} data-has-bg={entryBg ? true : undefined} data-shape={entry.shape} aria-hidden="true">
                 {iconImage ? (
                   <img
                     src={iconImage}
@@ -107,8 +115,9 @@ export function FolderContent<T>({
 /** The caller owns folder and item windows as independent peers. */
 export function Folder<T>({ folder, openedIds = [], visitedIds, thingsConfig, onVisit, onOpen, onOpenFolder, ...windowProps }: FolderProps<T>) {
   const folderIcon = folder.image || (isImageUrl(folder.emoji) ? folder.emoji : folder.emoji);
+  const folderBg = getBackgroundStyle(folder);
   return (
-    <ObjectWindow {...windowProps} title={folder.name} icon={folderIcon}>
+    <ObjectWindow {...windowProps} title={folder.name} icon={folderIcon} backgroundStyle={folderBg}>
       <FolderContent
         folder={folder}
         openedIds={openedIds}
