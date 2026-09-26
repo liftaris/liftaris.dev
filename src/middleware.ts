@@ -11,12 +11,16 @@ export const onRequest = defineMiddleware(async (context, next) => {
     canonical.protocol = "https:";
     return context.redirect(canonical.href, 308);
   }
-  let cmsPath: boolean;
-  try { cmsPath = decodeURIComponent(context.url.pathname).replace(/\/{2,}/g, "/").startsWith("/_emdash"); }
+  let path: string;
+  try { path = decodeURIComponent(context.url.pathname).replace(/\/{2,}/g, "/"); }
   catch { return new Response("Invalid path.", { status: 400 }); }
+  const cmsPath = path.startsWith("/_emdash");
   const guardedNext = async () => await cmsVisitorGuard(context, env.HOUSE_OWNER_ID) ?? next();
   if (!cmsPath) return guardedNext();
   context.cache.set(false);
+  if (import.meta.env.DEV && (path === "/_emdash/api/setup/dev-bypass" || path === "/_emdash/api/auth/dev-bypass")) {
+    return next();
+  }
   // Only the initial setup flow bypasses the owner perimeter, behind the
   // pre-existing private setup key. DEV is not an auth bypass after setup.
   let setupComplete = false;

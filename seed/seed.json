@@ -59,6 +59,126 @@
           "searchable": true
         }
       ]
+    },
+    {
+      "slug": "things",
+      "label": "Things",
+      "labelSingular": "Thing",
+      "supports": [
+        "drafts",
+        "search"
+      ],
+      "fields": [
+        {
+          "slug": "name",
+          "label": "Name",
+          "type": "string",
+          "required": true,
+          "searchable": true
+        },
+        {
+          "slug": "emoji",
+          "label": "Icon",
+          "type": "string",
+          "required": true,
+          "defaultValue": "📦"
+        },
+        {
+          "slug": "kind",
+          "label": "Kind",
+          "type": "select",
+          "defaultValue": "object",
+          "validation": {
+            "options": [
+              "object",
+              "folder",
+              "link",
+              "action"
+            ]
+          },
+          "searchable": true
+        },
+        {
+          "slug": "desktop",
+          "label": "Show on desktop",
+          "type": "boolean",
+          "defaultValue": false
+        },
+        {
+          "slug": "parent_id",
+          "label": "Parent folder",
+          "type": "string"
+        },
+        {
+          "slug": "action",
+          "label": "Action",
+          "type": "select",
+          "defaultValue": "none",
+          "validation": {
+            "options": [
+              "none",
+              "projects",
+              "experience",
+              "leave-gift"
+            ]
+          }
+        },
+        {
+          "slug": "href",
+          "label": "Link URL",
+          "type": "string"
+        },
+        {
+          "slug": "tint_when_visited",
+          "label": "Tint when visited",
+          "type": "boolean",
+          "defaultValue": true
+        },
+        {
+          "slug": "shape",
+          "label": "Shape",
+          "type": "select",
+          "defaultValue": "rectangle",
+          "validation": {
+            "options": [
+              "circle",
+              "rectangle"
+            ]
+          }
+        },
+        {
+          "slug": "anchor",
+          "label": "Anchor",
+          "type": "boolean",
+          "defaultValue": false
+        },
+        {
+          "slug": "width",
+          "label": "Width",
+          "type": "integer",
+          "defaultValue": 60
+        },
+        {
+          "slug": "height",
+          "label": "Height",
+          "type": "integer",
+          "defaultValue": 60
+        },
+        {
+          "slug": "sort_order",
+          "label": "Sort order",
+          "type": "integer",
+          "defaultValue": 0
+        }
+      ],
+      "admin": {
+        "listColumns": [
+          "name",
+          "emoji",
+          "kind",
+          "tint_when_visited"
+        ]
+      }
     }
   ],
   "content": {
@@ -2510,6 +2630,271 @@
               "markDefs": []
             }
           ]
+        }
+      }
+    ],
+    "things": [
+      {
+        "id": "octopus",
+        "slug": "octopus",
+        "status": "published",
+        "data": {
+          "name": "Octopus",
+          "emoji": "🐙",
+          "kind": "object",
+          "desktop": true,
+          "tint_when_visited": true,
+          "shape": "circle",
+          "anchor": false,
+          "width": 68,
+          "height": 70,
+          "sort_order": 1
+        }
+      },
+      {
+        "id": "computer",
+        "slug": "computer",
+        "status": "published",
+        "data": {
+          "name": "Computer",
+          "emoji": "🖥️",
+          "kind": "object",
+          "desktop": true,
+          "parent_id": "portfolio-folder",
+          "action": "projects",
+          "tint_when_visited": true,
+          "shape": "rectangle",
+          "anchor": true,
+          "width": 64,
+          "height": 58,
+          "sort_order": 2
+        }
+      },
+      {
+        "id": "shoes",
+        "slug": "shoes",
+        "status": "published",
+        "data": {
+          "name": "Walking shoes",
+          "emoji": "👟",
+          "kind": "object",
+          "desktop": true,
+          "tint_when_visited": true,
+          "shape": "rectangle",
+          "anchor": false,
+          "width": 54,
+          "height": 40,
+          "sort_order": 3
+        }
+      },
+      {
+        "id": "globe",
+        "slug": "globe",
+        "status": "published",
+        "data": {
+          "name": "Globe",
+          "emoji": "🌍",
+          "kind": "object",
+          "desktop": true,
+          "tint_when_visited": true,
+          "shape": "circle",
+          "anchor": false,
+          "width": 50,
+          "height": 50,
+          "sort_order": 4
+        }
+      },
+      {
+        "id": "plant",
+        "slug": "plant",
+        "status": "published",
+        "data": {
+          "name": "Plant",
+          "emoji": "🪴",
+          "kind": "object",
+          "desktop": true,
+          "tint_when_visited": true,
+          "shape": "rectangle",
+          "anchor": true,
+          "width": 56,
+          "height": 66,
+          "sort_order": 5
+        }
+      },
+      {
+        "id": "cloud",
+        "slug": "cloud",
+        "status": "published",
+        "data": {
+          "name": "Cloud",
+          "emoji": "☁️",
+          "kind": "object",
+          "desktop": true,
+          "tint_when_visited": true,
+          "shape": "rectangle",
+          "anchor": false,
+          "width": 60,
+          "height": 42,
+          "sort_order": 6
+        }
+      },
+      {
+        "id": "bike",
+        "slug": "bike",
+        "status": "published",
+        "data": {
+          "name": "Bicycle",
+          "emoji": "🚲",
+          "kind": "object",
+          "desktop": true,
+          "tint_when_visited": true,
+          "shape": "rectangle",
+          "anchor": false,
+          "width": 74,
+          "height": 54,
+          "sort_order": 7
+        }
+      },
+      {
+        "id": "boots",
+        "slug": "boots",
+        "status": "published",
+        "data": {
+          "name": "Climbing shoes",
+          "emoji": "🥾",
+          "kind": "object",
+          "desktop": true,
+          "tint_when_visited": true,
+          "shape": "rectangle",
+          "anchor": false,
+          "width": 47,
+          "height": 54,
+          "sort_order": 8
+        }
+      },
+      {
+        "id": "light",
+        "slug": "light",
+        "status": "published",
+        "data": {
+          "name": "Light",
+          "emoji": "💡",
+          "kind": "object",
+          "desktop": true,
+          "tint_when_visited": true,
+          "shape": "rectangle",
+          "anchor": true,
+          "width": 38,
+          "height": 52,
+          "sort_order": 9
+        }
+      },
+      {
+        "id": "case",
+        "slug": "case",
+        "status": "published",
+        "data": {
+          "name": "Briefcase",
+          "emoji": "💼",
+          "kind": "object",
+          "desktop": true,
+          "parent_id": "portfolio-folder",
+          "action": "experience",
+          "tint_when_visited": true,
+          "shape": "rectangle",
+          "anchor": false,
+          "width": 52,
+          "height": 44,
+          "sort_order": 10
+        }
+      },
+      {
+        "id": "leave-gift",
+        "slug": "leave-gift",
+        "status": "published",
+        "data": {
+          "name": "Leave a gift",
+          "emoji": "🎁",
+          "kind": "action",
+          "desktop": true,
+          "action": "leave-gift",
+          "tint_when_visited": true,
+          "shape": "rectangle",
+          "anchor": false,
+          "width": 64,
+          "height": 64,
+          "sort_order": 11
+        }
+      },
+      {
+        "id": "portfolio-folder",
+        "slug": "portfolio-folder",
+        "status": "published",
+        "data": {
+          "name": "Portfolio",
+          "emoji": "📁",
+          "kind": "folder",
+          "desktop": true,
+          "tint_when_visited": false,
+          "shape": "rectangle",
+          "anchor": false,
+          "width": 64,
+          "height": 56,
+          "sort_order": 12
+        }
+      },
+      {
+        "id": "writing-folder",
+        "slug": "writing-folder",
+        "status": "published",
+        "data": {
+          "name": "Writing",
+          "emoji": "📂",
+          "kind": "folder",
+          "desktop": true,
+          "tint_when_visited": false,
+          "shape": "rectangle",
+          "anchor": false,
+          "width": 64,
+          "height": 56,
+          "sort_order": 13
+        }
+      },
+      {
+        "id": "lab-folder",
+        "slug": "lab-folder",
+        "status": "published",
+        "data": {
+          "name": "Lab",
+          "emoji": "📁",
+          "kind": "folder",
+          "desktop": false,
+          "parent_id": "portfolio-folder",
+          "tint_when_visited": false,
+          "shape": "rectangle",
+          "anchor": false,
+          "width": 64,
+          "height": 56,
+          "sort_order": 14
+        }
+      },
+      {
+        "id": "clump-lab",
+        "slug": "clump-lab",
+        "status": "published",
+        "data": {
+          "name": "A place for my things",
+          "emoji": "🐙",
+          "kind": "link",
+          "desktop": false,
+          "parent_id": "lab-folder",
+          "href": "/lab/clump",
+          "tint_when_visited": true,
+          "shape": "rectangle",
+          "anchor": false,
+          "width": 56,
+          "height": 64,
+          "sort_order": 15
         }
       }
     ]

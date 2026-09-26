@@ -86,12 +86,12 @@ test("PATCH sends the editable fields with only cookie credentials and returns t
   const calls: { path: string; init: RequestInit }[] = [];
   globalThis.fetch = (async (path, init = {}) => {
     calls.push({ path: String(path), init });
-    return Response.json(snapshot);
+    return Response.json({ success: true, data: snapshot });
   }) as typeof fetch;
 
   expect(await client.updateGift("gift/one", update)).toEqual(snapshot);
   expect(calls).toHaveLength(1);
-  expect(calls[0].path).toBe("/api/house/gifts/gift%2Fone");
+  expect(calls[0].path).toBe("/_emdash/api/plugins/liftaris-gifts/update?id=gift%2Fone");
   expect(calls[0].init.method).toBe("PATCH");
   expect(JSON.parse(calls[0].init.body as string)).toEqual(update);
   expect(calls[0].init.credentials).toBe("same-origin");
@@ -103,9 +103,9 @@ test("HTTP permission and conflict errors retain their message and status withou
   for (const status of [403, 409]) {
     let calls = 0;
     globalThis.fetch = (async (path: RequestInfo | URL) => {
-      expect(String(path)).toBe("/api/house/gifts/gift-1");
+      expect(String(path)).toBe("/_emdash/api/plugins/liftaris-gifts/update?id=gift-1");
       calls++;
-      return Response.json({ error: "Cannot save this edit." }, { status });
+      return Response.json({ success: false, error: { code: "GIFT_ERROR", message: "Cannot save this edit." } }, { status });
     }) as typeof fetch;
     const failure = await client.updateGift("gift-1", { version: 1, emojiId: "gift", visibility: "public" }).catch((reason: unknown) => reason);
     expect(failure).toBeInstanceOf(client.HouseError);

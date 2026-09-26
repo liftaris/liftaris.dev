@@ -1,7 +1,111 @@
 import { FIELD_TYPE_TO_COLUMN, OptionsRepository, SchemaError, SchemaRegistry, type CreateFieldInput, type Database } from "emdash";
 import { sql, type Kysely } from "kysely";
+import { DEFAULT_THINGS } from "../../components/house/folders";
 
 const giftSchemaVersion = 2;
+const thingsSchemaVersion = 2;
+
+export const thingFields: readonly CreateFieldInput[] = [
+  { slug: "name", label: "Name", type: "string", required: true, searchable: true },
+  { slug: "emoji", label: "Icon", type: "string", required: true, defaultValue: "📦" },
+  { slug: "kind", label: "Kind", type: "select", defaultValue: "object", validation: { options: ["object", "folder", "link", "action"] }, searchable: true },
+  { slug: "desktop", label: "Show on desktop", type: "boolean", defaultValue: false, searchable: false },
+  { slug: "parent_id", label: "Parent folder", type: "string", searchable: false },
+  { slug: "action", label: "Action", type: "select", defaultValue: "none", validation: { options: ["none", "projects", "experience", "leave-gift"] }, searchable: false },
+  { slug: "href", label: "Link URL", type: "string", searchable: false },
+  { slug: "tint_when_visited", label: "Tint when visited", type: "boolean", required: false, defaultValue: true },
+  { slug: "shape", label: "Shape", type: "select", defaultValue: "rectangle", validation: { options: ["circle", "rectangle"] }, searchable: false },
+  { slug: "anchor", label: "Anchor", type: "boolean", defaultValue: false, searchable: false },
+  { slug: "width", label: "Width", type: "integer", defaultValue: 60, searchable: false },
+  { slug: "height", label: "Height", type: "integer", defaultValue: 60, searchable: false },
+  { slug: "sort_order", label: "Sort order", type: "integer", defaultValue: 0, searchable: false },
+];
+
+export async function initializeThingsCollection(db: Kysely<Database>): Promise<void> {
+  const options = new OptionsRepository(db);
+  if (await options.get("house:things-schema") === thingsSchemaVersion) return;
+  const schema = new SchemaRegistry(db);
+  const existing = await schema.getCollection("things");
+  if (!existing) {
+    try {
+      await schema.createSeedCollection({
+        slug: "things",
+        label: "Things",
+        labelSingular: "Thing",
+        supports: ["drafts", "search"],
+        routable: false,
+        commentsEnabled: false,
+      }, thingFields);
+    } catch (error) {
+      if (!(error instanceof SchemaError) || error.code !== "COLLECTION_EXISTS") throw error;
+    }
+  } else {
+    const collection = await schema.getCollectionWithFields("things");
+    if (collection) {
+      const missing = thingFields.filter((field) => !collection.fields.some((stored) => stored.slug === field.slug));
+      if (missing.length > 0) {
+        await assertThingColumns(db, missing);
+        await db.insertInto("_emdash_fields").values(missing.map((field) => ({
+          id: crypto.randomUUID(), collection_id: collection.id, slug: field.slug, label: field.label,
+          type: field.type, column_type: FIELD_TYPE_TO_COLUMN[field.type], required: field.required ? 1 : 0,
+          unique: 0, default_value: field.defaultValue !== undefined ? JSON.stringify(field.defaultValue) : null,
+          validation: field.validation ? JSON.stringify(field.validation) : null,
+          widget: null, options: null, sort_order: thingFields.indexOf(field), searchable: field.searchable ? 1 : 0, indexed: 0, translatable: 1,
+        }))).onConflict((conflict) => conflict.columns(["collection_id", "slug"]).doNothing()).execute();
+      }
+    }
+  }
+  try {
+    await sql`UPDATE _emdash_collections SET admin_config = ${JSON.stringify({ listColumns: ["name", "emoji", "kind", "tint_when_visited"] })} WHERE slug = 'things'`.execute(db);
+  } catch {
+    // Ignore if table doesn't exist
+  }
+  try {
+    await assertThingColumns(db, thingFields);
+    const user = await db.selectFrom("users").select("id").limit(1).executeTakeFirst();
+    const authorId = user?.id ?? null;
+    const now = new Date().toISOString();
+    for (const item of DEFAULT_THINGS) {
+      const exists = await sql<{ id: string }>`SELECT id FROM ec_things WHERE id = ${item.id}`.execute(db);
+      if (exists.rows.length === 0) {
+        await sql`INSERT INTO ec_things (
+          id, slug, status, author_id, created_at, updated_at, published_at, version, locale, translation_group,
+          name, emoji, kind, desktop, parent_id, action, href, tint_when_visited, shape, anchor, width, height, sort_order
+        ) VALUES (
+          ${item.id}, ${item.id}, 'published', ${authorId}, ${now}, ${now}, ${now}, 1, 'en', ${item.id},
+          ${item.name}, ${item.emoji}, ${item.kind}, ${item.desktop ? 1 : 0}, ${item.parent_id ?? null}, ${item.action ?? "none"}, ${item.href ?? null},
+          ${item.tint_when_visited ? 1 : 0}, ${item.shape}, ${item.anchor ? 1 : 0}, ${item.width}, ${item.height}, ${item.sort_order}
+        )`.execute(db);
+      } else {
+        await sql`UPDATE ec_things SET
+          kind = COALESCE(kind, ${item.kind}),
+          desktop = COALESCE(desktop, ${item.desktop ? 1 : 0}),
+          parent_id = COALESCE(parent_id, ${item.parent_id ?? null}),
+          action = COALESCE(action, ${item.action ?? "none"}),
+          href = COALESCE(href, ${item.href ?? null}),
+          sort_order = COALESCE(sort_order, ${item.sort_order})
+          WHERE id = ${item.id}`.execute(db);
+      }
+    }
+  } catch {
+    // If ec_things table doesn't exist yet, ignore
+  }
+  await options.set("house:things-schema", thingsSchemaVersion);
+}
+
+async function assertThingColumns(db: Kysely<Database>, fields: readonly CreateFieldInput[]): Promise<void> {
+  try {
+    const { rows: columns } = await sql<{ name: string; type: string; notnull: number }>`PRAGMA table_info(ec_things)`.execute(db);
+    for (const field of fields) {
+      if (!columns.some((c) => c.name === field.slug)) {
+        const colType = FIELD_TYPE_TO_COLUMN[field.type];
+        await sql.raw(`ALTER TABLE ec_things ADD COLUMN ${field.slug} ${colType}`).execute(db);
+      }
+    }
+  } catch {
+    // Ignore if table does not exist
+  }
+}
 
 const giftFields: readonly CreateFieldInput[] = [
   { slug: "emoji_id", label: "Object", type: "string", required: true, searchable: false },

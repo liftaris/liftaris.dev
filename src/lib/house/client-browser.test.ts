@@ -39,6 +39,7 @@ beforeAll(async () => {
         const gift = {id:"gift-1",emojiId:"gift",authorName:"Quiet Otter",createdAt:"2026-09-24",visibility:"public",message:"Old public note",version:1,canEdit:true,canReclaim:true,canRemove:false};
         let root;
         Object.assign(window, {React,gift,House,GiftDialog,ObjectWindow,houseMutations,
+          pluginReply(data,init) {return Response.json(data.error ? {success:false,error:{message:data.error}} : {success:true,data},init);},
           mount(Component,props={}) {if(root)flushSync(()=>root.unmount());root=createRoot(document.getElementById("root"));flushSync(()=>root.render(React.createElement(Component,props)));},
           render(Component,props) {flushSync(()=>root.render(React.createElement(Component,props)));},
           async until(predicate) {const end=Date.now()+3000;while(!predicate()){if(Date.now()>end)throw Error("Timed out: "+predicate+"\\n"+document.body.innerText);await new Promise(r=>setTimeout(r,10));}},
@@ -73,14 +74,14 @@ check("House orders creation/edit/reclaim snapshots and a created window never r
     window.fetch=async(path,init={})=>{
       const method=init.method??'GET';calls.push([path,method]);
       if(path==='/api/house/me')return Response.json({visitor:{id:'me',name:'Quiet Otter'},owner:false});
-      if(path==='/api/house') {initialSignal=init.signal;return new Promise(r=>releaseInitial=()=>r(Response.json({gifts:[]})));}
-      if(method==='POST')return Response.json({gifts:[other,retiring,gift],createdGiftId:gift.id});
-      if(method==='PATCH') {current={...current,...JSON.parse(init.body),version:current.version+1};return new Promise(r=>releasePatch=()=>r(Response.json({gifts:[other,current]})));}
-      if(method==='DELETE')return Response.json({gifts:path.endsWith('/retiring')?[other,current]:[current]});
-      if(path.endsWith('/other'))return Response.json(other);
-      if(path.endsWith('/retiring'))return Response.json(retiring);
-      if(!releaseCreated)return new Promise(r=>releaseCreated=()=>r(Response.json(gift)));
-      return Response.json(current);
+      if(path==='/_emdash/api/plugins/liftaris-gifts/snapshot') {initialSignal=init.signal;return new Promise(r=>releaseInitial=()=>r(pluginReply({gifts:[]})));}
+      if(method==='POST')return pluginReply({gifts:[other,retiring,gift],createdGiftId:gift.id});
+      if(method==='PATCH') {current={...current,...JSON.parse(init.body),version:current.version+1};return new Promise(r=>releasePatch=()=>r(pluginReply({gifts:[other,current]})));}
+      if(method==='DELETE')return pluginReply({gifts:path.endsWith('id=retiring')?[other,current]:[current]});
+      if(path.endsWith('id=other'))return pluginReply(other);
+      if(path.endsWith('id=retiring'))return pluginReply(retiring);
+      if(!releaseCreated)return new Promise(r=>releaseCreated=()=>r(pluginReply(gift)));
+      return pluginReply(current);
     };
     mount(House);clickText('Compose');
     await until(()=>document.querySelector('.house-composer'));
@@ -110,23 +111,23 @@ check("House orders creation/edit/reclaim snapshots and a created window never r
     await until(()=>releasePatch);
     const otherFrame=[...document.querySelectorAll('.house-gift-body')].find(el=>el.closest('.object-window')!==originalFrame);
     [...otherFrame.querySelectorAll('button')].find(el=>el.textContent==='Take back').click();await tick();
-    const serialized=!calls.some(c=>c[0].endsWith('/other') && c[1]==='DELETE');
+    const serialized=!calls.some(c=>c[0].endsWith('id=other') && c[1]==='DELETE');
     releasePatch();await until(()=>!document.querySelector('#scene [data-object="other"]') && originalFrame.getAttribute('aria-label')==='Heart');
     await tick();
     const final={immediate,aborted,retained,serialized,handoffPreserved,removedStayedRemoved:!document.querySelector('#scene [data-object="retiring"]'),
       sameWindow:originalFrame.isConnected && originalFrame.querySelector('.wb-body')===originalBody,
       draft:document.querySelector('#gift-message')?.value,
       mutations:calls.filter(c=>['POST','PATCH','DELETE'].includes(c[1]) && c[0]!=='/api/house/me').map(c=>c[1]),
-      initialReads:calls.filter(c=>c[0]==='/api/house').length,
+      initialReads:calls.filter(c=>c[0]==='/_emdash/api/plugins/liftaris-gifts/snapshot').length,
       sessionMethods:calls.filter(c=>c[0]==='/api/house/me').slice(0,2).map(c=>c[1])};
     // Reclaim a second created gift while its original detail response is held.
     const withdrawn={...gift,id:'withdrawn'};let releaseWithdrawn;
     window.fetch=async(path,init={})=>{
       if(path==='/api/house/me')return Response.json({visitor:{id:'me',name:'Quiet Otter'},owner:false});
-      if(init.method==='POST')return Response.json({gifts:[current,withdrawn],createdGiftId:withdrawn.id});
-      if(init.method==='DELETE')return Response.json({gifts:[current]});
-      if(!releaseWithdrawn)return new Promise(r=>releaseWithdrawn=()=>r(Response.json(withdrawn)));
-      return Response.json(withdrawn);
+      if(init.method==='POST')return pluginReply({gifts:[current,withdrawn],createdGiftId:withdrawn.id});
+      if(init.method==='DELETE')return pluginReply({gifts:[current]});
+      if(!releaseWithdrawn)return new Promise(r=>releaseWithdrawn=()=>r(pluginReply(withdrawn)));
+      return pluginReply(withdrawn);
     };
     submit('.house-composer');await until(()=>releaseWithdrawn);
     document.querySelector('#scene [data-object="withdrawn"]').click();await until(()=>document.querySelectorAll('.house-gift-body').length===2);
@@ -148,13 +149,13 @@ check("conflicts retain the draft until explicit reload; failures never silently
     window.fetch=async(path,init={})=>{
       if(init.method==='PATCH') {
         bodies.push(JSON.parse(init.body));
-        if(bodies.length===1)return Response.json({error:'Offline'},{status:503});
-        if(bodies.length===2){current={...gift,emojiId:'seedling',message:'Other tab',version:2};return Response.json({error:'Changed'},{status:409});}
-        saved=true;return Response.json({gifts:[{...gift,visibility:'private',authorName:null,message:null}]});
+        if(bodies.length===1)return pluginReply({error:'Offline'},{status:503});
+        if(bodies.length===2){current={...gift,emojiId:'seedling',message:'Other tab',version:2};return pluginReply({error:'Changed'},{status:409});}
+        saved=true;return pluginReply({gifts:[{...gift,visibility:'private',authorName:null,message:null}]});
       }
-      if(!releaseInitial){initialSignal=init.signal;return new Promise(r=>releaseInitial=()=>r(Response.json(gift)));}
-      if(reloadFails || saved)return Response.json({error:'Offline'},{status:503});
-      return Response.json(current);
+      if(!releaseInitial){initialSignal=init.signal;return new Promise(r=>releaseInitial=()=>r(pluginReply(gift)));}
+      if(reloadFails || saved)return pluginReply({error:'Offline'},{status:503});
+      return pluginReply(current);
     };
     mount(GiftDialog,{gift,initialDetail:gift,onClose(){},onDetail(next){details.push(next.emojiId);},mutate:houseMutations(s=>snapshots.push(s))});
     await until(()=>releaseInitial);clickText('Edit gift');await until(()=>document.querySelector('.house-gift-editor'));

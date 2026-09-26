@@ -2,7 +2,7 @@
 import Portfolio from "../layouts/Portfolio.astro";
 import { House } from "../components/house/House";
 import { getEmDashCollection } from "emdash";
-import type { WritingPost } from "../components/house/folders";
+import type { ThingSpec, WritingPost } from "../components/house/folders";
 
 const posts: WritingPost[] = [];
 let cursor: string | undefined;
@@ -13,5 +13,37 @@ do {
   posts.push(...result.entries.map((post) => ({ id: post.data.id, slug: post.id, title: post.data.title, icon: post.data.icon })));
   cursor = result.nextCursor;
 } while (cursor);
+
+let things: ThingSpec[] | undefined;
+try {
+  const thingsResult = await getEmDashCollection("things", { status: "published", limit: 100 });
+  if (!thingsResult.error && thingsResult.entries && thingsResult.entries.length > 0) {
+    Astro.cache.set(thingsResult.cacheHint);
+    things = thingsResult.entries.map((entry): ThingSpec => {
+      const data = entry.data as Record<string, unknown>;
+      const kind = (data.kind === "folder" || data.kind === "link" || data.kind === "action" || data.kind === "object") ? data.kind : "object";
+      const action = (data.action === "projects" || data.action === "experience" || data.action === "leave-gift") ? data.action : "none";
+      const shape = data.shape === "circle" ? "circle" : "rectangle";
+      return {
+        id: entry.id,
+        name: String(data.name ?? ""),
+        emoji: String(data.emoji ?? "📦"),
+        kind,
+        desktop: Boolean(data.desktop),
+        parent_id: data.parent_id ? String(data.parent_id) : null,
+        action,
+        href: data.href ? String(data.href) : null,
+        tint_when_visited: data.tint_when_visited !== false && data.tint_when_visited !== 0,
+        shape,
+        anchor: Boolean(data.anchor),
+        width: Number(data.width) || 60,
+        height: Number(data.height) || 60,
+        sort_order: Number(data.sort_order) || 0,
+      };
+    }).sort((a, b) => a.sort_order - b.sort_order);
+  }
+} catch {
+  // Gracefully fallback to defaults if things collection not yet initialized
+}
 ---
-<Portfolio><House posts={posts} client:load /></Portfolio>
+<Portfolio><House posts={posts} things={things} client:load /></Portfolio>

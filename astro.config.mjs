@@ -29,6 +29,11 @@ export default defineConfig({
       version: "1.0.0",
       format: "native",
       entrypoint: fileURLToPath(new URL("./src/plugins/theme-image.ts", import.meta.url)),
+    }, {
+      id: "liftaris-gifts",
+      version: "1.0.0",
+      format: "native",
+      entrypoint: fileURLToPath(new URL("./src/plugins/gifts.ts", import.meta.url)),
     }],
   })],
   vite: {

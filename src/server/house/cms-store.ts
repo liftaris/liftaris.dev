@@ -5,7 +5,7 @@ import type { CreatedGift, Gift, GiftDetail, HouseSnapshot, Viewer } from "../..
 import { findEmoji } from "../../lib/house/emoji";
 import { CreateGiftSchema, UpdateGiftSchema } from "./schemas";
 import { failure } from "./errors";
-import { digest, initializeGiftCollection } from "./cms-schema";
+import { digest, initializeGiftCollection, initializeThingsCollection } from "./cms-schema";
 import { takeQuota } from "./rate-limit";
 
 type Receipt = { id: string; author_id: string; fingerprint: string };
@@ -14,7 +14,10 @@ export class CmsHouseStore {
   private readonly content: ContentRepository;
   constructor(private readonly db: Kysely<Database>) { this.content = new ContentRepository(db); }
 
-  initialize(): Promise<void> { return initializeGiftCollection(this.db); }
+  async initialize(): Promise<void> {
+    await initializeGiftCollection(this.db);
+    await initializeThingsCollection(this.db);
+  }
 
   async snapshot(): Promise<HouseSnapshot> {
     const gifts: Gift[] = [];
@@ -79,9 +82,10 @@ export class CmsHouseStore {
     try { command = Schema.decodeUnknownSync(UpdateGiftSchema)(input); }
     catch { throw failure(400, "Check the gift, name, and message and try again."); }
     const data = giftData(command, viewer.visitor.name);
-    // EmDash 0.38's update has no version predicate; its _rev handler falls
-    // back to read-then-write on D1. Gifts have no revisions to publish instead.
-    // Keep this single statement fenced by version, lifecycle and ownership.
+    // EmDash 0.40.1's field update still has no atomic expected-version predicate.
+    // Native draft-pointer CAS + publish is possible, but is two commits with
+    // failure reconciliation, not a drop-in replacement for immediate edits.
+    // Preserve this fence until that lifecycle migration is independently tested.
     const result = await sql`UPDATE ec_gifts
       SET emoji_id = ${data.emoji_id}, author_name = ${data.author_name},
         message = ${data.message}, visibility = ${data.visibility},

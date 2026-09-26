@@ -31,10 +31,13 @@ account with an animal name, without a signup form. Native HttpOnly session cook
 authorize ownership; names and public gift IDs do not. Losing that session can
 lose access to earlier gifts.
 
-Gifts are EmDash content in the existing CMS `DB`. The Effect-backed API uses
-ordinary HTTP reads and mutations: no realtime connection, shared physics, or
-separate visitor auth database. Movement stays local, with a fresh arrangement
-on reload. Set `JEV_API_KEY` in ignored `.dev.vars` for suggestions, and set
+Gifts are EmDash content in the existing CMS `DB`. The native `liftaris-gifts`
+plugin owns their HTTP API under `/_emdash/api/plugins/liftaris-gifts`. EmDash
+handles route methods, bounded body parsing, subscriber authentication, CSRF
+headers, and response envelopes. Gift-specific policy restricts ownership and
+projects private fields; generic CMS APIs remain owner-only. No realtime
+connection, shared physics, or separate visitor auth database is involved.
+Movement stays local, with a fresh arrangement on reload. Set `JEV_API_KEY` in ignored `.dev.vars` for suggestions, and set
 `HOUSE_OWNER_ID` to the exact EmDash user ID allowed to administer the CMS, read
 private messages, and moderate gifts. After setup, this is required for CMS admin
 access; empty configuration fails closed. The signed-in owner's ID is available

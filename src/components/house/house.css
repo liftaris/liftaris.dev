@@ -68,6 +68,10 @@
   filter: grayscale(0) drop-shadow(0 0 5px rgb(255 230 161 / .4));
   opacity: 1;
 }
+.house-object[data-visited="true"] .house-object-art {
+  filter: grayscale(1) sepia(1) hue-rotate(240deg) saturate(5) brightness(0.38);
+  opacity: 1;
+}
 .house-object[data-grabbed="true"] .house-object-art { opacity: 1; }
 .house-object:focus-visible { outline: 2px solid var(--paper); outline-offset: 5px; }
 

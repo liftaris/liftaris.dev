@@ -41,6 +41,10 @@
   transform: translateZ(0);
 }
 .folder[data-monochrome="true"] .folder-entry-art { filter: grayscale(1); }
+.folder-entry[data-visited="true"] .folder-entry-art {
+  filter: grayscale(1) sepia(1) hue-rotate(240deg) saturate(5) brightness(0.38);
+  opacity: 1;
+}
 .folder-entry[aria-disabled="true"] { cursor: default; opacity: .65; }
 .folder-entry:focus-visible { border-color: currentColor; }
 .folder-empty { margin: 0; font-size: 12px; }

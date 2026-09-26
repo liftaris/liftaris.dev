@@ -10,6 +10,7 @@ export interface ObjectSpec extends Size {
   emoji: string;
   shape: "circle" | "rectangle";
   anchor?: boolean;
+  tint_when_visited?: boolean;
 }
 
 export const OBJECTS: readonly ObjectSpec[] = [

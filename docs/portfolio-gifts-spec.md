@@ -119,8 +119,28 @@ gift privacy through admin routes. Render visitor names and messages as plain te
 
 EmDash's `gifts` collection in the existing `DB` is authoritative. Use native
 content records and native author IDs, not a parallel custom gift store or a
-Durable Object copy. The HTTP service validates commands, enforces ownership and
-privacy, and projects only the fields each caller is allowed to read.
+Durable Object copy. The native `liftaris-gifts` plugin validates commands,
+enforces ownership and privacy, and projects only the fields each caller is
+allowed to read. Its exact native routes are `snapshot` and `public-gift` (public
+GET), `create` (private POST), `update` (private PATCH), and `gift` (private GET or
+DELETE). Private routes require EmDash's subscriber-level `content:read`
+permission plus gift-specific authorization, not CMS write permissions.
+
+The frontend consumes native response envelopes and sends `X-EmDash-Request: 1`.
+An unauthenticated detail read uses the explicitly public, redacted endpoint;
+this does not create an account. The Astro `/api/house/me` adapter remains solely
+for native session bootstrap/cookie persistence, which plugin contexts cannot
+mutate. `/api/house/suggest` remains the bounded suggestion adapter. Retired gift
+Astro endpoints have no aliases.
+
+Core repositories retain content persistence, deterministic gift IDs, author
+linkage and trash. The deletion-resistant submission receipt/trigger and the
+single-statement version/ownership/lifecycle edit fence remain deliberate bridge
+code. EmDash 0.40.1 supports native revision staging and publishing, but combining
+those into immediate gift edits requires a separately verified failure/retry
+migration. A read-check followed by `ctx.content.update` is not a safe replacement
+on D1. This transport refactor does not enable drafts, rewrite existing gift
+records, or equate private audience with unpublished content.
 
 Original portfolio objects and visitor gifts have distinct kinds, so reclaiming
 cannot delete a built-in object. Preserve atomic create/delete semantics and safe

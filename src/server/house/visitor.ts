@@ -3,6 +3,7 @@ import { UserRepository, type Database } from "emdash";
 import { DateTime, Schema } from "effect";
 import type { Kysely } from "kysely";
 import type { Viewer } from "../../lib/house/types";
+import { GIFT_API, GIFT_METHODS } from "../../lib/house/gift-api";
 import { failure, HouseError } from "./errors";
 import { takeQuota } from "./rate-limit";
 import { isHouseOwner } from "./owner-policy";
@@ -42,9 +43,14 @@ async function activeUser(db: Kysely<Database>, id: string) {
   return { id: row.id, name: row.name || "Visitor", anonymous };
 }
 
-function viewerFor(user: Awaited<ReturnType<typeof sessionUser>>, ownerId: string | undefined): Viewer {
+function viewerFor(user: Awaited<ReturnType<typeof activeUser>> | null, ownerId: string | undefined): Viewer {
   const owner = isHouseOwner(ownerId, user?.id) && !user?.anonymous;
   return { visitor: user && (user.anonymous || owner) ? { id: user.id, name: user.name } : null, owner };
+}
+
+/** Accept only EmDash's authenticated caller, never an ID from gift input. */
+export async function resolveCmsViewer(db: Kysely<Database>, id: string | undefined, ownerId: string | undefined): Promise<Viewer> {
+  return viewerFor(id ? await activeUser(db, id) : null, ownerId);
 }
 
 export async function resolveViewer(db: Kysely<Database>, session: VisitorSession | undefined, ownerId: string | undefined): Promise<Viewer> {
@@ -190,6 +196,10 @@ export async function cmsVisitorGuard(context: APIContext, ownerId: string | und
   if (exactPath && (method === "GET" || method === "HEAD") && path.startsWith("/_emdash/api/media/file/")) return null;
 
   context.cache.set(false);
+  const giftRoute = Object.entries(GIFT_METHODS).find(([route, methods]) =>
+    exactPath && path === `${GIFT_API}/${route}` && (methods as readonly string[]).includes(method))?.[0];
+  // Public routes cannot receive a caller from EmDash and always redact secrets.
+  if (giftRoute === "snapshot" || giftRoute === "public-gift") return null;
   try {
     const db = await visitorDb(context);
     const cookieUser = await sessionUser(db, context.session);
@@ -198,6 +208,17 @@ export async function cmsVisitorGuard(context: APIContext, ownerId: string | und
     // A token must not turn a marked cookie account into an editorial account.
     const current = nativeUser ?? cookieUser;
     const owner = isHouseOwner(ownerId, current?.id) && !marked;
+    if (giftRoute) {
+      if (context.request.headers.has("Authorization") || ("tokenScopes" in context.locals && context.locals.tokenScopes)) {
+        return privateJson({ error: "Use this browser's visitor identity." }, 403);
+      }
+      // Match the native caller to the cookie before delegating to plugin auth.
+      // No cookie is allowed through only so EmDash returns its native 401.
+      if (cookieUser?.id !== nativeUser?.id || (cookieUser && !marked && !owner)) {
+        return privateJson({ error: "This account cannot leave gifts." }, 403);
+      }
+      return null;
+    }
     if (owner) return null;
     if (method === "GET" && path === "/_emdash/api/auth/me") {
       // Native auth/me has a safe field allowlist; clamp role even if an admin

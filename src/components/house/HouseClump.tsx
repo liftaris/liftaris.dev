@@ -23,9 +23,15 @@ function measureViewport(element: HTMLDivElement) {
   return { scale, size: { width: Math.round(width / scale), height: Math.floor(height / scale) } };
 }
 
-export function HouseClump({ gifts, inspectedIds, onOpen }: {
+const EMPTY_VISITED: ReadonlySet<string> = new Set();
+const EMPTY_THINGS_CONFIG: Record<string, { tint_when_visited?: boolean }> = {};
+
+export function HouseClump({ gifts, inspectedIds, visitedIds = EMPTY_VISITED, thingsConfig = EMPTY_THINGS_CONFIG, desktopObjects, onOpen }: {
   gifts: readonly Gift[];
   inspectedIds: readonly string[];
+  visitedIds?: ReadonlySet<string>;
+  thingsConfig?: Record<string, { tint_when_visited?: boolean }>;
+  desktopObjects?: readonly ObjectSpec[];
   onOpen: (object: ObjectSpec, source: HTMLButtonElement, gift?: Gift) => void;
 }) {
   const viewport = useRef<HTMLDivElement>(null);
@@ -43,7 +49,8 @@ export function HouseClump({ gifts, inspectedIds, onOpen }: {
   const bounds = useRef(INITIAL_SIZE);
   const available = useRef(INITIAL_SIZE);
   const growth = useRef({ width: 0, height: 0 });
-  const objects = useMemo(() => [...OBJECTS, PORTFOLIO_FOLDER_OBJECT, WRITING_FOLDER_OBJECT, GIFT_ENTRY, ...giftObjects(displayed)], [displayed]);
+  const baseObjects = useMemo(() => desktopObjects ?? [...OBJECTS, PORTFOLIO_FOLDER_OBJECT, WRITING_FOLDER_OBJECT, GIFT_ENTRY], [desktopObjects]);
+  const objects = useMemo(() => [...baseObjects, ...giftObjects(displayed)], [baseObjects, displayed]);
   const retiring = retiringGiftIds(displayed, gifts, [...inspectedIds, grabId]);
   const liveIds = new Set(gifts.map((gift) => gift.id));
 
@@ -247,7 +254,10 @@ export function HouseClump({ gifts, inspectedIds, onOpen }: {
           const gift = displayed.find((item) => item.id === object.id);
           const removing = retiring.has(object.id);
           const opened = inspectedIds.includes(object.id);
-          return <button type="button" key={object.id} className="house-object" data-object={object.id} data-gift={Boolean(gift)} data-grabbed={grabId === object.id} data-removing={removing} data-window-open={opened}
+          const isFolder = ("kind" in object && (object as { kind?: string }).kind === "folder") || object.id === PORTFOLIO_FOLDER_OBJECT.id || object.id === WRITING_FOLDER_OBJECT.id || object.id === "lab-folder" || object.id.endsWith("-folder");
+          const shouldTint = thingsConfig[object.id]?.tint_when_visited ?? (isFolder ? false : true);
+          const visited = !isFolder && shouldTint && visitedIds.has(object.id);
+          return <button type="button" key={object.id} className="house-object" data-object={object.id} data-gift={Boolean(gift)} data-visited={visited} data-grabbed={grabId === object.id} data-removing={removing} data-window-open={opened}
             ref={(element) => { if (element) nodes.current.set(object.id, element); else nodes.current.delete(object.id); }}
             style={{ width: Math.max(44, object.width), height: Math.max(44, object.height), fontSize: Math.max(object.width, object.height) * .87 }}
             aria-disabled={removing || undefined} tabIndex={removing || opened ? -1 : 0} aria-expanded={opened} aria-haspopup="dialog"
