@@ -2,15 +2,13 @@
 
 Current architecture: native EmDash accounts, CMS-stored gifts, and HTTP-only
 interactions. Scene 01, the clump with object-sized collision bodies, remains the
-homepage experience. See [deployment setup](portfolio-deployment.md) and the
-[legacy-data cutover gate](legacy-gift-retirement.md). This branch does not deploy
-itself or automatically migrate old identities, ownership, or House gifts.
+homepage experience. See [deployment setup](portfolio-deployment.md).
 
 ## Confirmed experience
 
-The clump becomes the central interaction in the existing homepage's empty blue desktop space. Keep the current identity, navigation, writing rail, and overall visual character. The lab's heading, explanatory copy, scene selectors, collider controls, frame, and reset controls do not become homepage UI.
+The clump is the homepage's central interaction, with viewport gutters and a separate identity row. Portfolio and Writing folders contain objects that open independent windows. There is no header navigation or writing sidebar. The lab's heading, explanatory copy, scene selectors, collider controls, and reset controls do not become homepage UI.
 
-Personal objects remain in the clump. Visitors can leave emoji gifts that join the same pile. Gifts have a distinct color treatment from Kaio's objects; there are no author badges, names, dates, or message captions attached to objects in the resting scene. Attribution and text appear when a gift is opened. Preserve emergent arrangements and the ability to make a mess.
+Personal objects remain in the clump. Visitors can leave emoji gifts that join the same pile. Gifts have a distinct color treatment from Kaio's objects; there are no author badges, names, dates, or message captions attached to objects in the resting scene. Permitted attribution and text appear when a gift is opened. Preserve emergent arrangements and the ability to make a mess.
 
 Use the prototype's object-sized footprints rather than small peg colliders. Gifts appear immediately after successful submission, with no approval queue. Every gift remains until its sender or Kaio removes it: no automatic expiry or archival.
 
@@ -20,7 +18,7 @@ spirit of Google Docs. A visitor may use a chosen display name for attribution;
 names are neither verified identities nor proof of ownership. Anonymous accounts
 must not receive CMS editorial or administrative permissions.
 
-A gift consists of one chosen emoji, optional text, an attribution name, and a creation date. The sender chooses whether included text is public or visible only to Kaio and the sender. The emoji remains in the public pile in either case.
+A gift consists of one chosen emoji, optional text, an attribution name, and a creation date. The sender chooses whether its message and attribution are public or visible only to Kaio and the sender. Its emoji remains in the public pile in either case. Icon-only gifts are always public. The signed-in owner uses their CMS name; anonymous naming applies to visitors, not Kaio.
 
 Visitors can reclaim gifts they created. Kaio needs an owner-only removal path for unwanted gifts. Visible presence counts, cursors, and sign-in for visitors remain outside this feature's scope. The computer and briefcase open the existing Projects and Experience content in object windows.
 
@@ -38,7 +36,7 @@ Object search and message entry are separate. Search text is never saved as a me
 
 Keep the audience clear before submission, using concise functional controls. Icon-only actions have accessible names; placeholders are not the inputs' only labels. The submit button sits below the inner preview. Narrow or short screens scroll the window body without horizontal overflow.
 
-Choosing a suggestion does not publish a gift. A deliberate submit sends it. Preserve the draft and idempotency key on failure, and prevent duplicate submission or dismissal while saving. The server returns the exact created gift ID, including on retries; never infer it from the latest item or a collection diff. After authorized detail readback, open the real gift at the preview's bounds, then fade away the outer composer. The real window collapses to the newly created clump object. Reduced-motion users get an immediate handoff. Private text remains only in the sender's local open card, never the public collection.
+Choosing a suggestion does not publish a gift. A deliberate submit sends it. Preserve the draft and idempotency key on failure, and prevent duplicate submission or dismissal while saving. The server returns the exact created gift ID, including on retries; never infer it from the latest item or a collection diff. After authorized detail readback, open the real gift at the preview's bounds, then fade away the outer composer. The real window collapses to the newly created clump object. Reduced-motion users get an immediate handoff. Private text and attribution remain only in authorized open cards, never the public collection. The handoff belongs only to the composer that submitted the gift; later gift edits must not remount its window or close a new composer.
 
 ## Jev suggestions
 
@@ -97,23 +95,16 @@ retroactively identify older gifts. The public gift API remains narrower than th
 CMS admin API; an anonymous account must not gain collection-writing privileges
 outside the authorized gift commands.
 
-### Legacy identity cutoff
-
-Old Better Auth users and House gifts remain in their original storage until a
-separate migration is approved and verified. Native cookies do not recover old
-localStorage bearer ownership. A credential-verified identity bridge or an
-explicitly approved legacy-auth cutoff is required before claiming continuity.
-Names and submitted old IDs cannot serve as the bridge. See the retirement notes;
-this refactor provides neither an importer nor permission to delete old data.
-
 ## Public and private data
 
-Public gift data contains its opaque ID, emoji ID, displayed author name,
-server-created date, and public text when applicable. Private text never appears
-in page HTML, hydration data, public snapshots, generic public CMS responses,
-search results, or shared caches.
+Public gift data contains its opaque ID, emoji ID, server-created date, and
+visibility. Public gifts include their attribution and message. For private
+gifts, both `authorName` and `message` are null in public snapshots and unrelated
+visitors' detail responses; the icon still contributes to the visible pile.
+Private text and attribution never appear in page HTML, hydration data, generic
+public CMS responses, search results, or shared caches.
 
-Retrieve private text through an authorized, non-cacheable endpoint. Both sender
+Retrieve private text and attribution through an authorized, non-cacheable endpoint. Both sender
 and owner use native EmDash sessions; sender access compares the stored author ID,
 and owner access additionally matches the exact configured `HOUSE_OWNER_ID`.
 Being another authenticated CMS user is not sufficient. Empty owner configuration
@@ -139,32 +130,36 @@ responses or retry payloads.
 
 All visitors can rearrange their own local clump. The database stores shared gift
 membership, not poses. Fetch the collection through ordinary HTTP and refresh the
-current browser after its successful mutations. Other browsers see changes on a
+current browser after its successful mutations. Serialize create/edit/revoke and
+their snapshot application per scene so delayed responses cannot restore removed
+gifts. Edits carry the detail record's version; storage applies them atomically
+only if that version still matches. A 409 preserves the draft and requires an
+explicit latest-record reload before editing again. Other browsers see changes on a
 subsequent read or reload, not a push. No WebSockets, SSE, polling loop, presence
 counts, cursors, placement commands, or shared physics are needed.
 
-Each local scene starts at 500 × 600 and grows with the pile; a scrollable viewport preserves access to gifts as it grows. Membership reconciliation adds/removes only the affected bodies, without rewriting existing transforms, scaling the arrangement, shrinking the stage, or canceling an active grab. Reloading starts a fresh local arrangement.
+Each local scene follows the measured viewport and grows with the pile; overflow remains inside its scrollable viewport. Resizing remaps existing poses. Membership reconciliation preserves unaffected bodies and active grabs, and deleting gifts does not shrink the expanded stage. Reloading starts a fresh local arrangement.
 
-PartySync, PartyServer, PartySocket, and the active House service are retired.
-Keep only the inert class export and deployment history needed to retain legacy
-storage pending migration. Do not build a notification relay as a replacement.
+The inert `House` export and applied deployment history preserve existing
+infrastructure; neither serves gift requests.
 
 ## Effect and Alchemy boundary
 
 Effect owns command validation, authorization, TypeSafe calls, storage services, concurrency errors, and retry/cancellation boundaries. Matter retains its imperative numerical loop and transform rendering.
 
 Wrangler describes the active Worker, `DB` / `MEDIA` / `SESSION`, setup and Jev
-secrets, and owner ID. Hosted previews share production CMS users, gifts, content,
-and media; only their session KV binding stays environment-specific. Do not run a
-second setup or use preview for destructive tests. Preserve EmDash's request and
-scheduled handlers, custom domains, media access, and image plugin. Only production
-runs the publishing cron.
+secrets, and owner ID. Hosted preview uses separate D1, R2, and session KV from
+production. Preview CMS users, gifts, content, and media never write into production.
+Its owner/passkey setup and `HOUSE_OWNER_ID` are environment-specific; do not clone
+production credentials or automatically copy content. Preserve EmDash's request
+and scheduled handlers, custom domains, media access, and image plugin. Only
+production runs the publishing cron.
 
 The Alchemy stack still consumes the prebuilt Worker and references CMS/media
 without managing their lifecycle. Its temporary unbound `Visitors` declaration
 and inert `HOUSE` binding are preservation holds, not app dependencies. Removing
-them without the [staged retirement](legacy-gift-retirement.md) can destroy legacy
-data. Do not plan/deploy this transitional stack as a build check.
+them can delete remote storage; see the [deployment guide](portfolio-deployment.md).
+Do not plan/deploy this stack as a build check.
 
 ## Confirmed product decisions
 
@@ -172,7 +167,7 @@ data. Do not plan/deploy this transitional stack as a build check.
 | --- | --- |
 | Scene and collision | Scene 01, the clump; object-sized bodies |
 | Text inclusion | Blank message leaves only the default present; optional message entry is separate from object search |
-| Included-message audience | Public by default; sender can choose Kaio and sender only |
+| Message and attribution audience | Public by default; sender can choose Kaio and sender only; icons always visible, icon-only gifts public |
 | Publishing | Immediate; Kaio can remove unwanted gifts |
 | Retention | Keep every gift until its sender or Kaio removes it |
 | Shared membership | CMS-backed HTTP snapshots; no realtime sync; movement and physics stay local |
@@ -186,8 +181,10 @@ Retaining all gifts means crowding is a layout and performance constraint, not p
 - Real CMS gift persistence and author linkage, private/public projection, exact
   owner authorization, CSRF rejection, and denial of other users' reclaim/detail
   requests, including direct generic CMS API attempts.
-- Safe submit/retry and delete behavior, no deleted private text in responses,
-  independent local arrangements, and HTTP-only network traffic.
+- Safe submit/retry and delete behavior, atomic stale-edit rejection, ordered
+  mutation snapshots, stable gift windows and source-scoped composer handoff;
+  no deleted private text in responses, independent local arrangements, and
+  HTTP-only network traffic.
 - Debounced Jev suggestions with local fallback, cancellation and stale-result
   protection; credentials and drafts must not leak into public records.
 - Desktop/mobile layout, click-versus-drag, keyboard completion, window focus and
@@ -195,7 +192,8 @@ Retaining all gifts means crowding is a layout and performance constraint, not p
 - Existing CMS pages, media, request/scheduled handlers, and static preview-config
   checks. Passing old Better Auth/socket tests is not evidence for this version.
 
-Exercise mutations only on disposable local storage. Hosted checks require
-separate approval because preview shares the live CMS. Legacy migration must
-verify actual source/import counts and ownership mappings; retaining resources
-alone is not migration verification.
+Prefer disposable local storage for behavioral checks. Preview is isolated from
+production, but hosted checks must still respect its users and content. Verify
+its deployed binding IDs before any preview mutation. Legacy migration must verify
+actual source/import counts and ownership mappings; retaining resources alone is
+not migration verification.

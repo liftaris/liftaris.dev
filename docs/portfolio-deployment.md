@@ -7,26 +7,21 @@ background gift synchronization, or companion Worker. `src/worker.ts` preserves
 EmDash's request and scheduled handlers. Its inert `House` export exists only to
 preserve a historical namespace, not to serve the application.
 
-**Native CMS gifts start fresh.** Kaio confirmed that local gifts are development
-tests, preview has no gifts, and production has not shipped this system. No
-legacy migration is needed. Existing stores remain untouched; the
-[retirement safeguards](legacy-gift-retirement.md) still apply to resource deletion.
-
 ## Resource ownership
 
 | Target | Configuration owner | Resources |
 | --- | --- | --- |
 | Existing production portfolio | `wrangler.jsonc` / Wrangler | Existing `liftaris-dev` Worker, CMS `DB`, `MEDIA`, `SESSION`, custom domains, and publishing cron |
 | Local development | Astro / Wrangler local simulator | Local CMS `DB`, `MEDIA`, and `SESSION` |
-| GitHub branch previews | `wrangler.jsonc` `previews` / Workers Builds | Shared production CMS D1 and media R2; separate preview session KV |
-| Existing standalone Alchemy stages | `alchemy.run.ts` / Alchemy | Shared CMS/media references, stage Worker and session KV, plus temporary legacy preservation declarations |
+| GitHub branch previews | `wrangler.jsonc` `previews` / Workers Builds | Preview-only CMS D1, media R2, and session KV; all separate from production |
+| Existing standalone Alchemy stages | `alchemy.run.ts` / Alchemy | References to the provisioned preview CMS/media, stage Worker and session KV, plus temporary legacy preservation declarations |
 
-Preview and production intentionally share **posts, media, native visitor users,
-and gifts** in one CMS. An account/session is not portable between origins merely
-because the database is shared. The `SESSION` KV binding remains separate for
-production and preview; branches using the same preview ID share that preview KV.
-Astro/EmDash native cookie sessions use that KV, not a separate visitor auth
-service. Keep preview CMS versions compatible with the shared schema.
+Preview and production do not share **posts, media, native users, gifts, or
+sessions**. Branches using the same `previews` resource IDs share the preview
+stores with each other, not with production; this is an environment split, not
+per-branch database provisioning. Astro/EmDash native cookie sessions use each
+target's `SESSION` KV, not a separate visitor auth service. Production's existing
+resources, content, routes, and publishing cron remain unchanged.
 
 The app needs `DB`, `MEDIA`, `SESSION`, `JEV_API_KEY`, and `HOUSE_OWNER_ID`, plus
 `EMDASH_SETUP_KEY` to protect initial setup. The former production visitor sentinel
@@ -79,15 +74,13 @@ Existing CMS sessions must not be overwritten by visitor initialization.
 ```sh
 bun run typecheck
 bun run build
-node scripts/verify-preview-config.mjs
 ```
 
-`bun run build` runs the preview verifier automatically; the separate command can
-recheck an existing build. It validates `dist/server/wrangler.json`: shared CMS
-and media, isolated session KV, inherited server secrets, no `VISITOR_DB` or
-`HOUSE` runtime bindings, and preserved non-destructive class history. The Worker
-must still export the inert `House` and retain `fetch` / `scheduled`. The Astro
-build may open local helper servers; it does not deploy the Worker.
+`bun run build` compiles the Worker; it does not deploy. Before deploying a
+preview, inspect `dist/server/wrangler.json`: D1, R2, and session KV must be
+separate from production, and the setup/Jev secrets must be inherited. Keep
+`fetch` / `scheduled`, the inert `House` export, and applied class history.
+`scripts/` contains optional local tooling and is not part of the tracked build.
 
 For a strictly local production-build smoke test with the existing custom-domain routes, use an explicit local upstream, so the site's canonical-host redirect does not send requests to production:
 
@@ -101,22 +94,33 @@ Use disposable local storage for account and gift tests. Verify two independent
 native sessions, reload persistence, unauthorized reclaim/private-message denial,
 exact owner authorization, and public-response redaction. HTTP-only behavior must
 not depend on socket reconnection, timers, or cross-browser pushes. Do not run
-mutation tests against shared preview/production CMS bindings.
+mutation tests against production CMS bindings. Hosted preview tests require
+explicit authorization and verified preview-only resource IDs.
 
 ## GitHub branch previews
 
 Workers Builds deploys non-production branches with `wrangler preview`. This uses the explicit `previews` block in `wrangler.jsonc`, not the top-level production bindings and not the Alchemy stack. Astro otherwise injects a `SESSION` preview binding without a namespace ID, which Cloudflare rejects during deployment.
 
-The preview `DB` binding uses `liftaris-emdash`, and `MEDIA` uses
-`liftaris-emdash-media`, exactly as production does. No second setup wizard or seed
-import is needed. **Preview gift creation/removal and automatic account creation
-now also write to the shared live CMS**, alongside edits, uploads, and schema
-migrations. Preview is not a sandbox. Use the production CMS admin origin for
-existing passkeys, whose credentials are origin-bound.
+Every storage binding in `previews` must identify a provisioned non-production
+resource: `DB.database_id`, `MEDIA.bucket_name`, and `SESSION.id`. Use these
+explicit identifiers rather than automatic provisioning or production fallback.
+The source of truth is `wrangler.jsonc`; verify the generated config after Astro
+builds because adapter-generated bindings can differ from the source.
 
-The only environment-specific storage binding needed by the preview runtime is
-its `SESSION` KV. The old preview visitor database is unbound, not deleted. Old
-House namespaces and test identities remain untouched, not imported into the CMS.
+Start the preview CMS fresh. Do not export or copy production D1 data, media,
+users, sessions, or secrets into it. EmDash initializes its own schema; do not
+apply the archived visitor-auth migrations to the preview `DB`. Until the owner
+completes protected first-admin setup, a successful deployment may redirect to
+setup rather than serve the portfolio. This is not application readiness.
+
+Use a distinct preview setup key and complete setup on the preview origin.
+Passkeys are origin-bound; a production passkey is not a preview administrator.
+Leave preview `HOUSE_OWNER_ID` empty (fail closed) until the preview administrator
+exists, then use that account's ID from `/_emdash/api/auth/me`, rebuild and redeploy
+only preview. Do not copy the production owner's ID as a shortcut.
+
+The old preview visitor database is unbound, not deleted. Old House namespaces
+and test identities remain untouched, not imported into the new preview CMS.
 
 Set `EMDASH_SETUP_KEY` and `JEV_API_KEY` in the **Previews Base** configuration.
 Use a distinct preview setup key. Values do not belong in Git or plaintext `vars`.
@@ -134,8 +138,8 @@ The explicit secrets file initializes an existing Preview too, including one
 created by a failed build. Wrangler 4.135 preview uploads replace the deployment
 environment: neither top-level `secrets.required` nor an earlier secret upload
 preserves omitted bindings. `previews.unsafe.bindings` explicitly inherits these
-two server-side secrets without putting values in Git or CI, and the verifier
-requires both. Subsequent pushes can deploy without a secrets file. Verify names
+two server-side secrets without putting values in Git or CI. Subsequent pushes
+can deploy without a secrets file. Verify names
 after an authorized deployment with
 `wrangler preview secret list --name interactive-stuff`; a green build alone does
 not prove secrets survived.
@@ -144,21 +148,43 @@ The first deployment must include `--secrets-file`: with Wrangler 4.135, a brand
 
 Production routes and Cron Triggers do not run against branch previews. Leave them at the top level; scheduled CMS publishing runs only on production, not again on a preview. Never use `bun run deploy` to repair a preview. The published preview URL is shown by Wrangler and the Cloudflare dashboard.
 
+After an authorized deployment, read back that exact preview deployment's
+`DB`, `MEDIA`, and `SESSION` bindings and compare them with the generated preview
+config and production identifiers. Verify secret names without printing values,
+then check the hosted response. Report any remaining owner setup separately from
+deployment success; do not bypass setup or create the owner's credentials.
+
 ## Existing standalone Alchemy previews
 
 Alchemy consumes the current adapter's prebuilt Worker using
 `Cloudflare.Worker({ main, bundle: false, assets })`. It preserves the emitted
 module tree, `dist/client`, and custom entrypoint rather than installing another
-Astro adapter. Raw `DB` and `MEDIA` bindings reference shared production resources
-without adopting or managing their lifecycle. Only production runs the CMS cron.
+Astro adapter. With pinned `alchemy@2.0.0-beta.79`, construction-time
+schema-validated string config values supply the raw `DB` and `MEDIA` bindings:
 
-The stack needs only the setup and Jev secrets (`Config.Redacted`), the configured
-owner ID, and stage sessions for the application. It still declares legacy
+- `PREVIEW_CMS_DATABASE_ID`: the provisioned preview CMS D1 ID.
+- `PREVIEW_MEDIA_BUCKET_NAME`: the provisioned preview media R2 bucket name.
+
+Both are required, with no production defaults; malformed identifiers and the
+existing production CMS ID/media name are rejected during construction. Supply
+the exact resources recorded in Wrangler's `previews` block and check them against production before
+an approved Alchemy apply. Raw bindings reference those resources without
+adopting or managing their lifecycle: do not also declare Alchemy D1/R2 resources
+for them. This avoids competing resource owners and creating an extra CMS solely
+for the transitional Alchemy stack. Stage `Sessions` remains Alchemy-owned;
+do not replace it with the production or Wrangler preview namespace.
+
+The stack also needs preview setup and Jev secrets (`Config.Redacted`) and the
+preview administrator's `HOUSE_OWNER_ID`. Routes and crons are explicitly empty;
+only production runs scheduled CMS publishing. The stack still declares legacy
 `Visitors` with `RemovalPolicy.retain()` and an unused `HOUSE` binding as a
 **data-preservation hold**. Alchemy otherwise emits a destructive class migration
 when the binding is removed. These are not a second active auth or gift backend.
 The Worker is also marked for retention, but that does not prevent class deletion
-during an in-place update. See the [staged retirement procedure](legacy-gift-retirement.md).
+during an in-place update. A source-level retain policy is not enough: it must
+first be applied to each existing stage and verified in its persisted state.
+Removing the `HOUSE` binding also needs an explicitly approved namespace
+preservation or deletion plan; there is no class-level retain switch.
 
 Do not provision fresh stages from this transitional stack or run it as a static
 check. **A first Alchemy plan can write cloud state** via `Cloudflare.state()`
@@ -171,19 +197,22 @@ legacy databases; their unchanged migration history still belongs to Alchemy.
 
 `bun run deploy` targets the Wrangler-owned production Worker, not a preview.
 Keep `EMDASH_SETUP_KEY` and `JEV_API_KEY` configured as Worker secrets. Set the
-exact `HOUSE_OWNER_ID` for CMS administration and moderation. The production and
-preview Wrangler configurations identify Kaio's verified native administrator.
+exact `HOUSE_OWNER_ID` for CMS administration and moderation. Keep the verified
+production administrator ID unchanged; preview uses its own administrator ID.
 Preserve the existing CMS ID,
 R2 bucket, KV namespace, custom domains, cron, historical `house-v1` migration,
 and inert class export. Do not add `deleted_classes` or erase old resources.
 
-No legacy-data migration is required for this fresh-start rollout. Passing local
-checks does not authorize a cloud write or resource deletion. Do not use `--adopt`,
+Passing local checks does not authorize a cloud write or resource deletion. Do not use `--adopt`,
 rename preview resources to production names, or copy old visitor IDs into `DB`.
 
 ## References
 
 - [Alchemy state and first-run bootstrap](https://alchemy.run/state-store/)
+- [Alchemy documentation index](https://alchemy.run/llms.txt) and [Secrets & Config](https://alchemy.run/environments/secrets)
+- [Alchemy async Workers and prebuilt bundles](https://alchemy.run/cloudflare/compute/workers)
 - [Alchemy Worker source](https://github.com/alchemy-run/alchemy/blob/main/packages/alchemy/src/Cloudflare/Workers/Worker.ts), verified against the installed beta.79 `WorkerProps` / `bundle: false` implementation
+- [Cloudflare Previews: resource isolation](https://developers.cloudflare.com/workers/previews/resources/) and [configuration](https://developers.cloudflare.com/workers/previews/configuration/)
+- [Wrangler configuration](https://developers.cloudflare.com/workers/wrangler/configuration/), checked against installed Wrangler 4.135.0 `config-schema.json`
 - [Astro Cloudflare integration](https://docs.astro.build/en/guides/integrations-guide/cloudflare/)
 - [Cloudflare Durable Object class migrations](https://developers.cloudflare.com/durable-objects/reference/durable-objects-migrations/)

@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import type { SubmitEvent } from "react";
 import { createGift, ensureVisitor, getGift, suggestEmoji } from "../../lib/house/client";
+import type { HouseMutation } from "../../lib/house/client";
 import { EMOJI_CATALOG, findEmoji, localSuggestions } from "../../lib/house/emoji";
-import type { Audience, EmojiOption, GiftDetail, HouseSnapshot, Visitor } from "../../lib/house/types";
+import type { Audience, EmojiOption, GiftDetail, Visitor } from "../../lib/house/types";
 
-export function GiftComposer({ onGift, onSnapshot, onSavingChange }: {
-  onGift: (gift: GiftDetail, bounds: DOMRect) => void;
-  onSnapshot: (snapshot: HouseSnapshot) => void;
+export function GiftComposer({ onGift, mutate, onSavingChange }: {
+  onGift: (gift: GiftDetail, bounds: DOMRect, form: HTMLFormElement) => void;
+  mutate: HouseMutation;
   onSavingChange: (saving: boolean) => void;
 }) {
   const [text, setText] = useState("");
@@ -58,6 +59,7 @@ export function GiftComposer({ onGift, onSnapshot, onSavingChange }: {
   const submit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (saving) return;
+    const form = event.currentTarget;
     setSaving(true);
     onSavingChange(true);
     setError("");
@@ -66,11 +68,11 @@ export function GiftComposer({ onGift, onSnapshot, onSavingChange }: {
     if (pending.current?.key !== key) pending.current = { key, id: crypto.randomUUID() };
     try {
       setVisitor(await ensureVisitor());
-      const snapshot = await createGift({ ...draft, requestId: pending.current.id });
-      onSnapshot(snapshot);
+      const requestId = pending.current.id;
+      const snapshot = await mutate(() => createGift({ ...draft, requestId }));
       if (!snapshot.createdGiftId) throw new Error("This gift has already been taken back. Change your draft to leave a new one.");
       const gift = await getGift(snapshot.createdGiftId);
-      onGift(gift, preview.current!.getBoundingClientRect());
+      onGift(gift, preview.current!.getBoundingClientRect(), form);
       pending.current = null;
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Your gift couldn’t be left. Please try again.");
@@ -102,7 +104,7 @@ export function GiftComposer({ onGift, onSnapshot, onSavingChange }: {
         <label className="house-sr-only" htmlFor="gift-message">Your message, optional</label>
         <textarea id="gift-message" name="message" rows={5} maxLength={2000} placeholder="A message, a link, a terrible pun… (optional)" value={text} onChange={(event) => setText(event.target.value)} disabled={saving} />
         <label className="gift-from" htmlFor="gift-name"><span>From</span><input id="gift-name" aria-label="Your name, optional" name="nickname" autoComplete="nickname" type="text" placeholder={visitor?.name ?? "Anonymous animal"} value={displayName} maxLength={40} onChange={(event) => setDisplayName(event.target.value)} disabled={saving} /></label>
-        <label className="house-audience"><span>Message visible to</span><select value={visibility} disabled={saving} onChange={(event) => setVisibility(event.target.value as Audience)}><option value="public">Everyone</option><option value="private">Only Kaio & you</option></select></label>
+        <label className="house-audience"><span>Message & name visible to</span><select value={visibility} disabled={saving} onChange={(event) => setVisibility(event.target.value as Audience)}><option value="public">Everyone</option><option value="private">Only Kaio & you</option></select></label>
       </div>
     </div>
     <button className="house-send" type="submit" disabled={saving}>{saving ? "Leaving your gift…" : "Leave gift"} <span aria-hidden="true">↗</span></button>

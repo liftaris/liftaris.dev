@@ -25,18 +25,37 @@ type ObjectWindowProps = {
 export function ObjectWindow({ title, icon, source, fallbackSource, origin, monochrome = false, closeLabel = "Close window", width = 480, height = 380, canClose = true, initialBounds, onReady, onClose, children }: ObjectWindowProps) {
   const [body, setBody] = useState<HTMLElement | null>(null);
   const [error, setError] = useState(false);
+  const initial = useRef({ source, origin, width, height, initialBounds });
+  const windowInstance = useRef<WinBox | null>(null);
+  const readyFired = useRef(false);
   const close = useRef(onClose);
   close.current = onClose;
   const closeAllowed = useRef(canClose);
   closeAllowed.current = canClose;
-  const ready = useRef(onReady);
-  ready.current = onReady;
+
   const fallback = useRef(fallbackSource);
   fallback.current = fallbackSource;
-  useLayoutEffect(() => { if (body) ready.current?.(); }, [body]);
+  useLayoutEffect(() => {
+    const win = windowInstance.current;
+    if (!body || !win) return;
+    win.setTitle(title);
+    const frame = win.window as HTMLElement;
+    frame.setAttribute("aria-label", title);
+    frame.dataset.monochrome = String(monochrome);
+    const iconButton = frame.querySelector<HTMLButtonElement>(".object-window-icon")!;
+    iconButton.textContent = icon;
+    iconButton.setAttribute("aria-label", `Collapse ${title} window`);
+    frame.querySelector(".wb-close")!.setAttribute("aria-label", closeLabel);
+    frame.querySelector(".object-window-handle")!.setAttribute("aria-label", `Move ${title} window. Use arrow keys; Escape collapses.`);
+  }, [body, title, icon, monochrome, closeLabel]);
+  useLayoutEffect(() => {
+    if (body && onReady && !readyFired.current) { readyFired.current = true; onReady(); }
+  }, [body, onReady]);
 
   // Capture focus before React removes portal children on parent-driven close.
   useLayoutEffect(() => {
+    // Geometry and source belong to this mounted window, not its changing content.
+    const { source, origin, width, height, initialBounds } = initial.current;
     let disposed = false;
     let instance: WinBox | undefined;
     let restoreFocus = false;
@@ -58,7 +77,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
       </div><div class="wb-body"></div>`;
       let closing = false;
       const options: WinBox.Params & { template: HTMLElement } = {
-        template, title, index: 20, header: 18,
+        template, index: 20, header: 18,
         class: "object-window no-max no-full no-resize no-animation",
         width, height, minwidth: 1, minheight: 44,
         top: 58, left: 36, right: 12, bottom: 12,
@@ -84,13 +103,10 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
         },
       };
       const win = instance = new WinBox(options);
+      windowInstance.current = win;
       const frame = win.window as HTMLElement;
       frame.setAttribute("role", "dialog");
-      frame.setAttribute("aria-label", title);
-      frame.dataset.monochrome = String(monochrome);
       const iconButton = frame.querySelector<HTMLButtonElement>(".object-window-icon")!;
-      iconButton.textContent = icon;
-      iconButton.setAttribute("aria-label", `Collapse ${title} window`);
       iconButton.title = "Drag to move; click to minimize";
       // WinBox owns movement; the pointer gesture only distinguishes a click from a drag.
       let iconPress: { id: number; x: number; y: number; moved: boolean } | undefined;
@@ -112,9 +128,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
       };
       iconButton.onpointercancel = iconButton.onlostpointercapture = () => { iconPress = undefined; };
       iconButton.onclick = (event) => { if (event.detail === 0) win.close(); };
-      frame.querySelector(".wb-close")!.setAttribute("aria-label", closeLabel);
       const handle = frame.querySelector<HTMLElement>(".object-window-handle")!;
-      handle.setAttribute("aria-label", `Move ${title} window. Use arrow keys; Escape collapses.`);
       frame.querySelector<HTMLButtonElement>(".wb-collapse")!.onclick = () => { win.close(); };
 
       const move = (x: number, y: number) => win.move(
@@ -159,9 +173,10 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
       disposed = true;
       detach();
       instance?.close(true);
+      windowInstance.current = null;
       if (restoreFocus) returnTarget()?.focus({ preventScroll: true });
     };
-  }, [title, icon, source, origin, monochrome, closeLabel, width, height, initialBounds]);
+  }, []);
 
   if (error) return <p role="alert">Couldn’t load this window. <button type="button" onClick={onClose}>Return to icon</button></p>;
   return body ? createPortal(<div className="object-window-content">{children}</div>, body) : null;

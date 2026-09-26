@@ -87,9 +87,3 @@ export const EXPERIENCE: Record<string, Experience> = {
     body: "In my first professional stint as a software dev, I built dashboards for the FAA and CBP. That's basically all I did: data visualization in a SPA, following mocks to a T. With React, yeah.",
   },
 };
-
-export const SOCIAL = {
-  github: "https://github.com/liftaris",
-  linkedin: "https://www.linkedin.com/in/kaiobarb",
-  email: "mailto:kaio@liftaris.dev",
-};

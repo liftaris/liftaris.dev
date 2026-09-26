@@ -23,11 +23,13 @@ A local `.dev.vars` file can hold Worker secrets; it is ignored by Git.
 
 The homepage contains the shared Matter.js clump. Visitors can leave emoji gifts,
 optionally attach a public or private message, and edit or take back their own gifts.
+All icons remain visible. Private messages and attribution are visible only to
+that gift's sender and the owner; icon-only gifts are public. The signed-in owner
+uses their CMS name rather than an anonymous visitor name.
 Jev suggests emoji while they type. Visitors receive an automatic native EmDash
 account with an animal name, without a signup form. Native HttpOnly session cookies
 authorize ownership; names and public gift IDs do not. Losing that session can
-lose access to earlier gifts. Legacy localStorage bearer tokens are not converted
-automatically.
+lose access to earlier gifts.
 
 Gifts are EmDash content in the existing CMS `DB`. The Effect-backed API uses
 ordinary HTTP reads and mutations: no realtime connection, shared physics, or
@@ -40,16 +42,11 @@ at `/_emdash/api/auth/me`. No visitor database migration or auth secret is neede
 
 See the [gift specification](docs/portfolio-gifts-spec.md) and
 [deployment guide](docs/portfolio-deployment.md). GitHub branch previews use the
-`previews` bindings in `wrangler.jsonc`. Preview and production share the same
-EmDash database and media library, now including native visitor users and gifts.
-The `SESSION` KV remains environment-specific. Preview writes affect shared live
-data; it is not a disposable CMS sandbox. No second CMS setup or content copy is
-needed.
-
-**No legacy migration is needed for this rollout.** Existing local gifts are
-development tests; preview has no gifts, and production has not shipped the gift
-system. Native CMS gifts start fresh. Legacy storage remains untouched; see the
-[retirement safeguards](docs/legacy-gift-retirement.md) before deleting resources.
+`previews` bindings in `wrangler.jsonc`. Preview has its own EmDash database,
+media bucket, and session KV, separate from production. Its native users, gifts,
+and content stay in that environment. Complete a separate owner/passkey setup,
+optionally import the repository seed, then configure the preview owner's ID.
+Production content and credentials are not copied automatically.
 
 ## Portfolio interaction lab
 
@@ -79,9 +76,12 @@ bun run build
 
 `bun run start` serves the production build through Wrangler.
 
-## Content and migration
+`scripts/` is ignored local development tooling, not a checkout requirement.
+Builds, lint, typechecking, and default test discovery do not depend on it.
 
-The `posts` collection contains title, date, and rich-text body fields. Its
+## Content
+
+The `posts` collection contains title, icon, date, and rich-text body fields. Its
 public URLs remain `/blog/<slug>`, including the existing mixed-case
 `Understanding-L-Systems` URL. The Theme Image editor block keeps separate light
 and dark image URLs and alternative text.
@@ -89,17 +89,10 @@ and dark image URLs and alternative text.
 When editing a published post, **Save** keeps a draft revision. Use **Publish
 changes** to make that revision visible on the site.
 
-`content/posts/*.md` is the preserved import archive, not the live CMS. The
-conversion script creates `seed/seed.json`, preserving original text, dates,
-URLs, nested lists, links, code, and images:
-
-```bash
-bun run migrate:posts
-```
-
-This command only prepares the import. EmDash initializes the schema on first
-request; content is imported by the setup wizard with seed content enabled (or
-the local dev bypass). Existing content is not overwritten on redeploy. Do not
+`content/posts/*.md` preserves the original posts; `seed/seed.json` supplies their
+initial CMS content and schema. Neither is the live CMS. EmDash initializes the
+schema on first request; content is imported by the setup wizard with seed
+content enabled (or the local dev bypass). Existing content is not overwritten on redeploy. Do not
 use the archive or seed to edit published content: use EmDash.
 
 The existing blog images have been imported into EmDash's media library. Live
@@ -121,7 +114,7 @@ The historical `house-v1` migration and inert `House` export preserve old storag
 the application does not bind or call it. Do not remove the history or add a
 class-deletion migration as a cleanup shortcut.
 
-Only deploy after approving the legacy-data cutover and the intended target:
+`bun run deploy` targets production, not preview:
 
 ```bash
 bunx wrangler login

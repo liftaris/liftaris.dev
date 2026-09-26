@@ -1,26 +1,23 @@
 import { expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { GiftDialog } from "../../components/house/GiftDialog";
+import { HouseClump } from "../../components/house/HouseClump";
+import { houseMutations } from "./client";
 import type { Gift, GiftDetail } from "./types";
 
 const gift: Gift = { id: "gift-1", emojiId: "gift", authorName: "Original author", createdAt: "2026-09-24", visibility: "public", message: "Previously public note" };
-const detail: GiftDetail = { ...gift, canEdit: false, canReclaim: false, canRemove: false };
-function render(current: GiftDetail) {
-  return renderToStaticMarkup(<GiftDialog gift={gift} initialDetail={current} onClose={() => {}} onSnapshot={() => {}} />);
-}
 
-test("authoritative private detail never falls back to an old public message", () => {
-  const html = render({ ...detail, visibility: "private", message: null, authorName: "Updated author" });
-  expect(html).not.toContain("Previously public note");
-  expect(html).toContain("A private note for Kaio");
-  expect(html).toContain("From Updated author");
-  expect(html).not.toContain("Original author");
-});
-
-test("only the gift author is offered editing; site moderation does not imply edit permission", () => {
-  expect(render({ ...detail, canEdit: true, canReclaim: true })).toContain("Edit gift");
-  expect(render(detail)).not.toContain("Edit gift");
-  const ownerView = render({ ...detail, canRemove: true });
-  expect(ownerView).not.toContain("Edit gift");
-  expect(ownerView).toContain("Remove gift");
+test("redacted detail replaces old public text and attribution while the private icon remains accessible", () => {
+  const hidden: GiftDetail = { ...gift, version: 2, visibility: "private", message: null, authorName: null, canEdit: false, canReclaim: false, canRemove: false };
+  const render = (detail: GiftDetail) => renderToStaticMarkup(<GiftDialog gift={gift} initialDetail={detail} onClose={() => {}} onDetail={() => {}} mutate={houseMutations(() => {})} />);
+  const html = render(hidden);
+  expect(html).not.toContain(gift.message!);
+  expect(html).not.toContain(gift.authorName!);
+  expect(html).not.toContain("house-attribution");
+  const scene = renderToStaticMarkup(<HouseClump gifts={[hidden]} inspectedIds={[]} onOpen={() => {}} />);
+  expect(scene).toContain('data-object="gift-1"');
+  expect(scene).not.toContain(gift.authorName!);
+  const authorized = render({ ...hidden, message: "Private note", authorName: "Stored author", canEdit: true });
+  expect(authorized).toContain("Private note");
+  expect(authorized).toContain("Stored author");
 });

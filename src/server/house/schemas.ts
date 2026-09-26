@@ -10,4 +10,4 @@ const GiftFields = {
 };
 
 export const CreateGiftSchema = Schema.Struct({ ...GiftFields, requestId: Identifier });
-export const UpdateGiftSchema = Schema.Struct(GiftFields);
+export const UpdateGiftSchema = Schema.Struct({ ...GiftFields, version: Schema.Int.check(Schema.isGreaterThan(0)) });

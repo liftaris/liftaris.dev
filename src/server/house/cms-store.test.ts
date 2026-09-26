@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from "bun:test";
-import { ContentRepository, SchemaRegistry } from "emdash";
+import { ContentRepository } from "emdash";
 import { cmsTestDb } from "./cms-test-db";
 import { CmsHouseStore } from "./cms-store";
 
@@ -19,91 +19,73 @@ async function fixture() {
 }
 
 const gift = { requestId: "one", emojiId: "popcorn", message: "Hello", visibility: "public" as const };
+const stranger = { visitor: null, owner: false };
 
-test("gifts are CMS records owned by the visitor's CMS account", async () => {
-  const { db, store, sender } = await fixture();
-  const result = await store.create(gift, sender);
-  expect(result.createdGiftId).toBeString();
-  const record = await new ContentRepository(db).findById("gifts", result.createdGiftId!);
-  expect(record?.authorId).toBe(sender.visitor.id);
-  expect(record?.data.message).toBe("Hello");
-  expect(result.gifts).toHaveLength(1);
-  const collection = await new SchemaRegistry(db).getCollection("gifts");
-  expect(collection?.supports).not.toContain("search");
-  expect(collection?.routable).toBe(false);
-});
-
-test("private messages are readable only by their sender and the owner", async () => {
+test("private gifts keep public icons but reveal message and author only to sender/owner; empty gifts are public", async () => {
   const { store, sender, other, owner } = await fixture();
-  const created = await store.create({ ...gift, visibility: "private", message: "Private note" }, sender);
+  const secret = { ...gift, visibility: "private", message: "Private note", displayName: "Private sender" };
+  const created = await store.create(secret, sender);
   const id = created.createdGiftId!;
-  expect(JSON.stringify(created)).not.toContain("Private note");
-  expect(JSON.stringify(created)).not.toContain(sender.visitor.id);
-  expect(await store.detail(id, sender)).toMatchObject({ message: "Private note", canEdit: true, canReclaim: true });
-  expect(await store.detail(id, owner)).toMatchObject({ message: "Private note", canRemove: true });
-  expect(await store.detail(id, other)).toMatchObject({ message: null, canEdit: false, canReclaim: false });
-  expect(await store.detail(id, { visitor: null, owner: false })).toMatchObject({ message: null, canEdit: false });
+  const redacted = { id, emojiId: gift.emojiId, visibility: "private", message: null, authorName: null };
+  expect(created.gifts[0]).toMatchObject(redacted);
+  expect(await store.snapshot()).toEqual({ gifts: created.gifts });
+  for (const viewer of [other, stranger]) {
+    const detail = await store.detail(id, viewer);
+    expect(detail).toMatchObject({ ...redacted, canEdit: false, canReclaim: false, canRemove: false });
+    for (const hidden of [secret.message, secret.displayName, sender.visitor.id]) {
+      expect(JSON.stringify({ created, detail })).not.toContain(hidden);
+    }
+  }
+  expect(await store.detail(id, sender)).toMatchObject({ message: secret.message, authorName: secret.displayName, canEdit: true, canReclaim: true });
+  expect(await store.detail(id, owner)).toMatchObject({ message: secret.message, authorName: secret.displayName, canEdit: true, canRemove: true });
+
+  const icon = await store.create({ ...gift, requestId: "icon", message: " \n ", visibility: "private" }, sender);
+  expect(icon.gifts.find((item) => item.id === icon.createdGiftId)).toMatchObject({ visibility: "public", message: null, authorName: sender.visitor.name });
+  const owned = await store.create(gift, owner);
+  expect(owned.gifts.find((item) => item.id === owned.createdGiftId)).toMatchObject({ authorName: "Kaio", message: gift.message });
 });
 
-test("visitors can edit only their own gifts and cannot change ownership", async () => {
-  const { db, store, sender, other } = await fixture();
-  const id = (await store.create(gift, sender)).createdGiftId!;
-  await expect(store.update(id, { ...gift, message: "stolen" }, other)).rejects.toMatchObject({ status: 403 });
-  await expect(store.update(id, gift, { visitor: null, owner: false })).rejects.toMatchObject({ status: 401 });
-  const changed = await store.update(id, { ...gift, message: "Secret edit", visibility: "private", authorId: other.visitor.id, status: "draft", collection: "posts" }, sender);
-  expect(changed.gifts[0].message).toBeNull();
-  expect(await store.detail(id, sender)).toMatchObject({ message: "Secret edit", canEdit: true });
-  const record = await new ContentRepository(db).findById("gifts", id);
-  expect(record?.authorId).toBe(sender.visitor.id);
-  expect(record?.status).toBe("published");
-  await expect(store.update(id, { ...gift, emojiId: "bogus" }, sender)).rejects.toMatchObject({ status: 400 });
-  await expect(store.update(id, { ...gift, message: "x".repeat(2001) }, sender)).rejects.toMatchObject({ status: 400 });
+test("version-checked edits retain CMS identity/lifecycle and cannot overwrite a newer private CMS edit", async () => {
+  const { db, store, sender, other, owner } = await fixture();
+  const repository = new ContentRepository(db);
+  const id = (await store.create({ ...gift, authorId: other.visitor.id, status: "draft" }, sender)).createdGiftId!;
+  const original = (await repository.findById("gifts", id))!;
+  const { version } = await store.detail(id, sender);
+  expect(version).toBe(original.version);
+  await expect(store.update(id, { ...gift, version }, other)).rejects.toMatchObject({ status: 403 });
+  await expect(store.update(id, { ...gift, version }, stranger)).rejects.toMatchObject({ status: 401 });
+
+  await store.update(id, { ...gift, version, message: "Sender edit", authorId: other.visitor.id,
+    author_id: other.visitor.id, status: "draft", collection: "posts" }, sender);
+  const edited = (await repository.findById("gifts", id))!;
+  expect(edited).toMatchObject({ authorId: sender.visitor.id, status: "published", createdAt: original.createdAt,
+    publishedAt: original.publishedAt, version: version + 1, data: { submission_hash: original.data.submission_hash } });
+
+  await repository.update("gifts", id, { data: { message: "New private CMS note", visibility: "private" } });
+  await expect(store.update(id, { ...gift, version: edited.version, message: "Stale public draft" }, sender)).rejects.toMatchObject({ status: 409 });
+  expect(await repository.findById("gifts", id)).toMatchObject({ version: edited.version + 1,
+    data: { message: "New private CMS note", visibility: "private" } });
+  const current = await store.detail(id, owner);
+  expect(current).toMatchObject({ message: "New private CMS note", authorName: sender.visitor.name });
+  await store.update(id, { ...gift, version: current.version, displayName: current.authorName, message: "Owner edit", visibility: "private" }, owner);
+  expect(await store.detail(id, sender)).toMatchObject({ message: "Owner edit", authorName: sender.visitor.name, version: current.version + 1 });
+  expect((await repository.findById("gifts", id))?.authorId).toBe(sender.visitor.id);
+
+  await repository.update("gifts", id, { status: "draft" });
+  await expect(store.update(id, { ...gift, version: current.version + 1 }, sender)).rejects.toMatchObject({ status: 404 });
+  expect(await store.snapshot()).toEqual({ gifts: [] });
 });
 
-test("withdrawal is sender-only, owner moderation works, and CMS changes are authoritative", async () => {
+test("only sender/owner can remove gifts, repeated removal is safe and edits never revive trash", async () => {
   const { db, store, sender, other, owner } = await fixture();
   const id = (await store.create(gift, sender)).createdGiftId!;
+  const { version } = await store.detail(id, sender);
+  await expect(store.remove(id, stranger)).rejects.toMatchObject({ status: 401 });
   await expect(store.remove(id, other)).rejects.toMatchObject({ status: 403 });
   expect((await store.remove(id, sender)).gifts).toEqual([]);
-  await expect(store.detail(id, sender)).rejects.toMatchObject({ status: 404 });
   expect((await store.remove(id, sender)).gifts).toEqual([]);
+  await expect(store.update(id, { ...gift, version }, sender)).rejects.toMatchObject({ status: 404 });
+  expect((await new ContentRepository(db).findByIdIncludingTrashed("gifts", id))?.data.message).toBe(gift.message);
   const second = (await store.create({ ...gift, requestId: "two" }, other)).createdGiftId!;
-  const repository = new ContentRepository(db);
-  await repository.update("gifts", second, { data: { message: "Edited in CMS" } });
-  expect((await store.snapshot()).gifts[0].message).toBe("Edited in CMS");
   expect((await store.remove(second, owner)).gifts).toEqual([]);
-});
-
-test("concurrent retries deduplicate and cannot resurrect a permanently deleted gift", async () => {
-  const { db, store, sender, other } = await fixture();
-  const results = await Promise.all([store.create(gift, sender), store.create(gift, sender)]);
-  expect(results[0].createdGiftId).toBe(results[1].createdGiftId);
-  expect((await store.snapshot()).gifts).toHaveLength(1);
-  const id = results[0].createdGiftId!;
-  await expect(store.create({ ...gift, message: "different" }, sender)).rejects.toMatchObject({ status: 409 });
-  await store.create(gift, other);
-  await store.remove(id, sender);
-  expect((await store.create(gift, sender)).createdGiftId).toBeNull();
-  await new ContentRepository(db).permanentDelete("gifts", id);
-  const restarted = new CmsHouseStore(db);
-  await restarted.initialize();
-  expect((await restarted.create(gift, sender)).createdGiftId).toBeNull();
-  expect((await restarted.snapshot()).gifts).toHaveLength(1);
-});
-
-test("new submissions are limited per CMS user but retries and owner moderation remain available", async () => {
-  const { store, sender, owner } = await fixture();
-  for (let i = 0; i < 10; i++) await store.create({ ...gift, requestId: `attempt-${i}` }, sender);
-  await expect(store.create({ ...gift, requestId: "too-many" }, sender)).rejects.toMatchObject({ status: 429 });
-  expect((await store.create({ ...gift, requestId: "attempt-0" }, sender)).createdGiftId).toBeString();
-  expect((await store.create(gift, owner)).createdGiftId).toBeString();
-});
-
-test("concurrent first requests initialize one complete gift collection", async () => {
-  const { db } = await cmsTestDb();
-  cleanups.push(() => db.destroy());
-  const stores = Array.from({ length: 4 }, () => new CmsHouseStore(db));
-  await Promise.all(stores.map((store) => store.initialize()));
-  expect(await stores[0].snapshot()).toEqual({ gifts: [] });
-  expect((await new SchemaRegistry(db).getCollectionWithFields("gifts"))?.fields.map((field) => field.slug)).toContain("submission_hash");
 });

@@ -1,6 +1,5 @@
-// Optional real-Chromium component checks, without a dev server or DOM-test dependencies:
-// HOUSE_BROWSER_TESTS=1 bun test src/lib/house/client-browser.test.ts
-// Network and window/physics boundaries are doubles; React and gift components are real.
+// Deferred real-Chromium checks: HOUSE_BROWSER_TESTS=1 bun test src/lib/house/client-browser.test.ts
+// Only network and scene physics are doubled; the windows, portals and gift forms are real.
 import { afterAll, beforeAll, expect, test } from "bun:test";
 import { build } from "esbuild";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
@@ -24,10 +23,8 @@ beforeAll(async () => {
   directory = await mkdtemp(join(tmpdir(), "house-client-tests-"));
   const stubs: Record<string, string> = {
     "./HouseClump": `export function HouseClump({gifts,onOpen}) {return <div id="scene"><button data-object="leave-gift" onClick={e=>onOpen({id:"leave-gift",name:"Present",emoji:"🎁"},e.currentTarget)}>Compose</button>{gifts.map(g=><button key={g.id} data-object={g.id} onClick={e=>onOpen({id:g.id,name:g.emojiId,emoji:g.emojiId},e.currentTarget,g)}>{g.id}:{g.emojiId}</button>)}</div>}`,
-    "../window/ObjectWindow": `export function ObjectWindow({children,title,icon}) {return <section className="object-window"><h2>{icon} {title}</h2>{children}</section>}`,
     "../folder/Folder": "export const Folder = () => null",
     "../../../components/Stage": "export const Stage = () => null",
-    "../../lib/house/use-house-sync": "export function useHouseSync() { window.syncInvocations++; }",
   };
   const bundle = await build({
     stdin: {
@@ -37,26 +34,30 @@ beforeAll(async () => {
         import {flushSync} from "react-dom";
         import {House} from "./src/components/house/House";
         import {GiftDialog} from "./src/components/house/GiftDialog";
-        import {GiftComposer} from "./src/components/house/GiftComposer";
-        const gift = {id:"gift-1",emojiId:"gift",authorName:"Quiet Otter",createdAt:"2026-09-24",visibility:"public",message:"Old public note",canEdit:true,canReclaim:true,canRemove:false};
+        import {ObjectWindow} from "./src/components/window/ObjectWindow";
+        import {houseMutations} from "./src/lib/house/client";
+        const gift = {id:"gift-1",emojiId:"gift",authorName:"Quiet Otter",createdAt:"2026-09-24",visibility:"public",message:"Old public note",version:1,canEdit:true,canReclaim:true,canRemove:false};
         let root;
-        Object.assign(window, {gift,House,GiftDialog,GiftComposer,syncInvocations:0,
+        Object.assign(window, {React,gift,House,GiftDialog,ObjectWindow,houseMutations,
           mount(Component,props={}) {if(root)flushSync(()=>root.unmount());root=createRoot(document.getElementById("root"));flushSync(()=>root.render(React.createElement(Component,props)));},
+          render(Component,props) {flushSync(()=>root.render(React.createElement(Component,props)));},
           async until(predicate) {const end=Date.now()+3000;while(!predicate()){if(Date.now()>end)throw Error("Timed out: "+predicate+"\\n"+document.body.innerText);await new Promise(r=>setTimeout(r,10));}},
+          tick() {return new Promise(r=>setTimeout(r,30));},
           change(selector,value) {const el=document.querySelector(selector); const proto=el instanceof HTMLTextAreaElement?HTMLTextAreaElement.prototype:el instanceof HTMLSelectElement?HTMLSelectElement.prototype:HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(proto,"value").set.call(el,value);el.dispatchEvent(new Event(el instanceof HTMLSelectElement?"change":"input",{bubbles:true}));},
           submit(selector) {document.querySelector(selector).dispatchEvent(new Event("submit",{bubbles:true,cancelable:true}));},
           clickText(text) {const el=[...document.querySelectorAll("button")].find(el=>el.textContent===text);if(!el)throw Error("Missing button: "+text);el.click();},
         });`,
     },
-    bundle: true, write: false, format: "iife", platform: "browser", jsx: "automatic",
+    outfile: "test.js", bundle: true, write: false, format: "iife", platform: "browser", jsx: "automatic",
     define: { "process.env.NODE_ENV": '"development"' },
     plugins: [{ name: "component-boundaries", setup(api) {
-      api.onResolve({ filter: /.*/ }, (args) => args.path in stubs ? { path: args.path, namespace: "stub" } : args.path.endsWith(".css") ? { path: args.path, namespace: "style" } : undefined);
+      api.onResolve({ filter: /.*/ }, (args) => args.path in stubs ? { path: args.path, namespace: "stub" } : undefined);
       api.onLoad({ filter: /.*/, namespace: "stub" }, (args) => ({ contents: stubs[args.path], loader: "tsx", resolveDir: process.cwd() }));
-      api.onLoad({ filter: /.*/, namespace: "style" }, () => ({ contents: "", loader: "js" }));
     } }],
   });
-  await writeFile(join(directory, "test.html"), `<html><body><div id="root"></div><script>${bundle.outputFiles[0].text.replaceAll("</script", "<\\/script")}</script></body></html>`);
+  const script = bundle.outputFiles.find((file) => file.path.endsWith(".js"))!.text;
+  const css = bundle.outputFiles.find((file) => file.path.endsWith(".css"))!.text;
+  await writeFile(join(directory, "test.html"), `<html><head><style>${css}</style></head><body><div id="root"></div><script>${script.replaceAll("</script", "<\\/script")}</script></body></html>`);
   browser("open", new URL(`file://${directory}/test.html`).href);
 }, 60_000);
 
@@ -65,206 +66,139 @@ afterAll(async () => {
   try { browser("close"); } finally { if (directory) await rm(directory, { recursive: true, force: true }); }
 }, 40_000);
 
-check("House initializes the anonymous session on mount without realtime", () => {
-  const result = evaluate<{ methods: string[]; sync: number }>(`
-    const calls=[];
-    window.fetch=async(path,init={})=>{calls.push([path,init.method??"GET"]);return Response.json(path==="/api/house"?{gifts:[]}:{visitor:{id:"me",name:"Quiet Otter"},owner:false});};
-    mount(House);
-    await until(()=>calls.some(c=>c[0]==="/api/house/me" && c[1]==="GET"));
-    return {methods:calls.filter(c=>c[0]==="/api/house/me").map(c=>c[1]),sync:window.syncInvocations};
-  `);
-  expect(result.methods).toEqual(["POST", "GET"]);
-  expect(result.sync).toBe(0);
-}, 40_000);
-
-check("creation updates the scene before detail resolves and invalidates the late initial GET", () => {
-  const result = evaluate<{ immediate: boolean; retained: boolean; aborted: boolean }>(`
-    let releaseInitial, releaseDetail, initialSignal;
+check("House orders creation/edit/reclaim snapshots and a created window never retires a later composer", () => {
+  const result = evaluate(`
+    let releaseInitial, initialSignal, releaseCreated, releasePatch, current={...gift};
+    const other={...gift,id:'other'}, retiring={...gift,id:'retiring'}, calls=[];
     window.fetch=async(path,init={})=>{
-      if(path==="/api/house") {initialSignal=init.signal;return new Promise(r=>releaseInitial=()=>r(Response.json({gifts:[]})));}
-      if(path==="/api/house/me")return Response.json({visitor:{id:"me",name:"Quiet Otter"},owner:false});
-      if(path==="/api/house/gifts")return Response.json({gifts:[gift],createdGiftId:gift.id});
-      return new Promise(r=>releaseDetail=()=>r(Response.json(gift)));
+      const method=init.method??'GET';calls.push([path,method]);
+      if(path==='/api/house/me')return Response.json({visitor:{id:'me',name:'Quiet Otter'},owner:false});
+      if(path==='/api/house') {initialSignal=init.signal;return new Promise(r=>releaseInitial=()=>r(Response.json({gifts:[]})));}
+      if(method==='POST')return Response.json({gifts:[other,retiring,gift],createdGiftId:gift.id});
+      if(method==='PATCH') {current={...current,...JSON.parse(init.body),version:current.version+1};return new Promise(r=>releasePatch=()=>r(Response.json({gifts:[other,current]})));}
+      if(method==='DELETE')return Response.json({gifts:path.endsWith('/retiring')?[other,current]:[current]});
+      if(path.endsWith('/other'))return Response.json(other);
+      if(path.endsWith('/retiring'))return Response.json(retiring);
+      if(!releaseCreated)return new Promise(r=>releaseCreated=()=>r(Response.json(gift)));
+      return Response.json(current);
     };
-    mount(House);
-    clickText("Compose");
+    mount(House);clickText('Compose');
     await until(()=>document.querySelector('.house-composer'));
-    submit('.house-composer');
-    await until(()=>releaseDetail);
-    await new Promise(r=>setTimeout(r,30));
-    const immediate=!!document.querySelector('#scene [data-object="gift-1"]');
-    const aborted=initialSignal.aborted;
-    releaseInitial();
-    await new Promise(r=>setTimeout(r,30));
+    submit('.house-composer');await until(()=>releaseCreated);
+    const immediate=!!document.querySelector('#scene [data-object="gift-1"]'), aborted=initialSignal.aborted;
+    releaseInitial();await tick();
     const retained=!!document.querySelector('#scene [data-object="gift-1"]');
-    releaseDetail();
-    await until(()=>document.querySelector('.house-gift-body'));
-    mount(()=>null);
-    return {immediate,retained,aborted};
-  `);
-  expect(result).toEqual({ immediate: true, retained: true, aborted: true });
-}, 40_000);
-
-check("own gift edits PATCH then refresh detail without letting an older detail win", () => {
-  const result = evaluate<{ body: unknown; order: string[]; immediate: boolean; oldReadAborted: boolean; message: string | null; name: string | null }>(`
-    let releaseInitial, initialSignal, releasePatch, releaseDetail, body;
-    const order=[], snapshots=[];
-    const updated={...gift,emojiId:"heart",message:"New private note",visibility:"private",authorName:"Friend"};
-    const snapshot={gifts:[{...updated,message:null}]};
-    window.fetch=async(path,init={})=>{
-      if(init.method==="PATCH") {body=JSON.parse(init.body);order.push("PATCH");return new Promise(r=>releasePatch=()=>r(Response.json(snapshot)));}
-      if(!releaseInitial) {initialSignal=init.signal;return new Promise(r=>releaseInitial=()=>r(Response.json(gift)));}
-      order.push("GET");return new Promise(r=>releaseDetail=()=>r(Response.json(updated)));
-    };
-    mount(GiftDialog,{gift,initialDetail:gift,onClose(){},onSnapshot(s){snapshots.push(s);}});
-    await until(()=>releaseInitial);
-    clickText("Edit gift");
-    await until(()=>document.querySelector('[aria-label="Edit gift"]'));
-    change('[name="emojiId"]','heart'); change('[name="message"]',' New private note ');
-    change('[name="nickname"]',' Friend '); change('[name="visibility"]','private');
-    await new Promise(r=>setTimeout(r,0));
-    submit('[aria-label="Edit gift"]');
+    document.querySelector('#scene [data-object="retiring"]').click();
+    await until(()=>[...document.querySelectorAll('button')].some(el=>el.textContent==='Take back'));
+    clickText('Take back');await until(()=>!document.querySelector('#scene [data-object="retiring"]') && !document.querySelector('.house-gift-body'));
+    // The just-created icon can also be opened before the composer's detail read finishes.
+    document.querySelector('#scene [data-object="gift-1"]').click();await until(()=>document.querySelector('.house-gift-body'));
+    clickText('Edit gift');await until(()=>document.querySelector('.house-gift-editor'));
+    change('.house-gift-editor [name=emojiId]','seedling');await tick();submit('.house-gift-editor');
+    await until(()=>releasePatch);releasePatch();
+    await until(()=>!document.querySelector('.house-gift-editor') && document.querySelector('.house-gift-body').closest('.object-window').getAttribute('aria-label')==='Seedling');
+    releaseCreated();await until(()=>!document.querySelector('.house-composer') && document.querySelector('.house-gift-body'));
+    const handoffPreserved=document.querySelector('.house-gift-body').closest('.object-window').getAttribute('aria-label')==='Seedling';
+    releasePatch=undefined;
+    const originalFrame=document.querySelector('.house-gift-body').closest('.object-window'), originalBody=originalFrame.querySelector('.wb-body');
+    clickText('Compose');await until(()=>document.querySelector('.house-composer'));
+    change('#gift-message','Unsent second draft');await tick();
+    document.querySelector('#scene [data-object="other"]').click();
+    await until(()=>document.querySelectorAll('.house-gift-body').length===2);
+    originalFrame.querySelector('.house-reclaim').click();await until(()=>document.querySelector('.house-gift-editor'));
+    change('.house-gift-editor [name=emojiId]','heart');await tick();submit('.house-gift-editor');
     await until(()=>releasePatch);
-    if(!document.querySelector('[type="submit"]').disabled)throw Error("Save must disable while pending");
-    releasePatch();
-    await until(()=>releaseDetail);
-    const immediate=snapshots.length===1 && snapshots[0].gifts[0].message===null;
-    releaseDetail();
-    await until(()=>document.querySelector('.house-gift-message')?.textContent==='New private note');
-    releaseInitial();
-    await new Promise(r=>setTimeout(r,30));
-    return {body,order,immediate,oldReadAborted:initialSignal.aborted,message:document.querySelector('.house-gift-message')?.textContent??null,name:document.querySelector('.house-attribution')?.textContent??null};
-  `);
-  expect(result).toEqual({
-    body: { emojiId: "heart", message: "New private note", visibility: "private", displayName: "Friend" },
-    order: ["PATCH", "GET"], immediate: true, oldReadAborted: true, message: "New private note", name: "From Friend",
-  });
-}, 40_000);
-
-check("editing an object updates its open window title and scene immediately", () => {
-  const result = evaluate<{ title: string; scene: string }>(`
-    let current=gift;
-    window.fetch=async(path,init={})=>{
-      if(path==="/api/house/me")return Response.json({visitor:{id:"me",name:"Quiet Otter"},owner:false});
-      if(path==="/api/house")return Response.json({gifts:[current]});
-      if(init.method==="PATCH") {current={...current,...JSON.parse(init.body)};return Response.json({gifts:[current]});}
-      return Response.json(current);
-    };
-    mount(House);
-    await until(()=>document.querySelector('#scene [data-object="gift-1"]'));
-    document.querySelector('#scene [data-object="gift-1"]').click();
-    await until(()=>[...document.querySelectorAll('button')].some(el=>el.textContent==='Edit gift'));
-    clickText('Edit gift');
-    await until(()=>document.querySelector('[name="emojiId"]'));
-    change('[name="emojiId"]','heart');
-    await new Promise(r=>setTimeout(r,0));
-    submit('[aria-label="Edit gift"]');
-    await until(()=>document.querySelector('#scene [data-object="gift-1"]').textContent.includes('heart'));
-    return {title:document.querySelector('.object-window h2').textContent,scene:document.querySelector('#scene [data-object="gift-1"]').textContent};
-  `);
-  expect(result).toEqual({ title: "❤️ Heart", scene: "gift-1:heart" });
-}, 40_000);
-
-check("a saved private gift with failed detail refresh cannot expose or overwrite the old message", () => {
-  const result = evaluate<{ oldMessage: boolean; editable: boolean; saved: boolean }>(`
-    let saved=false;
-    window.fetch=async(path,init={})=>{
-      if(init.method==="PATCH"){saved=true;return Response.json({gifts:[{...gift,visibility:'private',message:null}]});}
-      return saved?Response.json({error:'Offline'},{status:503}):Response.json(gift);
-    };
-    mount(GiftDialog,{gift,initialDetail:gift,onClose(){},onSnapshot(){}});
-    await new Promise(r=>setTimeout(r,20));
-    clickText('Edit gift');
-    await until(()=>document.querySelector('[name="visibility"]'));
-    change('[name="visibility"]','private');
-    await new Promise(r=>setTimeout(r,0));
-    submit('[aria-label="Edit gift"]');
-    await until(()=>document.querySelector('.house-error')?.textContent.includes('was saved'));
-    return {oldMessage:document.querySelector('#root').textContent.includes('Old public note'),editable:[...document.querySelectorAll('button')].some(el=>el.textContent==='Edit gift'),saved};
-  `);
-  expect(result).toEqual({ oldMessage: false, editable: false, saved: true });
-}, 40_000);
-
-check("failed edits preserve the draft for retry, including explicit blank fields", () => {
-  const result = evaluate<{ preserved: string; bodies: unknown[]; removed: boolean; cancelled: boolean }>(`
-    const bodies=[];
-    let current=gift, snapshots=0;
-    window.fetch=async(path,init={})=>{
-      if(init.method==="PATCH") {
-        bodies.push(JSON.parse(init.body));
-        if(bodies.length===1)return Response.json({error:'Try again'},{status:503});
-        current={...gift,...bodies.at(-1),message:null};return Response.json({gifts:[current]});
-      }
-      return Response.json(current);
-    };
-    mount(GiftDialog,{gift,initialDetail:gift,onClose(){},onSnapshot(){snapshots++;}});
-    clickText('Edit gift');
-    await until(()=>document.querySelector('[name="message"]'));
-    change('[name="message"]','Unsent draft');
-    await new Promise(r=>setTimeout(r,0));
-    submit('[aria-label="Edit gift"]');
-    await until(()=>document.querySelector('.house-error')?.textContent==='Try again');
-    const preserved=document.querySelector('[name="message"]').value;
-    change('[name="message"]','');change('[name="nickname"]','');
-    await new Promise(r=>setTimeout(r,0));
-    submit('[aria-label="Edit gift"]');
-    await until(()=>!document.querySelector('.house-gift-editor') && [...document.querySelectorAll('button')].some(el=>el.textContent==='Edit gift'));
-    const removed=!document.querySelector('.house-gift-message') && snapshots===1;
-    clickText('Edit gift');
-    await until(()=>document.querySelector('.house-gift-editor'));
-    change('[name="message"]','Discard this');
-    clickText('Cancel');
-    await until(()=>!document.querySelector('.house-gift-editor'));
-    return {preserved,bodies,removed,cancelled:bodies.length===2 && !document.querySelector('.house-gift-message')};
-  `);
-  expect(result.preserved).toBe("Unsent draft");
-  expect(result.bodies).toEqual([
-    { emojiId: "gift", message: "Unsent draft", visibility: "public", displayName: "Quiet Otter" },
-    { emojiId: "gift", message: "", visibility: "public", displayName: "" },
-  ]);
-  expect(result.removed).toBe(true);
-  expect(result.cancelled).toBe(true);
-}, 40_000);
-
-check("taking back a gift immediately delivers the deletion snapshot and closes the card", () => {
-  const result = evaluate<{ methods: string[]; snapshots: unknown[]; closed: number }>(`
-    const methods=[],snapshots=[];let closed=0;
-    window.fetch=async(path,init={})=>{methods.push(init.method??'GET');return Response.json(init.method==='DELETE'?{gifts:[]}:gift);};
-    mount(GiftDialog,{gift,initialDetail:gift,onClose(){closed++;},onSnapshot(s){snapshots.push(s);}});
-    clickText('Take back');
-    await until(()=>closed===1);
-    return {methods,snapshots,closed};
-  `);
-  expect(result.methods).toContain("DELETE");
-  expect(result.snapshots).toEqual([{ gifts: [] }]);
-  expect(result.closed).toBe(1);
-}, 40_000);
-
-check("a delayed created-gift detail never reapplies its older snapshot over another mutation", () => {
-  const result = evaluate<{ removedStayedRemoved: boolean; createdVisible: boolean }>(`
-    const other={...gift,id:'old-gift'};
-    let releaseDetail;
+    const otherFrame=[...document.querySelectorAll('.house-gift-body')].find(el=>el.closest('.object-window')!==originalFrame);
+    [...otherFrame.querySelectorAll('button')].find(el=>el.textContent==='Take back').click();await tick();
+    const serialized=!calls.some(c=>c[0].endsWith('/other') && c[1]==='DELETE');
+    releasePatch();await until(()=>!document.querySelector('#scene [data-object="other"]') && originalFrame.getAttribute('aria-label')==='Heart');
+    await tick();
+    const final={immediate,aborted,retained,serialized,handoffPreserved,removedStayedRemoved:!document.querySelector('#scene [data-object="retiring"]'),
+      sameWindow:originalFrame.isConnected && originalFrame.querySelector('.wb-body')===originalBody,
+      draft:document.querySelector('#gift-message')?.value,
+      mutations:calls.filter(c=>['POST','PATCH','DELETE'].includes(c[1]) && c[0]!=='/api/house/me').map(c=>c[1]),
+      initialReads:calls.filter(c=>c[0]==='/api/house').length,
+      sessionMethods:calls.filter(c=>c[0]==='/api/house/me').slice(0,2).map(c=>c[1])};
+    // Reclaim a second created gift while its original detail response is held.
+    const withdrawn={...gift,id:'withdrawn'};let releaseWithdrawn;
     window.fetch=async(path,init={})=>{
       if(path==='/api/house/me')return Response.json({visitor:{id:'me',name:'Quiet Otter'},owner:false});
-      if(path==='/api/house')return Response.json({gifts:[other]});
-      if(init.method==='DELETE')return Response.json({gifts:[gift]});
-      if(path==='/api/house/gifts')return Response.json({gifts:[other,gift],createdGiftId:gift.id});
-      if(path.endsWith('/old-gift'))return Response.json(other);
-      return new Promise(r=>releaseDetail=()=>r(Response.json(gift)));
+      if(init.method==='POST')return Response.json({gifts:[current,withdrawn],createdGiftId:withdrawn.id});
+      if(init.method==='DELETE')return Response.json({gifts:[current]});
+      if(!releaseWithdrawn)return new Promise(r=>releaseWithdrawn=()=>r(Response.json(withdrawn)));
+      return Response.json(withdrawn);
     };
-    mount(House);
-    await until(()=>document.querySelector('#scene [data-object="old-gift"]'));
-    document.querySelector('#scene [data-object="old-gift"]').click();
-    await until(()=>[...document.querySelectorAll('button')].some(el=>el.textContent==='Take back'));
-    clickText('Compose');
-    await until(()=>document.querySelector('.house-composer'));
-    submit('.house-composer');
-    await until(()=>releaseDetail);
-    clickText('Take back');
-    await until(()=>!document.querySelector('#scene [data-object="old-gift"]'));
-    releaseDetail();
-    await until(()=>document.querySelector('.house-gift-body'));
-    return {removedStayedRemoved:!document.querySelector('#scene [data-object="old-gift"]'),createdVisible:!!document.querySelector('#scene [data-object="gift-1"]')};
+    submit('.house-composer');await until(()=>releaseWithdrawn);
+    document.querySelector('#scene [data-object="withdrawn"]').click();await until(()=>document.querySelectorAll('.house-gift-body').length===2);
+    const withdrawing=[...document.querySelectorAll('.house-gift-body')].find(el=>el.closest('.object-window')!==originalFrame);
+    await until(()=>[...withdrawing.querySelectorAll('button')].some(el=>el.textContent==='Take back'));
+    [...withdrawing.querySelectorAll('button')].find(el=>el.textContent==='Take back').click();
+    await until(()=>!document.querySelector('#scene [data-object="withdrawn"]') && document.querySelectorAll('.house-gift-body').length===1);
+    releaseWithdrawn();await until(()=>!document.querySelector('.house-composer'));
+    final.lateRevocation=document.querySelectorAll('.house-gift-body').length===1 && !document.querySelector('#scene [data-object="withdrawn"]');
+    mount(()=>null);return final;
   `);
-  expect(result).toEqual({ removedStayedRemoved: true, createdVisible: true });
+  expect(result).toEqual({ immediate: true, aborted: true, retained: true, serialized: true, handoffPreserved: true, lateRevocation: true, removedStayedRemoved: true, sameWindow: true, draft: "Unsent second draft", mutations: ["POST", "DELETE", "PATCH", "PATCH", "DELETE"], initialReads: 1, sessionMethods: ["POST", "GET"] });
+}, 40_000);
+
+check("conflicts retain the draft until explicit reload; failures never silently rebase or reveal redacted fields", () => {
+  const result = evaluate(`
+    let initialSignal,releaseInitial,current={...gift},reloadFails=true,saved=false;
+    const bodies=[],snapshots=[],details=[];
+    window.fetch=async(path,init={})=>{
+      if(init.method==='PATCH') {
+        bodies.push(JSON.parse(init.body));
+        if(bodies.length===1)return Response.json({error:'Offline'},{status:503});
+        if(bodies.length===2){current={...gift,emojiId:'seedling',message:'Other tab',version:2};return Response.json({error:'Changed'},{status:409});}
+        saved=true;return Response.json({gifts:[{...gift,visibility:'private',authorName:null,message:null}]});
+      }
+      if(!releaseInitial){initialSignal=init.signal;return new Promise(r=>releaseInitial=()=>r(Response.json(gift)));}
+      if(reloadFails || saved)return Response.json({error:'Offline'},{status:503});
+      return Response.json(current);
+    };
+    mount(GiftDialog,{gift,initialDetail:gift,onClose(){},onDetail(next){details.push(next.emojiId);},mutate:houseMutations(s=>snapshots.push(s))});
+    await until(()=>releaseInitial);clickText('Edit gift');await until(()=>document.querySelector('.house-gift-editor'));
+    change('[name=message]','Unsent draft');await tick();submit('.house-gift-editor');
+    await until(()=>document.querySelector('.house-error').textContent==='Offline');
+    const retryDraft=document.querySelector('[name=message]').value;
+    submit('.house-gift-editor');await until(()=>document.body.textContent.includes('changed elsewhere'));
+    const conflictDraft=document.querySelector('[name=message]').value, disabled=document.querySelector('[type=submit]').disabled;
+    releaseInitial();await tick();submit('.house-gift-editor');await tick();
+    const noRetry=bodies.length===2;
+    clickText('Reload latest gift');await until(()=>document.querySelector('.house-error').textContent==='Offline');
+    const failedReloadPreservesDraft=document.querySelector('[name=message]').value==='Unsent draft' && document.querySelector('[type=submit]').disabled;
+    clickText('Cancel');await until(()=>!document.querySelector('.house-gift-editor'));
+    const cancelCannotBypass=[...document.querySelectorAll('button')].find(el=>el.textContent==='Edit gift').disabled;
+    reloadFails=false;clickText('Reload latest gift');await until(()=>document.querySelector('.house-gift-message')?.textContent==='Other tab');
+    clickText('Edit gift');await until(()=>document.querySelector('[name=message]'));
+    const reloadedDraft=document.querySelector('[name=message]').value;
+    change('[name=message]','');change('[name=nickname]','');change('[name=visibility]','private');await tick();submit('.house-gift-editor');
+    await until(()=>document.querySelector('.house-error').textContent.includes('was saved'));
+    const final={retryDraft,conflictDraft,disabled,noRetry,failedReloadPreservesDraft,cancelCannotBypass,reloadedDraft,
+      aborted:initialSignal.aborted,versions:bodies.map(b=>b.version),last:bodies.at(-1),snapshots:snapshots.length,details,
+      redacted:!document.querySelector('.house-gift-message,.house-attribution'),
+      cannotEdit:![...document.querySelectorAll('button')].some(el=>el.textContent==='Edit gift')};
+    mount(()=>null);return final;
+  `);
+  expect(result).toEqual({ retryDraft: "Unsent draft", conflictDraft: "Unsent draft", disabled: true, noRetry: true, failedReloadPreservesDraft: true, cancelCannotBypass: true, reloadedDraft: "Other tab", aborted: true, versions: [1, 1, 2], last: { version: 2, emojiId: "seedling", message: "", displayName: "", visibility: "private" }, snapshots: 1, details: ["seedling"], redacted: true, cannotEdit: true });
+}, 40_000);
+
+check("ObjectWindow updates in place without resetting content, focus, geometry or its one-shot ready callback", () => {
+  const result = evaluate(`
+    const source=document.createElement('button');document.body.append(source);
+    let ready=0,closed=0;
+    function Draft(){const [value,setValue]=React.useState('');return React.createElement('input',{id:'unsent',value,onChange:e=>setValue(e.target.value)});}
+    const props={title:'Present',icon:'🎁',source,origin:new DOMRect(50,60,48,48),onReady(){ready++;},onClose(){closed++;}};
+    const children=React.createElement(Draft);
+    mount(ObjectWindow,{...props,children});await until(()=>document.querySelector('#unsent'));
+    const frame=document.querySelector('.object-window'),body=frame.querySelector('.wb-body'),input=document.querySelector('#unsent');
+    frame.winbox.move(100,120);change('#unsent','Keep this draft');await tick();input.focus();input.setSelectionRange(3,7);
+    render(ObjectWindow,{...props,title:'Heart',icon:'❤️',origin:new DOMRect(0,0,1,1),initialBounds:new DOMRect(0,0,20,20),children});await tick();
+    const final={sameWindow:document.querySelector('.object-window')===frame,sameBody:frame.querySelector('.wb-body')===body,
+      sameInput:document.querySelector('#unsent')===input,value:input.value,focused:document.activeElement===input,selection:[input.selectionStart,input.selectionEnd],
+      position:[frame.winbox.x,frame.winbox.y],title:frame.getAttribute('aria-label'),icon:frame.querySelector('.object-window-icon').textContent,ready};
+    frame.winbox.close();await until(()=>closed===1);mount(()=>null);
+    final.focusReturned=document.activeElement===source;final.windows=document.querySelectorAll('.object-window').length;source.remove();return final;
+  `);
+  expect(result).toEqual({ sameWindow: true, sameBody: true, sameInput: true, value: "Keep this draft", focused: true, selection: [3, 7], position: [100, 120], title: "Heart", icon: "❤️", ready: 1, focusReturned: true, windows: 0 });
 }, 40_000);

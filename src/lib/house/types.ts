@@ -2,7 +2,8 @@ export type Audience = "public" | "private";
 export interface Gift {
   id: string;
   emojiId: string;
-  authorName: string;
+  /** Private attribution is available only in authorized detail responses. */
+  authorName: string | null;
   createdAt: string;
   visibility: Audience;
   /** Only public messages appear in scene snapshots. */
@@ -24,6 +25,7 @@ export interface Viewer {
   owner: boolean;
 }
 export interface GiftDetail extends Gift {
+  version: number;
   canEdit: boolean;
   canReclaim: boolean;
   canRemove: boolean;
@@ -37,7 +39,7 @@ export interface CreateGift {
   displayName?: string;
 }
 
-export type UpdateGift = Omit<CreateGift, "requestId">;
+export type UpdateGift = Omit<CreateGift, "requestId"> & { version: number };
 
 export interface EmojiOption {
   id: string;

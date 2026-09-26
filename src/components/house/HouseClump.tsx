@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
 import { createSceneEngine } from "../clump/matter-engine";
 import { OBJECTS } from "../clump/model";
@@ -6,11 +6,22 @@ import type { ObjectSpec, Point, SceneEngine } from "../clump/model";
 import { giftObjects, worldSize } from "../../lib/house/emoji";
 import type { Gift } from "../../lib/house/types";
 import { reconcileGifts, retiringGiftIds } from "./gift-presence";
-import { PORTFOLIO_FOLDER_OBJECT } from "./folders";
+import { PORTFOLIO_FOLDER_OBJECT, WRITING_FOLDER_OBJECT } from "./folders";
 
 type Grab = { id: string; point: Point; origin: Point; moved: boolean; pointerId?: number };
 const INITIAL_SIZE = { width: 500, height: 600 };
 const GIFT_ENTRY: ObjectSpec = { id: "leave-gift", name: "Leave a gift", emoji: "🎁", width: 64, height: 64, shape: "rectangle" };
+
+function measureViewport(element: HTMLDivElement) {
+  // Measure the fixed outer box: scrollbars appearing as the crowd grows must
+  // not resize the physics world or release an ongoing drag.
+  const rect = element.getBoundingClientRect();
+  const width = Math.floor(rect.width);
+  const height = Math.floor(rect.height);
+  if (!width || !height) return null;
+  const scale = Math.min(1, width / INITIAL_SIZE.width);
+  return { scale, size: { width: Math.round(width / scale), height: Math.floor(height / scale) } };
+}
 
 export function HouseClump({ gifts, inspectedIds, onOpen }: {
   gifts: readonly Gift[];
@@ -30,7 +41,9 @@ export function HouseClump({ gifts, inspectedIds, onOpen }: {
   const [scale, setScale] = useState(1);
   const [size, setSize] = useState(INITIAL_SIZE);
   const bounds = useRef(INITIAL_SIZE);
-  const objects = useMemo(() => [...OBJECTS, PORTFOLIO_FOLDER_OBJECT, GIFT_ENTRY, ...giftObjects(displayed)], [displayed]);
+  const available = useRef(INITIAL_SIZE);
+  const growth = useRef({ width: 0, height: 0 });
+  const objects = useMemo(() => [...OBJECTS, PORTFOLIO_FOLDER_OBJECT, WRITING_FOLDER_OBJECT, GIFT_ENTRY, ...giftObjects(displayed)], [displayed]);
   const retiring = retiringGiftIds(displayed, gifts, [...inspectedIds, grabId]);
   const liveIds = new Set(gifts.map((gift) => gift.id));
 
@@ -38,17 +51,16 @@ export function HouseClump({ gifts, inspectedIds, onOpen }: {
     setDisplayed((current) => reconcileGifts(current, gifts));
   }, [gifts]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const element = viewport.current;
     if (!element) return;
-    const measure = () => setScale(Math.min(1, element.clientWidth / INITIAL_SIZE.width));
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, []);
-
-  useLayoutEffect(() => {
+    const measured = measureViewport(element);
+    if (measured) {
+      available.current = measured.size;
+      bounds.current = { width: measured.size.width + growth.current.width, height: measured.size.height + growth.current.height };
+      setSize(bounds.current);
+      setScale(measured.scale);
+    }
     const reduced = matchMedia("(prefers-reduced-motion: reduce)");
     const scene = createSceneEngine({ scene: "clump", collision: "outline", size: bounds.current, reducedMotion: reduced.matches });
     engine.current = scene;
@@ -93,6 +105,30 @@ export function HouseClump({ gifts, inspectedIds, onOpen }: {
     paint.current = draw;
     draw();
     run();
+    const observer = new ResizeObserver(() => {
+      const next = measureViewport(element);
+      if (!next) return;
+      setScale(next.scale);
+      if (next.size.width === available.current.width && next.size.height === available.current.height) return;
+      available.current = next.size;
+      const nextBounds = { width: next.size.width + growth.current.width, height: next.size.height + growth.current.height };
+      // A viewport resize remaps the existing arrangement, never reseeds it.
+      // Matter releases its handle on resize; release the matching UI grab too.
+      const grab = grabbed.current;
+      if (grab) {
+        grabbed.current = null;
+        setGrabId(null);
+        if (grab.moved) clickSuppressed.current = { id: grab.id, until: performance.now() + 400 };
+        const source = nodes.current.get(grab.id);
+        if (grab.pointerId !== undefined && source?.hasPointerCapture(grab.pointerId)) source.releasePointerCapture(grab.pointerId);
+      }
+      scene.resize(nextBounds);
+      bounds.current = nextBounds;
+      setSize(nextBounds);
+      draw();
+      run();
+    });
+    observer.observe(element);
     const visibility = () => {
       if (document.hidden) {
         cancelAnimationFrame(frame);
@@ -108,6 +144,7 @@ export function HouseClump({ gifts, inspectedIds, onOpen }: {
     return () => {
       disposed = true;
       cancelAnimationFrame(frame);
+      observer.disconnect();
       document.removeEventListener("visibilitychange", visibility);
       scene.dispose();
       engine.current = null;
@@ -117,10 +154,14 @@ export function HouseClump({ gifts, inspectedIds, onOpen }: {
   useLayoutEffect(() => {
     const scene = engine.current;
     if (!scene) return;
-    // Grow the local stage without rescaling positions or interrupting a grab.
-    // Never shrink it around a visitor's existing arrangement after a deletion.
+    // Apply the existing crowd expansion beyond the measured visible area.
+    // Its high-water mark survives deletion; growth never interrupts a grab.
     const requested = worldSize(displayed.length);
-    const next = { width: Math.max(bounds.current.width, requested.width), height: Math.max(bounds.current.height, requested.height) };
+    growth.current = {
+      width: Math.max(growth.current.width, requested.width - INITIAL_SIZE.width),
+      height: Math.max(growth.current.height, requested.height - INITIAL_SIZE.height),
+    };
+    const next = { width: available.current.width + growth.current.width, height: available.current.height + growth.current.height };
     if (next.width !== bounds.current.width || next.height !== bounds.current.height) {
       scene.resize(next, true);
       bounds.current = next;
@@ -210,7 +251,7 @@ export function HouseClump({ gifts, inspectedIds, onOpen }: {
             ref={(element) => { if (element) nodes.current.set(object.id, element); else nodes.current.delete(object.id); }}
             style={{ width: Math.max(44, object.width), height: Math.max(44, object.height), fontSize: Math.max(object.width, object.height) * .87 }}
             aria-disabled={removing || undefined} tabIndex={removing || opened ? -1 : 0} aria-expanded={opened} aria-haspopup="dialog"
-            aria-label={gift ? `${object.name}, gift from ${gift.authorName}. Open gift or use arrow keys to move.` : `${object.name}. Open window or use arrow keys to move.`} aria-describedby="house-movement-help"
+            aria-label={gift ? `${object.name}, gift${gift.authorName === null ? "" : ` from ${gift.authorName}`}. Open gift or use arrow keys to move.` : `${object.name}. Open window or use arrow keys to move.`} aria-describedby="house-movement-help"
             onAnimationEnd={(event) => {
               if (event.target !== event.currentTarget || event.animationName !== "house-depart" || !removing) return;
               if (document.activeElement === event.currentTarget) document.querySelector<HTMLButtonElement>('[data-object="leave-gift"]')?.focus({ preventScroll: true });
@@ -230,6 +271,6 @@ export function HouseClump({ gifts, inspectedIds, onOpen }: {
         })}
       </div>
     </div>
-    <p id="house-movement-help" className="house-sr-only">Drag to move things in your own arrangement. With a keyboard, arrows move, Q and E turn, Enter places, and Escape cancels. Press Enter on a thing to open its window.</p>
+    <p id="house-movement-help" className="house-sr-only">Drag to move things in your own arrangement. With a keyboard, arrows move, Q and E turn, Enter places, and Escape cancels. Press Enter on a thing to open its window. When the collection grows, scroll this area to explore more gifts.</p>
   </div>;
 }

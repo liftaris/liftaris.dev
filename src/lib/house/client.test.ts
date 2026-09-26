@@ -1,6 +1,7 @@
 import { afterEach, expect, test } from "bun:test";
 import { ensureVisitor } from "./client";
 import * as client from "./client";
+import type { HouseSnapshot } from "./types";
 
 const originalFetch = globalThis.fetch;
 const originalStorage = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
@@ -80,14 +81,14 @@ test("missing or changed cookie identity rejects, then allows retry", async () =
 
 test("PATCH sends the editable fields with only cookie credentials and returns the fresh snapshot", async () => {
   withoutBrowserStorage();
-  const update = { emojiId: "heart", message: "Updated note", visibility: "private" as const, displayName: "Friend" };
-  const snapshot = { gifts: [{ id: "gift/one", ...update, authorName: "Friend", message: null, createdAt: "2026-09-24" }] };
+  const update = { version: 3, emojiId: "heart", message: "Updated note", visibility: "private" as const, displayName: "Friend" };
+  const snapshot: HouseSnapshot = { gifts: [{ id: "gift/one", emojiId: "heart", visibility: "private", authorName: null, message: null, createdAt: "2026-09-24" }] };
   const calls: { path: string; init: RequestInit }[] = [];
   globalThis.fetch = (async (path, init = {}) => {
     calls.push({ path: String(path), init });
     return Response.json(snapshot);
   }) as typeof fetch;
-  expect(typeof client.updateGift).toBe("function");
+
   expect(await client.updateGift("gift/one", update)).toEqual(snapshot);
   expect(calls).toHaveLength(1);
   expect(calls[0].path).toBe("/api/house/gifts/gift%2Fone");
@@ -97,13 +98,42 @@ test("PATCH sends the editable fields with only cookie credentials and returns t
   expect(new Headers(calls[0].init.headers).has("Authorization")).toBe(false);
 });
 
-test("HTTP authorization errors preserve the server message and status", async () => {
+test("HTTP permission and conflict errors retain their message and status without retrying", async () => {
   withoutBrowserStorage();
-  globalThis.fetch = (async (path: RequestInfo | URL) => {
-    expect(String(path)).toBe("/api/house/gifts/not-mine");
-    return Response.json({ error: "You can only edit your own gifts." }, { status: 403 });
-  }) as typeof fetch;
-  const failure = await client.updateGift("not-mine", { emojiId: "gift", visibility: "public" }).catch((reason: unknown) => reason);
-  expect(failure).toBeInstanceOf(client.HouseError);
-  expect(failure).toMatchObject({ status: 403, message: "You can only edit your own gifts." });
+  for (const status of [403, 409]) {
+    let calls = 0;
+    globalThis.fetch = (async (path: RequestInfo | URL) => {
+      expect(String(path)).toBe("/api/house/gifts/gift-1");
+      calls++;
+      return Response.json({ error: "Cannot save this edit." }, { status });
+    }) as typeof fetch;
+    const failure = await client.updateGift("gift-1", { version: 1, emojiId: "gift", visibility: "public" }).catch((reason: unknown) => reason);
+    expect(failure).toBeInstanceOf(client.HouseError);
+    expect(failure).toMatchObject({ status, message: "Cannot save this edit." });
+    expect(calls).toBe(1);
+  }
+});
+
+test("a House serializes mutations through snapshot acceptance, recovers after failure and never blocks another House", async () => {
+  const calls: string[] = [];
+  let visible: string[] = [];
+  const mutate = client.houseMutations((snapshot) => {
+    visible = snapshot.gifts.map((gift) => gift.id);
+    calls.push(`accept:${visible.join(',')}`);
+  });
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => { release = resolve; });
+  const gift = { id: "created", emojiId: "gift", authorName: null, message: null, visibility: "private" as const, createdAt: "2026-09-24" };
+  const create = mutate(async () => { calls.push("POST"); await gate; return { gifts: [gift], createdGiftId: gift.id }; });
+  const edit = mutate(async () => { calls.push("PATCH"); expect(visible).toEqual([gift.id]); throw new client.HouseError("Conflict", 409); });
+  const failed = edit.catch((error: unknown) => error);
+  const remove = mutate(async () => { calls.push("DELETE"); return { gifts: [] }; });
+  await client.houseMutations(() => {})(async () => ({ gifts: [] }));
+  expect(calls).toEqual(["POST"]);
+  release();
+  expect((await create).createdGiftId).toBe(gift.id);
+  expect(await failed).toMatchObject({ status: 409 });
+  await remove;
+  expect(calls).toEqual(["POST", "accept:created", "PATCH", "DELETE", "accept:"]);
+  expect(visible).toEqual([]);
 });

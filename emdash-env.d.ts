@@ -10,6 +10,7 @@ export interface Post {
   slug: string | null;
   status: string;
   title: string;
+  icon: string;
   date: string;
   content?: PortableTextBlock[];
   createdAt: Date;

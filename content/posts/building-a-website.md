@@ -1,5 +1,6 @@
 ---
 title: Building a Website
+icon: "📄"
 author: 'Kaio'
 date: '2023-03-09T16:04:44.000Z'
 ---

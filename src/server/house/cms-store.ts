@@ -1,6 +1,6 @@
-import { ContentRepository, type ContentItem, type Database } from "emdash";
+import { ContentRepository, invalidateCollectionCache, type ContentItem, type Database } from "emdash";
 import { sql, type Kysely } from "kysely";
-import { Schema } from "effect";
+import { DateTime, Schema } from "effect";
 import type { CreatedGift, Gift, GiftDetail, HouseSnapshot, Viewer } from "../../lib/house/types";
 import { findEmoji } from "../../lib/house/emoji";
 import { CreateGiftSchema, UpdateGiftSchema } from "./schemas";
@@ -62,8 +62,11 @@ export class CmsHouseStore {
     const item = await this.content.findById("gifts", id);
     if (!item || item.status !== "published") throw failure(404, "This gift is no longer here.");
     const owns = viewer.visitor?.id === item.authorId;
-    return { ...publicGift(item),
-      message: item.data.visibility === "public" || owns || viewer.owner ? String(item.data.message ?? "") || null : null,
+    const gift = publicGift(item);
+    const canRead = gift.visibility === "public" || owns || viewer.owner;
+    return { ...gift, version: item.version,
+      authorName: canRead ? String(item.data.author_name) : null,
+      message: canRead ? String(item.data.message ?? "") || null : null,
       canEdit: owns || viewer.owner, canReclaim: owns, canRemove: viewer.owner,
     };
   }
@@ -75,7 +78,20 @@ export class CmsHouseStore {
     let command: typeof UpdateGiftSchema.Type;
     try { command = Schema.decodeUnknownSync(UpdateGiftSchema)(input); }
     catch { throw failure(400, "Check the gift, name, and message and try again."); }
-    await this.content.update("gifts", id, { data: giftData(command, viewer.visitor.name) });
+    const data = giftData(command, viewer.visitor.name);
+    // EmDash 0.38's update has no version predicate; its _rev handler falls
+    // back to read-then-write on D1. Gifts have no revisions to publish instead.
+    // Keep this single statement fenced by version, lifecycle and ownership.
+    const result = await sql`UPDATE ec_gifts
+      SET emoji_id = ${data.emoji_id}, author_name = ${data.author_name},
+        message = ${data.message}, visibility = ${data.visibility},
+        updated_at = ${DateTime.formatIso(DateTime.nowUnsafe())}, version = version + 1
+      WHERE id = ${id} AND version = ${command.version}
+        AND status = 'published' AND deleted_at IS NULL
+        ${viewer.owner ? sql`` : sql`AND author_id = ${viewer.visitor.id}`}
+    `.execute(this.db);
+    if (!result.numAffectedRows) throw failure(409, "This gift changed. Reload it before saving again.");
+    invalidateCollectionCache("gifts");
     return this.snapshot();
   }
 
@@ -89,16 +105,17 @@ export class CmsHouseStore {
   }
 }
 
-function giftData(command: typeof UpdateGiftSchema.Type, name: string) {
+function giftData(command: Omit<typeof UpdateGiftSchema.Type, "version">, name: string) {
   if (!findEmoji(command.emojiId)) throw failure(400, "Choose one of the suggested emoji.");
   return { emoji_id: command.emojiId, author_name: command.displayName?.trim() || name,
     message: command.message?.trim() || null, visibility: command.message?.trim() ? command.visibility : "public" };
 }
 
 function publicGift(item: ContentItem): Gift {
+  const visibility = item.data.message && item.data.visibility === "private" ? "private" : "public";
   return {
-    id: item.id, emojiId: String(item.data.emoji_id), authorName: String(item.data.author_name), createdAt: item.createdAt,
-    visibility: item.data.visibility === "private" ? "private" : "public",
-    message: item.data.visibility === "public" && typeof item.data.message === "string" ? item.data.message : null,
+    id: item.id, emojiId: String(item.data.emoji_id), authorName: visibility === "public" ? String(item.data.author_name) : null, createdAt: item.createdAt,
+    visibility,
+    message: visibility === "public" && typeof item.data.message === "string" ? item.data.message : null,
   };
 }

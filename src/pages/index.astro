@@ -1,5 +1,17 @@
 ---
 import Portfolio from "../layouts/Portfolio.astro";
 import { House } from "../components/house/House";
+import { getEmDashCollection } from "emdash";
+import type { WritingPost } from "../components/house/folders";
+
+const posts: WritingPost[] = [];
+let cursor: string | undefined;
+do {
+  const result = await getEmDashCollection("posts", { status: "published", orderBy: { date: "desc" }, limit: 100, cursor });
+  if (result.error) throw result.error;
+  Astro.cache.set(result.cacheHint);
+  posts.push(...result.entries.map((post) => ({ id: post.data.id, slug: post.id, title: post.data.title, icon: post.data.icon })));
+  cursor = result.nextCursor;
+} while (cursor);
 ---
-<Portfolio><House client:load /></Portfolio>
+<Portfolio><House posts={posts} client:load /></Portfolio>

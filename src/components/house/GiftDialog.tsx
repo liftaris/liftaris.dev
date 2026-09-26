@@ -1,17 +1,19 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { SubmitEvent } from "react";
 import { getGift, HouseError, reclaimGift, updateGift } from "../../lib/house/client";
+import type { HouseMutation } from "../../lib/house/client";
 import { EMOJI_CATALOG } from "../../lib/house/emoji";
-import type { Audience, Gift, GiftDetail, HouseSnapshot, UpdateGift } from "../../lib/house/types";
+import type { Audience, Gift, GiftDetail, UpdateGift } from "../../lib/house/types";
 
-export function GiftDialog({ gift, initialDetail, onClose, onSnapshot }: {
-  gift: Gift; initialDetail?: GiftDetail; onClose: () => void; onSnapshot: (snapshot: HouseSnapshot) => void;
+export function GiftDialog({ gift, initialDetail, onClose, onDetail, mutate }: {
+  gift: Gift; initialDetail?: GiftDetail; onClose: () => void; onDetail: (gift: GiftDetail) => void; mutate: HouseMutation;
 }) {
   const [detail, setDetail] = useState<GiftDetail | null>(initialDetail ?? null);
   const [error, setError] = useState("");
   const [removing, setRemoving] = useState(false);
   const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState<UpdateGift | null>(null);
+  const [conflict, setConflict] = useState(false);
   const reading = useRef<AbortController | null>(null);
   const mutating = useRef(false);
   const fieldId = useId();
@@ -20,23 +22,23 @@ export function GiftDialog({ gift, initialDetail, onClose, onSnapshot }: {
     const controller = new AbortController();
     reading.current = controller;
     void getGift(gift.id, controller.signal).then((next) => {
-      if (!controller.signal.aborted) setDetail(next);
+      if (!controller.signal.aborted) { setDetail(next); onDetail(next); }
     }).catch((reason: unknown) => {
       if (controller.signal.aborted) return;
       if (reason instanceof HouseError && reason.status === 404) setError("This gift has been taken back. You can finish looking before closing it.");
       else setError(reason instanceof Error ? reason.message : "Couldn’t open this gift. Please try again.");
     });
     return () => { controller.abort(); reading.current?.abort(); };
-  }, [gift.id]);
+  }, [gift.id, onDetail]);
 
   const edit = () => {
-    if (!detail?.canEdit || mutating.current) return;
-    setDraft({ emojiId: detail.emojiId, message: detail.message ?? "", visibility: detail.visibility, displayName: detail.authorName });
+    if (!detail?.canEdit || mutating.current || conflict) return;
+    setDraft({ version: detail.version, emojiId: detail.emojiId, message: detail.message ?? "", visibility: detail.visibility, displayName: detail.authorName ?? "" });
     setError("");
   };
   const save = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!draft || !detail?.canEdit || mutating.current) return;
+    if (!draft || !detail?.canEdit || mutating.current || conflict) return;
     mutating.current = true;
     setSaving(true);
     setError("");
@@ -45,18 +47,39 @@ export function GiftDialog({ gift, initialDetail, onClose, onSnapshot }: {
     reading.current = controller;
     let saved = false;
     try {
-      const next = await updateGift(gift.id, { ...draft, message: draft.message?.trim() ?? "", displayName: draft.displayName?.trim() ?? "" });
+      const next = await mutate(() => updateGift(gift.id, { ...draft, message: draft.message?.trim() ?? "", displayName: draft.displayName?.trim() ?? "" }));
       saved = true;
-      onSnapshot(next);
       if (controller.signal.aborted) return;
       const visible = next.gifts.find((item) => item.id === gift.id);
-      // Public snapshots redact private text; don't reopen an incomplete draft.
+      // Public snapshots redact private text and author; don't reopen an incomplete draft.
       if (visible) setDetail({ ...detail, ...visible, canEdit: false });
       setDraft(null);
       const refreshed = await getGift(gift.id, controller.signal);
-      if (!controller.signal.aborted) setDetail(refreshed);
+      if (!controller.signal.aborted) { setDetail(refreshed); onDetail(refreshed); }
     } catch (reason) {
-      if (!controller.signal.aborted) setError(saved ? "Your gift was saved, but its details couldn’t load. Close and reopen it to try again." : reason instanceof Error ? reason.message : "Couldn’t save this gift. Please try again.");
+      if (!controller.signal.aborted) {
+        if (!saved && reason instanceof HouseError && reason.status === 409) setConflict(true);
+        else setError(saved ? "Your gift was saved, but its details couldn’t load. Close and reopen it to try again." : reason instanceof Error ? reason.message : "Couldn’t save this gift. Please try again.");
+      }
+    } finally { mutating.current = false; setSaving(false); }
+  };
+  const reload = async () => {
+    if (mutating.current) return;
+    mutating.current = true;
+    setSaving(true);
+    setError("");
+    reading.current?.abort();
+    const controller = new AbortController();
+    reading.current = controller;
+    try {
+      const latest = await getGift(gift.id, controller.signal);
+      if (controller.signal.aborted) return;
+      setDetail(latest);
+      onDetail(latest);
+      setDraft(null);
+      setConflict(false);
+    } catch (reason) {
+      if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : "Couldn’t reload this gift. Please try again.");
     } finally { mutating.current = false; setSaving(false); }
   };
   const remove = async () => {
@@ -66,7 +89,7 @@ export function GiftDialog({ gift, initialDetail, onClose, onSnapshot }: {
     setRemoving(true);
     setError("");
     try {
-      onSnapshot(await reclaimGift(gift.id));
+      await mutate(() => reclaimGift(gift.id));
       onClose();
     } catch (reason) {
       if (reason instanceof HouseError && reason.status === 404) onClose();
@@ -85,21 +108,25 @@ export function GiftDialog({ gift, initialDetail, onClose, onSnapshot }: {
       <label htmlFor={`${fieldId}-message`}>Your message, optional</label>
       <textarea id={`${fieldId}-message`} name="message" rows={5} maxLength={2000} value={draft.message ?? ""} disabled={saving || removing} onChange={(event) => setDraft({ ...draft, message: event.target.value })} />
       <label className="gift-from" htmlFor={`${fieldId}-name`}><span>From</span><input id={`${fieldId}-name`} aria-label="Your name, optional" name="nickname" autoComplete="nickname" maxLength={40} value={draft.displayName ?? ""} disabled={saving || removing} onChange={(event) => setDraft({ ...draft, displayName: event.target.value })} /></label>
-      <label className="house-audience"><span>Message visible to</span><select name="visibility" value={draft.visibility} disabled={saving || removing} onChange={(event) => setDraft({ ...draft, visibility: event.target.value as Audience })}><option value="public">Everyone</option><option value="private">Only Kaio & you</option></select></label>
+      <label className="house-audience"><span>Message & name visible to</span><select name="visibility" value={draft.visibility} disabled={saving || removing} onChange={(event) => setDraft({ ...draft, visibility: event.target.value as Audience })}><option value="public">Everyone</option><option value="private">Only Kaio & you</option></select></label>
       <div className="house-gift-actions">
         <button className="house-reclaim" type="button" disabled={saving || removing} onClick={() => { setDraft(null); setError(""); }}>Cancel</button>
-        <button className="house-send" type="submit" disabled={saving || removing}>{saving ? "Saving…" : "Save changes"}</button>
+        <button className="house-send" type="submit" disabled={saving || removing || conflict}>{saving ? "Saving…" : "Save changes"}</button>
       </div>
     </form> : <>
     {message && <p className="house-gift-message">{message}</p>}
     {current.visibility === "private" && <p className="house-private">{message ? "A private note" : "A private note for Kaio"}</p>}
-    <p className="house-attribution">From {current.authorName}</p>
+    {current.authorName !== null && <p className="house-attribution">From {current.authorName}</p>}
     <time className="house-gift-date" dateTime={current.createdAt}>{new Date(current.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}</time>
     <div className="house-gift-actions">
-      {detail?.canEdit && <button className="house-reclaim" type="button" disabled={saving || removing} onClick={edit}>{saving ? "Saving…" : "Edit gift"}</button>}
+      {detail?.canEdit && <button className="house-reclaim" type="button" disabled={saving || removing || conflict} onClick={edit}>{saving ? "Saving…" : "Edit gift"}</button>}
       {(detail?.canReclaim || detail?.canRemove) && <button className="house-reclaim" type="button" disabled={saving || removing} onClick={() => { void remove(); }}>{removing ? "Removing…" : detail.canReclaim ? "Take back" : "Remove gift"}</button>}
     </div>
     </>}
+    {conflict && <div role="alert">
+      <p>This gift changed elsewhere. Your draft hasn’t been saved. Copy anything you want to keep, then reload the latest gift before editing again. Reloading discards this draft.</p>
+      <button className="house-reclaim" type="button" disabled={saving || removing} onClick={() => { void reload(); }}>Reload latest gift</button>
+    </div>}
     <p className="house-error" role="alert">{error}</p>
   </div>;
 }

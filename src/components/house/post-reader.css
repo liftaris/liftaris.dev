@@ -1,0 +1,2 @@
+.object-window-content:has(> .post-reader) { height: 100%; padding: 0; }
+.post-reader { display: block; width: 100%; height: 100%; border: 0; background: var(--paper); }

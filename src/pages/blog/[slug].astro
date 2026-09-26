@@ -9,7 +9,7 @@ if (error && error.name !== "LiveEntryNotFoundError") throw error;
 if (!post) return Astro.rewrite("/404");
 Astro.cache.set(cacheHint);
 ---
-<Portfolio title={`${post.data.title} | Kaio Barbosa`} content={{ collection: "posts", id: post.data.id, slug: post.id }}>
+<Portfolio embedded={Astro.url.searchParams.get("window") === "1"} title={`${post.data.title} | Kaio Barbosa`} content={{ collection: "posts", id: post.data.id, slug: post.id }}>
   <article class="article-content">
     <p class="meta">{new Date(post.data.date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })}</p>
     <h1 {...post.edit.title}>{post.data.title}</h1>

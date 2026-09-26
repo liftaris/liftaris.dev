@@ -1,27 +1,28 @@
 .house {
   --house-gift: #ffe6a1;
-  width: min(100%, 580px);
-  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
   container-type: inline-size;
   color: var(--paper, #fffbed);
 }
 
-.shell.onHome .stageContent {
-  width: 100%;
-  padding-top: max(50px, 5svh);
-}
-
 .house-viewport {
+  position: relative;
+  flex: 1 1 0;
   width: 100%;
-  max-height: min(650px, 72svh);
-  min-height: 320px;
+  min-width: 0;
+  min-height: 0;
   overflow: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
   scrollbar-color: rgb(255 251 237 / .35) transparent;
 }
 
-.house-world-space { position: relative; margin-inline: auto; }
+.house-world-space { position: relative; margin-inline: auto; overflow: clip; }
 .house-world { position: relative; transform-origin: top left; }
 .house-object {
   position: absolute;
@@ -219,7 +220,7 @@
 
 .house-error { font-size: 12px; line-height: 1.6; margin: 10px 0 0; }
 .house-error:empty { display: none; }
-.house-connection { text-align: center; font-size: 12px; padding-inline: 16px; }
+.house-connection { flex-shrink: 0; max-height: 30%; overflow: auto; margin: 8px 0 0; padding-inline: 16px; text-align: center; font-size: 12px; }
 .house-composer :disabled { cursor: wait; opacity: .65; }
 
 .house-gift-body { display: flex; flex-direction: column; align-items: flex-start; width: 100%; min-height: 0; }
@@ -274,25 +275,7 @@
   .gift-preview-body { padding: 16px 12px; }
   .gift-change-object { font-size: 10px; }
 }
-@media (max-width: 1280px) {
-  .shell.onHome { padding-bottom: 0; }
-  .shell.onHome .stageContent { padding-top: 12px; }
-  .shell.onHome .identity {
-    position: relative;
-    inset: auto;
-    width: 100%;
-  }
-  .shell.onHome .identity { margin-top: 28px; }
-}
-@media (max-width: 700px) {
-  .shell.onHome .postlist { position: static; }
-}
-@media (min-width: 1281px) {
-  .house-viewport {
-    min-height: min(320px, calc(100svh - 240px));
-    max-height: min(650px, calc(100svh - 240px));
-  }
-}
+
 @media (forced-colors: active) {
   .house-object:focus-visible, .house-composer :focus-visible { outline-color: Highlight; }
   .gift-preview, .house-suggestions button[aria-pressed="true"] { border-color: CanvasText; }

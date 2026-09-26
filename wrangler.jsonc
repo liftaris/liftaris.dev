@@ -24,9 +24,8 @@
       "database_id": "0e886ca8-384e-4090-8035-c187268c7da7"
     }
   ],
-  // Historical namespace only: keep the inert House export and migration.
-  // No runtime binding or deleted_classes migration; legacy data is not migrated.
-  // See docs/legacy-gift-retirement.md before changing this history.
+  // Applied namespace history. Keep the inert House export; it is not used by the app.
+  // A deleted_classes migration would delete remote storage.
   "migrations": [
     { "tag": "house-v1", "new_sqlite_classes": ["House"] }
   ],
@@ -63,26 +62,27 @@
       ]
     },
     "vars": {
-      "HOUSE_OWNER_ID": "01M366VZ20X87M0WMW2Y846Z0Y"
+      // Owner registered in the isolated preview CMS, not production.
+      "HOUSE_OWNER_ID": "01M3D50BEQJSREDCCRJK91R999"
     },
     "kv_namespaces": [
       {
         "binding": "SESSION",
-        "id": "c2d847173c624a3e816ed26dceb8504c"
+        "id": "d40889cd503f4bd4912c6de7aafd5394"
       }
     ],
     "d1_databases": [
       {
         "binding": "DB",
-        // One CMS and media library serve production and branch previews.
-        "database_name": "liftaris-emdash",
-        "database_id": "0e886ca8-384e-4090-8035-c187268c7da7"
+        // Preview gifts, native users and CMS content never touch production.
+        "database_name": "liftaris-emdash-preview",
+        "database_id": "a5e64636-afe8-44f9-87e6-5055554edda9"
       }
     ],
     "r2_buckets": [
       {
         "binding": "MEDIA",
-        "bucket_name": "liftaris-emdash-media"
+        "bucket_name": "liftaris-emdash-media-preview"
       }
     ]
   },

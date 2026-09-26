@@ -40,6 +40,13 @@
           "searchable": true
         },
         {
+          "slug": "icon",
+          "label": "Icon",
+          "type": "string",
+          "required": true,
+          "defaultValue": "📄"
+        },
+        {
           "slug": "date",
           "label": "Date",
           "type": "datetime",
@@ -67,6 +74,7 @@
         ],
         "data": {
           "title": "Understanding L Systems",
+          "icon": "🅻",
           "date": "2023-03-19T18:50:44.000Z",
           "content": [
             {
@@ -739,6 +747,7 @@
         ],
         "data": {
           "title": "Bazaar Ghost",
+          "icon": "👻",
           "date": "2025-11-30T00:00:00.000Z",
           "content": [
             {
@@ -2189,6 +2198,7 @@
         ],
         "data": {
           "title": "Building a Website",
+          "icon": "📄",
           "date": "2023-03-09T16:04:44.000Z",
           "content": [
             {

@@ -1,5 +1,6 @@
 ---
 title: Understanding L Systems
+icon: "🅻"
 author: Kaio
 date: '2023-03-19T18:50:44.000Z'
 ---

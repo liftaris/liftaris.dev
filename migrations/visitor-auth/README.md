@@ -8,4 +8,4 @@ at startup.
 Do not edit applied SQL, apply it to `DB`, or add destructive cleanup migrations.
 Alchemy temporarily retains the original `Visitors` declaration and migration
 path to preserve existing stage resources. The archive is not a data backup or
-an importer. See [legacy retirement and cutover](../../docs/legacy-gift-retirement.md).
+an importer.

@@ -3,17 +3,14 @@
   "project": [
     "src/**/*.{astro,ts,tsx}",
     "components/**/*.{ts,tsx}",
-    "data/**/*.ts",
-    "scripts/*.mjs"
+    "data/**/*.ts"
   ],
   "entry": [
     "src/pages/**/*.{astro,ts}",
     "src/plugins/*.ts",
-    "scripts/*.mjs"
+    "{src,components,data}/**/*.test.{ts,tsx}"
   ],
   "ignore": [
-    "**/*.test.{ts,tsx}",
-    "src/server/house/cms-test-db.ts",
     "**/*.config.{js,mjs,ts}"
   ],
   "ignoreDependencies": [

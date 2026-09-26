@@ -42,6 +42,18 @@ export function ensureVisitor(): Promise<Visitor> {
   return visitorPromise;
 }
 
+export type HouseMutation = <T extends HouseSnapshot>(request: () => Promise<T>) => Promise<T>;
+
+/** One queue per mounted House; accepting the snapshot is part of the mutation. */
+export function houseMutations(accept: (snapshot: HouseSnapshot) => void): HouseMutation {
+  let pending = Promise.resolve();
+  return (request) => {
+    const next = pending.then(request).then((snapshot) => { accept(snapshot); return snapshot; });
+    pending = next.then(() => {}, () => {});
+    return next;
+  };
+}
+
 export const getHouse = (signal?: AbortSignal) => request<HouseSnapshot>("/api/house", { signal });
 export const getGift = (id: string, signal?: AbortSignal) => request<GiftDetail>(`/api/house/gifts/${encodeURIComponent(id)}`, { signal });
 export const createGift = (gift: CreateGift) => request<CreatedGift>("/api/house/gifts", { method: "POST", body: JSON.stringify(gift) });

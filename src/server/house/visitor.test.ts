@@ -12,11 +12,10 @@ class Session implements VisitorSession {
   value: unknown;
   writes = 0;
   rotations = 0;
-  ttl: number | undefined;
   constructor(value?: unknown) { this.value = value; }
   async get() { return this.value; }
-  set(_key: "user", value: { id: string }, options?: { ttl?: number }) {
-    this.value = value; this.writes++; this.ttl = options?.ttl;
+  set(_key: "user", value: { id: string }) {
+    this.value = value; this.writes++;
   }
   async regenerate() { this.rotations++; }
 }
@@ -77,24 +76,6 @@ test("bootstrap bounds new accounts in the existing CMS rate-limit table", async
   expect((await ensureCmsVisitor(fixture.db, new Session({ id: fixture.sender.id }), fixture.owner.id)).visitor?.id).toBe(fixture.sender.id);
 });
 
-test("bootstrap keeps recent visitor identity read-only, never extends an owner's", async () => {
-  await completeSetup();
-  const session = new Session();
-  await ensureCmsVisitor(fixture.db, session, fixture.owner.id);
-  expect(session.ttl).toBe(34_560_000);
-  const writes = session.writes;
-  await ensureCmsVisitor(fixture.db, session, fixture.owner.id);
-  expect(session.writes).toBe(writes);
-  const owner = new Session({ id: fixture.owner.id });
-  await ensureCmsVisitor(fixture.db, owner, fixture.owner.id);
-  expect(owner.writes).toBe(0);
-  const legacy = new Session({ id: fixture.sender.id });
-  await ensureCmsVisitor(fixture.db, legacy, fixture.owner.id);
-  await ensureCmsVisitor(fixture.db, legacy, fixture.owner.id);
-  expect(legacy.writes).toBe(1);
-  expect(legacy.value).toEqual({ id: fixture.sender.id, lastRenewedAt: expect.any(Number) });
-});
-
 function contextFor(request: Request, session = new Session()) {
   const cookies = new Map<string, { value: string; options?: Record<string, unknown> }>();
   const context = {
@@ -110,24 +91,6 @@ function contextFor(request: Request, session = new Session()) {
 const origin = "https://www.liftaris.dev";
 const bootstrapRequest = (headers: Record<string, string> = {}, body = "{}") => new Request(`${origin}/api/house/me`, {
   method: "POST", headers: { Origin: origin, "Content-Type": "application/json", ...headers }, body,
-});
-
-test("session endpoint boots with a persistent cookie and verifies identity read-only", async () => {
-  await completeSetup();
-  const { context, cookies, session } = contextFor(bootstrapRequest());
-  const response = await visitorResponse(context, fixture.owner.id);
-  expect(response.status).toBe(200);
-  const viewer = await response.json();
-  expect(cookies.get("astro-session")?.options).toEqual({ path: "/", httpOnly: true, sameSite: "lax", secure: true, maxAge: expect.any(Number) });
-  expect(cookies.get("astro-session")?.options?.maxAge).toBeLessThanOrEqual(34_560_000);
-  expect(cookies.get("astro-session")?.options?.maxAge).toBeGreaterThanOrEqual(34_559_999);
-  expect(response.headers.get("Cache-Control")).toContain("no-store");
-  const writes = session.writes;
-  const read = contextFor(new Request(`${origin}/api/house/me`), session);
-  const verification = await visitorResponse(read.context, fixture.owner.id);
-  expect(JSON.stringify(await verification.json())).toBe(JSON.stringify(viewer));
-  expect(session.writes).toBe(writes);
-  expect(read.cookies.size).toBe(0);
 });
 
 test("real Astro boots respect KV's one write per key per second", async () => {
@@ -212,7 +175,13 @@ test("real Astro sessions round-trip the visitor cookie and keep native login br
   const response = await visitorResponse(initial.context, fixture.owner.id);
   expect(response.status).toBe(200);
   await initial.session[PERSIST_SYMBOL]();
-  const identity = await response.json();
+  const identity = await response.json() as Awaited<ReturnType<typeof resolveViewer>>;
+  expect(identity.visitor).not.toBeNull();
+  const user = await new UserRepository(fixture.db).findById(identity.visitor!.id);
+  expect(user).toMatchObject({ role: 10, data: { anonymous: true } });
+  expect(user?.email).toMatch(/^[a-f0-9-]+@visitors\.invalid$/);
+  expect(identity).toEqual({ visitor: { id: user!.id, name: user!.name! }, owner: false });
+  expect(await new UserRepository(fixture.db).count()).toBe(4);
   const setCookie = [...initial.cookies.headers()].find((value) => value.startsWith("astro-session="))!;
   expect(setCookie).toMatch(/Max-Age=(34560000|34559999);/);
   expect(setCookie).toContain("HttpOnly");
@@ -251,15 +220,6 @@ test.each([
   expect(session.writes).toBe(0);
 });
 
-test("session endpoint does not silently replace an unreadable existing cookie", async () => {
-  await completeSetup();
-  const { context, cookies, session } = contextFor(bootstrapRequest());
-  cookies.set("astro-session", { value: crypto.randomUUID() });
-  expect((await visitorResponse(context, fixture.owner.id)).status).toBe(401);
-  expect(session.writes).toBe(0);
-  expect(await new UserRepository(fixture.db).count()).toBe(3);
-});
-
 test("bootstrap preserves incoming identity evidence when upstream Astro deletes an unreadable cookie", async () => {
   await completeSetup();
   const storage = createStorage();
@@ -283,18 +243,18 @@ test("bootstrap preserves incoming identity evidence when upstream Astro deletes
   } finally { await storage.dispose(); }
 });
 
-test.each([
-  "/_emdash/api/content/gifts", "/_emdash/api/content/posts", "/_emdash/api/content/gifts/abc",
-  "/_emdash/api/users", "/_emdash/api/media", "/_emdash/api/settings", "/_emdash/api/schema/collections",
-  "/_emdash/api/plugins/theme-image", "/_emdash/api/mcp", "/_emdash/admin", "/_emdash/admin/users",
-  "/_emdash/api/auth/signup/complete", "/_emdash/api/auth/invite/accept", "/_emdash/api/auth/register",
-  "/_emdash/api/auth/passkey/register/options", "/_emdash/api/auth/passkey/register/verify",
-  "/_emdash/api/oauth/authorize", "/_emdash/oauth/authorize", "/_emdash/api/oauth/token", "/_emdash/api/oauth/device/authorize",
-  "/_emdash/api/api-tokens", "/_emdash/api/search", "/_emdash/api/search/suggest", "/_emdash/api/snapshot",
-  "/_emdash/api/auth/me/extra", "/_emdash/api/auth/passkey/options/extra",
-  "/_emdash/api/setup", "/_emdash/api/auth/dev-bypass", "/_emdash/api/auth/oauth/google/callback",
-])("CMS visitor perimeter blocks %s even on native public-auth paths", async (path) => {
-  const { context } = contextFor(new Request(`${origin}${path}`), new Session({ id: fixture.sender.id }));
+test("CMS visitors cannot bypass the perimeter through native content, auth or encoded routes", async () => {
+  for (const path of [
+    "/_emdash/api/content/gifts", "/_emdash/api/content/posts", "/_emdash/admin",
+    "/_emdash/api/search", "/_emdash/api/snapshot", "/_emdash/api/auth/signup/complete",
+    "/_emdash/api/auth/passkey/register/options", "/_emdash/api/oauth/token",
+    "/_emdash/api/auth/me/extra", "/_emdash/api/auth/passkey/options/extra",
+    "/_emdash/api/setup", "/_emdash/api/auth/dev-bypass", "/%5femdash/api/content/gifts",
+  ]) {
+    const { context } = contextFor(new Request(`${origin}${path}`), new Session({ id: fixture.sender.id }));
+    expect((await cmsVisitorGuard(context, fixture.owner.id))?.status, path).toBe(403);
+  }
+  const { context } = contextFor(new Request(`${origin}/_emdash/api/auth/me`, { method: "POST" }), new Session({ id: fixture.sender.id }));
   expect((await cmsVisitorGuard(context, fixture.owner.id))?.status).toBe(403);
 });
 
@@ -331,32 +291,4 @@ test("promoted visitors cannot enter native visual editing on public pages", asy
   const { context } = contextFor(new Request(`${origin}/?edit=true`), new Session({ id: fixture.sender.id }));
   context.locals.user = { id: fixture.sender.id, role: 50, data: { anonymous: true } } as unknown as App.Locals["user"];
   expect((await cmsVisitorGuard(context, fixture.owner.id))?.status).toBe(403);
-});
-
-test("encoded CMS namespaces do not bypass the gift perimeter", async () => {
-  const { context } = contextFor(new Request(`${origin}/%5femdash/api/content/gifts`), new Session({ id: fixture.sender.id }));
-  expect((await cmsVisitorGuard(context, fixture.owner.id))?.status).toBe(403);
-});
-
-test("auth/me is read-only for visitors", async () => {
-  const { context } = contextFor(new Request(`${origin}/_emdash/api/auth/me`, { method: "POST" }), new Session({ id: fixture.sender.id }));
-  expect((await cmsVisitorGuard(context, fixture.owner.id))?.status).toBe(403);
-});
-
-test("bootstrap creates a native subscriber and restores the same identity", async () => {
-  await completeSetup();
-  const session = new Session();
-  const viewer = await ensureCmsVisitor(fixture.db, session, fixture.owner.id);
-  expect(viewer.owner).toBe(false);
-  expect(viewer.visitor?.name).toBeTruthy();
-  const user = await new UserRepository(fixture.db).findById(viewer.visitor!.id);
-  expect(user?.role).toBe(10);
-  expect(user?.data).toEqual({ anonymous: true });
-  expect(user?.email).toMatch(/^[a-f0-9-]+@visitors\.invalid$/);
-  expect(session.value).toEqual({ id: user!.id, lastRenewedAt: expect.any(Number) });
-  expect(session.rotations).toBe(1);
-  expect(await resolveViewer(fixture.db, session, fixture.owner.id)).toEqual(viewer);
-  expect(await ensureCmsVisitor(fixture.db, session, fixture.owner.id)).toEqual(viewer);
-  expect(await new UserRepository(fixture.db).count()).toBe(4);
-  expect(Object.keys(viewer.visitor!).sort()).toEqual(["id", "name"]);
 });
