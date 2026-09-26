@@ -8,9 +8,22 @@ export interface ObjectSpec extends Size {
   id: string;
   name: string;
   emoji: string;
+  image?: string | null;
   shape: "circle" | "rectangle";
   anchor?: boolean;
   tint_when_visited?: boolean;
+}
+
+export function isImageUrl(value?: string | null): boolean {
+  if (!value || typeof value !== "string") return false;
+  const trimmed = value.trim();
+  return (
+    trimmed.startsWith("http://") ||
+    trimmed.startsWith("https://") ||
+    trimmed.startsWith("/") ||
+    trimmed.startsWith("data:image/") ||
+    /\.(gif|webp|avif|png|jpe?g|svg)(\?.*)?$/i.test(trimmed)
+  );
 }
 
 export const OBJECTS: readonly ObjectSpec[] = [

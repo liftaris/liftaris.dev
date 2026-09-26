@@ -55,3 +55,84 @@ test("thingsConfig tint_when_visited can disable visited tint per thing in clump
   expect(clumpScene).toMatch(/data-object="case"[^>]*data-visited="true"/);
 });
 
+test("isImageUrl correctly identifies image and gif URLs versus emojis", () => {
+  const { isImageUrl } = require("../../components/clump/model");
+  expect(isImageUrl("🐙")).toBe(false);
+  expect(isImageUrl("📦")).toBe(false);
+  expect(isImageUrl("hello world")).toBe(false);
+  expect(isImageUrl(null)).toBe(false);
+  expect(isImageUrl(undefined)).toBe(false);
+
+  expect(isImageUrl("https://media.giphy.com/media/xyz/giphy.gif")).toBe(true);
+  expect(isImageUrl("http://example.com/icon.webp")).toBe(true);
+  expect(isImageUrl("/_emdash/api/media/file/image123.avif")).toBe(true);
+  expect(isImageUrl("/assets/icons/retro.png")).toBe(true);
+  expect(isImageUrl("https://example.com/photo.jpeg?w=100")).toBe(true);
+  expect(isImageUrl("data:image/webp;base64,AAAA")).toBe(true);
+});
+
+test("HouseClump renders <img> for things with image or image URL emoji", () => {
+  const customThings = [
+    { id: "gif-thing", name: "Dancing Cat", emoji: "🐱", image: "https://example.com/cat.gif", width: 60, height: 60, shape: "rectangle" as const },
+    { id: "webp-thing", name: "WebP Icon", emoji: "https://example.com/icon.webp", width: 60, height: 60, shape: "circle" as const },
+    { id: "emoji-thing", name: "Standard Emoji", emoji: "🐙", width: 60, height: 60, shape: "circle" as const },
+  ];
+  const visited = new Set(["gif-thing"]);
+  const scene = renderToStaticMarkup(
+    <HouseClump gifts={[]} inspectedIds={[]} visitedIds={visited} desktopObjects={customThings} onOpen={() => {}} />
+  );
+
+  // Gif thing renders img with GIF url and visited tint
+  expect(scene).toContain('<img src="https://example.com/cat.gif" alt="" class="house-object-image"');
+  expect(scene).toMatch(/data-object="gif-thing"[^>]*data-visited="true"/);
+
+  // Webp thing renders img from emoji url
+  expect(scene).toContain('<img src="https://example.com/icon.webp" alt="" class="house-object-image"');
+
+  // Standard emoji thing renders raw emoji text
+  expect(scene).toContain('<span class="house-object-art" aria-hidden="true">🐙</span>');
+});
+
+test("Folder renders <img> for items and links with image icons", () => {
+  const { FolderContent } = require("../../components/folder/Folder");
+  const folderSpec = {
+    id: "test-folder",
+    name: "Test Folder",
+    emoji: "📁",
+    kind: "folder" as const,
+    items: [
+      {
+        kind: "item" as const,
+        id: "gif-item",
+        name: "Animated GIF",
+        emoji: "✨",
+        image: "/images/sparkle.gif",
+        value: { id: "gif-item" },
+      },
+      {
+        kind: "link" as const,
+        id: "web-link",
+        name: "Website",
+        emoji: "🌐",
+        image: "https://example.com/globe.avif",
+        href: "https://example.com",
+      },
+      {
+        kind: "item" as const,
+        id: "text-item",
+        name: "Text Emoji",
+        emoji: "📝",
+        value: { id: "text-item" },
+      },
+    ],
+  };
+
+  const html = renderToStaticMarkup(
+    <FolderContent folder={folderSpec} />
+  );
+
+  expect(html).toContain('<img src="/images/sparkle.gif" alt="" class="folder-entry-image"');
+  expect(html).toContain('<img src="https://example.com/globe.avif" alt="" class="folder-entry-image"');
+  expect(html).toContain('<span class="folder-entry-art" aria-hidden="true">📝</span>');
+});
+

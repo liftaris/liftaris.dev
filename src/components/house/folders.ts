@@ -1,5 +1,5 @@
 import type { FolderSpec, FolderEntry } from "../folder/Folder";
-import type { ObjectSpec } from "../clump/model";
+import { isImageUrl, type ObjectSpec } from "../clump/model";
 
 export type WritingPost = { id: string; slug: string; title: string; icon: string };
 export type PostThing = ObjectSpec & { kind: "post"; href: string };
@@ -54,17 +54,19 @@ export function buildFolder(
 
   if (folderThing.id === "writing-folder") {
     for (const post of posts) {
+      const isImg = isImageUrl(post.icon);
       const value: PostThing = {
         kind: "post",
         id: `post:${post.id}`,
         name: post.title,
-        emoji: post.icon,
+        emoji: isImg ? "📝" : post.icon,
+        image: isImg ? post.icon : undefined,
         href: `/blog/${encodeURIComponent(post.slug)}`,
         width: 56,
         height: 64,
         shape: "rectangle",
       };
-      items.push({ kind: "item", id: value.id, name: value.name, emoji: value.emoji, value });
+      items.push({ kind: "item", id: value.id, name: value.name, emoji: value.emoji, image: value.image, value });
     }
   }
 
@@ -72,11 +74,13 @@ export function buildFolder(
     if (child.kind === "folder") {
       items.push(buildFolder(child, allThings, posts));
     } else if (child.kind === "link") {
+      const isImg = isImageUrl(child.image) ? child.image : isImageUrl(child.emoji) ? child.emoji : undefined;
       items.push({
         kind: "link",
         id: child.id,
         name: child.name,
         emoji: child.emoji,
+        image: isImg,
         href: child.href ?? "#",
       });
     } else {
@@ -91,6 +95,7 @@ export function buildFolder(
         id: child.id,
         name: displayName,
         emoji: child.emoji,
+        image: child.image,
         value: child,
       });
     }

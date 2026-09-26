@@ -1,7 +1,7 @@
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
 import { createSceneEngine } from "../clump/matter-engine";
-import { OBJECTS } from "../clump/model";
+import { isImageUrl, OBJECTS } from "../clump/model";
 import type { ObjectSpec, Point, SceneEngine } from "../clump/model";
 import { giftObjects, worldSize } from "../../lib/house/emoji";
 import type { Gift } from "../../lib/house/types";
@@ -257,6 +257,8 @@ export function HouseClump({ gifts, inspectedIds, visitedIds = EMPTY_VISITED, th
           const isFolder = ("kind" in object && (object as { kind?: string }).kind === "folder") || object.id === PORTFOLIO_FOLDER_OBJECT.id || object.id === WRITING_FOLDER_OBJECT.id || object.id === "lab-folder" || object.id.endsWith("-folder");
           const shouldTint = thingsConfig[object.id]?.tint_when_visited ?? (isFolder ? false : true);
           const visited = !isFolder && shouldTint && visitedIds.has(object.id);
+          const iconImage = ("image" in object && (object as { image?: string | null }).image)
+            || (isImageUrl(object.emoji) ? object.emoji : null);
           return <button type="button" key={object.id} className="house-object" data-object={object.id} data-gift={Boolean(gift)} data-visited={visited} data-grabbed={grabId === object.id} data-removing={removing} data-window-open={opened}
             ref={(element) => { if (element) nodes.current.set(object.id, element); else nodes.current.delete(object.id); }}
             style={{ width: Math.max(44, object.width), height: Math.max(44, object.height), fontSize: Math.max(object.width, object.height) * .87 }}
@@ -277,7 +279,7 @@ export function HouseClump({ gifts, inspectedIds, visitedIds = EMPTY_VISITED, th
               const suppressed = clickSuppressed.current;
               if (!opened && !removing && (!gift || liveIds.has(gift.id)) && !(suppressed?.id === object.id && performance.now() < suppressed.until)) onOpen(object, event.currentTarget, gift);
             }}
-          ><span className="house-object-art" aria-hidden="true">{object.emoji}</span></button>;
+          ><span className="house-object-art" aria-hidden="true">{iconImage ? <img src={iconImage} alt="" className="house-object-image" loading="lazy" decoding="async" /> : object.emoji}</span></button>;
         })}
       </div>
     </div>

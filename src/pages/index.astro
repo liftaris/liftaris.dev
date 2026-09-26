@@ -2,6 +2,7 @@
 import Portfolio from "../layouts/Portfolio.astro";
 import { House } from "../components/house/House";
 import { getEmDashCollection } from "emdash";
+import { isImageUrl } from "../components/clump/model";
 import type { ThingSpec, WritingPost } from "../components/house/folders";
 
 const posts: WritingPost[] = [];
@@ -24,10 +25,33 @@ try {
       const kind = (data.kind === "folder" || data.kind === "link" || data.kind === "action" || data.kind === "object") ? data.kind : "object";
       const action = (data.action === "projects" || data.action === "experience" || data.action === "leave-gift") ? data.action : "none";
       const shape = data.shape === "circle" ? "circle" : "rectangle";
+
+      let imageUrl: string | null = null;
+      if (typeof data.image === "string" && data.image) {
+        imageUrl = data.image;
+      } else if (data.image && typeof data.image === "object") {
+        const imgObj = data.image as Record<string, unknown>;
+        if (typeof imgObj.src === "string" && imgObj.src) {
+          imageUrl = imgObj.src;
+        } else if (typeof imgObj.previewUrl === "string" && imgObj.previewUrl) {
+          imageUrl = imgObj.previewUrl;
+        } else if (typeof imgObj.url === "string" && imgObj.url) {
+          imageUrl = imgObj.url;
+        } else if (typeof imgObj.id === "string" && imgObj.id) {
+          const key = (imgObj.meta as Record<string, unknown> | undefined)?.storageKey || imgObj.id;
+          imageUrl = `/_emdash/api/media/file/${key}`;
+        }
+      }
+      const emojiVal = String(data.emoji ?? "📦");
+      if (!imageUrl && isImageUrl(emojiVal)) {
+        imageUrl = emojiVal;
+      }
+
       return {
         id: entry.id,
         name: String(data.name ?? ""),
-        emoji: String(data.emoji ?? "📦"),
+        emoji: emojiVal,
+        image: imageUrl,
         kind,
         desktop: Boolean(data.desktop),
         parent_id: data.parent_id ? String(data.parent_id) : null,

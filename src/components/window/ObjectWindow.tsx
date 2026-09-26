@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type WinBox from "winbox/src/js/winbox.js";
+import { isImageUrl } from "../clump/model";
 import "winbox/dist/css/winbox.min.css";
 import "./window.css";
 
@@ -43,7 +44,16 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
     frame.setAttribute("aria-label", title);
     frame.dataset.monochrome = String(monochrome);
     const iconButton = frame.querySelector<HTMLButtonElement>(".object-window-icon")!;
-    iconButton.textContent = icon;
+    if (isImageUrl(icon)) {
+      iconButton.replaceChildren();
+      const img = document.createElement("img");
+      img.src = icon;
+      img.alt = "";
+      img.className = "object-window-image";
+      iconButton.appendChild(img);
+    } else {
+      iconButton.textContent = icon;
+    }
     iconButton.setAttribute("aria-label", `Collapse ${title} window`);
     frame.querySelector(".wb-close")!.setAttribute("aria-label", closeLabel);
     frame.querySelector(".object-window-handle")!.setAttribute("aria-label", `Move ${title} window. Use arrow keys; Escape collapses.`);

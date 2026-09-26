@@ -42,9 +42,19 @@
   user-select: none;
   transform: translateZ(0);
 }
+.object-window-image {
+  display: block;
+  width: 56px;
+  height: 56px;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
 .object-window > .wb-header .object-window-icon { cursor: grab; touch-action: none; }
 .object-window > .wb-header .object-window-icon:active { cursor: grabbing; }
-.object-window[data-monochrome="true"] > .wb-header .object-window-icon { filter: grayscale(1) brightness(1.6); }
+.object-window[data-monochrome="true"] > .wb-header .object-window-icon:not(:has(.object-window-image)) { filter: grayscale(1) brightness(1.6); }
 .object-window .wb-control { display: flex; }
 .object-window .wb-control button {
   width: 28px;
