@@ -162,13 +162,13 @@ module tree, `dist/client`, and custom entrypoint rather than installing another
 Astro adapter. With pinned `alchemy@2.0.0-beta.79`, construction-time
 schema-validated string config values supply the raw `DB` and `MEDIA` bindings:
 
-- `PREVIEW_CMS_DATABASE_ID`: the provisioned preview CMS D1 ID.
-- `PREVIEW_MEDIA_BUCKET_NAME`: the provisioned preview media R2 bucket name.
+- `PREVIEW_CMS_DATABASE_ID`: the provisioned preview CMS D1 ID (defaults to Wrangler's preview CMS D1 ID).
+- `PREVIEW_MEDIA_BUCKET_NAME`: the provisioned preview media R2 bucket name (defaults to Wrangler's preview R2 bucket).
 
-Both are required, with no production defaults; malformed identifiers and the
-existing production CMS ID/media name are rejected during construction. Supply
-the exact resources recorded in Wrangler's `previews` block and check them against production before
-an approved Alchemy apply. Raw bindings reference those resources without
+Both fall back to the provisioned preview resources when unset; malformed
+identifiers and the existing production CMS ID/media name are strictly rejected
+during construction. Supply explicit overrides if targeting a different preview
+environment and check them against production before an approved Alchemy apply. Raw bindings reference those resources without
 adopting or managing their lifecycle: do not also declare Alchemy D1/R2 resources
 for them. This avoids competing resource owners and creating an extra CMS solely
 for the transitional Alchemy stack. Stage `Sessions` remains Alchemy-owned;
@@ -187,11 +187,13 @@ Removing the `HOUSE` binding also needs an explicitly approved namespace
 preservation or deletion plan; there is no class-level retain switch.
 
 Do not provision fresh stages from this transitional stack or run it as a static
-check. **A first Alchemy plan can write cloud state** via `Cloudflare.state()`
-bootstrap. Retain policies need an explicitly approved apply and readback before
-declarations can be orphaned safely. No plan, bootstrap, or deployment has been
-performed for this change. Do not run Wrangler migrations against Alchemy-owned
-legacy databases; their unchanged migration history still belongs to Alchemy.
+check without `ALCHEMY_STATE=local`. **A first Alchemy plan can write cloud state**
+via `Cloudflare.state()` bootstrap (use `ALCHEMY_STATE=local` to inspect plans locally
+without remote state bootstrapping). Retain policies need an explicitly approved
+apply and readback before declarations can be orphaned safely. No plan, bootstrap,
+or deployment has been performed for this change. Do not run Wrangler migrations
+against Alchemy-owned legacy databases; their unchanged migration history still
+belongs to Alchemy.
 
 ## Existing production target
 

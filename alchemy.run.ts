@@ -1,4 +1,4 @@
-import { RemovalPolicy, Stack } from "alchemy";
+import { localState, RemovalPolicy, Stack } from "alchemy";
 import * as Cloudflare from "alchemy/Cloudflare";
 import { Config, Effect, Schema } from "effect";
 import type { House } from "./src/server/house/House";
@@ -11,9 +11,16 @@ import type { House } from "./src/server/house/House";
 // delete remote storage; see docs/portfolio-deployment.md before an apply.
 export default Stack(
   "liftaris-house-preview",
-  { providers: Cloudflare.providers(), state: Cloudflare.state() },
+  {
+    providers: Cloudflare.providers(),
+    state:
+      process.env.ALCHEMY_STATE === "local"
+        ? localState()
+        : Cloudflare.state(),
+  },
   Effect.gen(function* () {
-    // Required construction-time inputs: no production fallback or adoption.
+    // Construction-time inputs defaulting to provisioned preview resources.
+    // Production storage IDs are strictly blocked.
     const cmsDatabaseId = yield* Config.schema(
       Schema.String.check(
         Schema.isUUID(),
@@ -22,7 +29,8 @@ export default Stack(
         }),
       ),
       "PREVIEW_CMS_DATABASE_ID",
-    );
+    ).pipe(Config.withDefault("a5e64636-afe8-44f9-87e6-5055554edda9"));
+
     const mediaBucketName = yield* Config.schema(
       Schema.String.check(
         Schema.isPattern(/^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/),
@@ -31,7 +39,8 @@ export default Stack(
         }),
       ),
       "PREVIEW_MEDIA_BUCKET_NAME",
-    );
+    ).pipe(Config.withDefault("liftaris-emdash-media-preview"));
+
     // Persist retain in existing stage state before any later removal. Simply
     // deleting this declaration would destroy databases with the old policy.
     const legacyVisitors = yield* Cloudflare.D1.Database("Visitors", {
@@ -40,6 +49,7 @@ export default Stack(
     const sessions = yield* Cloudflare.KV.Namespace("Sessions");
 
     const website = yield* Cloudflare.Worker("Website", {
+      name: "liftaris-house-preview",
       main: "./dist/server/entry.mjs",
       bundle: false,
       assets: "./dist/client",
