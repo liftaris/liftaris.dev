@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { GiftDialog } from "../../components/house/GiftDialog";
+import { House } from "../../components/house/House";
 import { HouseClump } from "../../components/house/HouseClump";
 import { houseMutations } from "./client";
 import type { Gift, GiftDetail } from "./types";
@@ -254,5 +255,32 @@ test("FolderContent applies background styles to folder and folder entries", () 
   // Entry artwork receives entry background
   expect(html).toContain("background-image:url(&quot;/images/star-pattern.png&quot;)");
   expect(html).toContain("background-repeat:repeat");
+});
+
+test("HouseClump renders trash emoji icon at bottom right of landing page physics area", () => {
+  const scene = renderToStaticMarkup(
+    <HouseClump gifts={[gift]} inspectedIds={[]} onOpen={() => {}} />
+  );
+
+  // Trash container at bottom right of physics area
+  expect(scene).toContain('class="house-trash"');
+  expect(scene).toContain('role="region"');
+  expect(scene).toContain('aria-label="Trash"');
+  expect(scene).toContain('title="Drag gifts here to remove them"');
+  expect(scene).toContain("🗑️");
+
+  // Physics area wrapper contains both the viewport and trash element
+  expect(scene).toContain('class="house-clump-area"');
+  expect(scene).toContain('class="house-viewport"');
+
+  // Accessible instructions mention senders and admins can drag gifts to trash
+  expect(scene).toContain("Senders and admins can drag gifts to the trash icon at the bottom right to remove them.");
+});
+
+test("House renders HouseClump containing the trash zone", () => {
+  const html = renderToStaticMarkup(<House />);
+  expect(html).toContain('class="house"');
+  expect(html).toContain('class="house-trash"');
+  expect(html).toContain("🗑️");
 });
 

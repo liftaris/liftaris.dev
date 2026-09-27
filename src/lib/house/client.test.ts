@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from "bun:test";
-import { ensureVisitor } from "./client";
+import { ensureViewer, ensureVisitor } from "./client";
 import * as client from "./client";
 import type { HouseSnapshot } from "./types";
 
@@ -61,7 +61,7 @@ test("later initialization rechecks the cookie inside the cross-tab lock, includ
   }) as typeof fetch;
 
   expect(await ensureVisitor()).toEqual(visitor);
-  expect(await ensureVisitor()).toEqual(visitor);
+  expect(await ensureViewer()).toEqual({ visitor, owner: true });
   expect(locks).toBe(2);
 });
 

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import { ensureVisitor, getHouse, houseMutations } from "../../lib/house/client";
+import { ensureViewer, getHouse, houseMutations, reclaimGift } from "../../lib/house/client";
 import type { Gift, GiftDetail, HouseSnapshot } from "../../lib/house/types";
 import { giftObjects } from "../../lib/house/emoji";
 import { GiftComposer } from "./GiftComposer";
@@ -45,6 +45,28 @@ function loadVisitedIds(): Set<string> {
 function saveVisitedIds(ids: ReadonlySet<string>): void {
   try {
     localStorage.setItem(VISITED_STORAGE_KEY, JSON.stringify([...ids]));
+  } catch {
+    // Ignore quota/security errors
+  }
+}
+
+const SENT_GIFTS_STORAGE_KEY = "liftaris:sent_gifts";
+
+function loadSentGiftIds(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = localStorage.getItem(SENT_GIFTS_STORAGE_KEY);
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? new Set(parsed) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+function saveSentGiftIds(ids: ReadonlySet<string>): void {
+  try {
+    localStorage.setItem(SENT_GIFTS_STORAGE_KEY, JSON.stringify([...ids]));
   } catch {
     // Ignore quota/security errors
   }
@@ -97,6 +119,8 @@ export function House({
   }, [things, thingsConfig]);
 
   const [visitedIds, setVisitedIds] = useState<Set<string>>(() => loadVisitedIds());
+  const [sentGiftIds, setSentGiftIds] = useState<Set<string>>(() => loadSentGiftIds());
+  const [isAdmin, setIsAdmin] = useState(false);
   const [snapshot, setSnapshot] = useState<HouseSnapshot | null>(null);
   const accepted = useRef<HouseSnapshot | null>(null);
   // Open cards retain their contents until this browser edits or closes them.
@@ -131,6 +155,15 @@ export function House({
   }, []);
   const [mutate] = useState(() => houseMutations((next) => flushSync(() => accept(next))));
   const refreshDetail = useCallback((gift: GiftDetail) => {
+    if (gift.canReclaim) {
+      setSentGiftIds((current) => {
+        if (current.has(gift.id)) return current;
+        const next = new Set(current);
+        next.add(gift.id);
+        saveSentGiftIds(next);
+        return next;
+      });
+    }
     setOpened((current) => current.map((item) => item.object.id === gift.id
       ? { ...item, gift, object: giftObjects([gift])[0] } : item));
   }, []);
@@ -160,6 +193,13 @@ export function House({
       void frame.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 180, easing: "ease-out", fill: "forwards" })
         .finished.then(retire, retire);
     };
+    setSentGiftIds((current) => {
+      if (current.has(gift.id)) return current;
+      const next = new Set(current);
+      next.add(gift.id);
+      saveSentGiftIds(next);
+      return next;
+    });
     const visible = accepted.current?.gifts.find((item) => item.id === gift.id);
     if (!visible) { finishComposer(); return; }
     setOpened((current) => current.some((item) => item.object.id === gift.id)
@@ -169,12 +209,29 @@ export function House({
         origin: source.getBoundingClientRect(), previewBounds, onReady: finishComposer,
       }]);
   };
+  const trashGift = useCallback(async (id: string) => {
+    try {
+      await mutate(() => reclaimGift(id));
+      close(id);
+      setSentGiftIds((current) => {
+        if (!current.has(id)) return current;
+        const next = new Set(current);
+        next.delete(id);
+        saveSentGiftIds(next);
+        return next;
+      });
+    } catch {
+      // Ignore if unauthorized or failed
+    }
+  }, [mutate]);
   useEffect(() => {
     setReady(true);
     let active = true;
     const controller = new AbortController();
     initialRead.current = controller;
-    void ensureVisitor().catch((reason: unknown) => {
+    void ensureViewer().then((viewer) => {
+      if (active && viewer?.owner) setIsAdmin(true);
+    }).catch((reason: unknown) => {
       if (active) setSessionError(reason instanceof Error ? reason.message : "Couldn’t start your visitor session. Reload to try again.");
     });
     void getHouse(controller.signal).then((next) => {
@@ -192,7 +249,10 @@ export function House({
       visitedIds={visitedIds}
       thingsConfig={mergedThingsConfig}
       desktopObjects={desktopThings}
+      isAdmin={isAdmin}
+      sentGiftIds={sentGiftIds}
       onOpen={open}
+      onTrash={trashGift}
     />
     {loadError && <p className="house-connection" role="status">{loadError}</p>}
     {sessionError && <p className="house-connection" role="status">{sessionError}</p>}

@@ -2,6 +2,7 @@ import type { CreateGift, CreatedGift, EmojiOption, GiftDetail, HouseSnapshot, U
 
 import { GIFT_API, type GIFT_METHODS } from "./gift-api";
 
+let viewerPromise: Promise<Viewer> | undefined;
 let visitorPromise: Promise<Visitor> | undefined;
 
 export class HouseError extends Error {
@@ -24,21 +25,29 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return result as T;
 }
 
-async function restoreOrCreateVisitor(): Promise<Visitor> {
+async function restoreOrCreateViewer(): Promise<Viewer> {
   const created = await request<Viewer>("/api/house/me", { method: "POST", body: "{}" });
   const persisted = await request<Viewer>("/api/house/me");
   if (!created.visitor || persisted.visitor?.id !== created.visitor.id) {
     throw new Error("Enable cookies to leave a gift and edit or take it back later.");
   }
-  return persisted.visitor;
+  return persisted;
+}
+
+export function ensureViewer(): Promise<Viewer> {
+  if (!viewerPromise) {
+    viewerPromise = (typeof navigator !== "undefined" && navigator.locks
+      ? navigator.locks.request("kaio.house.visitor", restoreOrCreateViewer)
+      : restoreOrCreateViewer()).finally(() => {
+      viewerPromise = undefined;
+    });
+  }
+  return viewerPromise;
 }
 
 export function ensureVisitor(): Promise<Visitor> {
   if (!visitorPromise) {
-    // The server reuses the cookie session after obtaining this origin-wide lock.
-    visitorPromise = (typeof navigator !== "undefined" && navigator.locks
-      ? navigator.locks.request("kaio.house.visitor", restoreOrCreateVisitor)
-      : restoreOrCreateVisitor()).finally(() => {
+    visitorPromise = ensureViewer().then((viewer) => viewer.visitor!).finally(() => {
       visitorPromise = undefined;
     });
   }

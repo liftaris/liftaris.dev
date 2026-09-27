@@ -1,9 +1,10 @@
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
 import { createSceneEngine } from "../clump/matter-engine";
 import { getBackgroundStyle, isImageUrl, OBJECTS } from "../clump/model";
 import type { ObjectSpec, Point, SceneEngine } from "../clump/model";
 import { giftObjects, worldSize } from "../../lib/house/emoji";
+import { getGift } from "../../lib/house/client";
 import type { Gift } from "../../lib/house/types";
 import { reconcileGifts, retiringGiftIds } from "./gift-presence";
 import { PORTFOLIO_FOLDER_OBJECT, WRITING_FOLDER_OBJECT } from "./folders";
@@ -26,16 +27,30 @@ function measureViewport(element: HTMLDivElement) {
 const EMPTY_VISITED: ReadonlySet<string> = new Set();
 const EMPTY_THINGS_CONFIG: Record<string, { tint_when_visited?: boolean }> = {};
 
-export function HouseClump({ gifts, inspectedIds, visitedIds = EMPTY_VISITED, thingsConfig = EMPTY_THINGS_CONFIG, desktopObjects, onOpen }: {
+export function HouseClump({
+  gifts,
+  inspectedIds,
+  visitedIds = EMPTY_VISITED,
+  thingsConfig = EMPTY_THINGS_CONFIG,
+  desktopObjects,
+  isAdmin = false,
+  sentGiftIds = EMPTY_VISITED,
+  onOpen,
+  onTrash,
+}: {
   gifts: readonly Gift[];
   inspectedIds: readonly string[];
   visitedIds?: ReadonlySet<string>;
   thingsConfig?: Record<string, { tint_when_visited?: boolean }>;
   desktopObjects?: readonly ObjectSpec[];
+  isAdmin?: boolean;
+  sentGiftIds?: ReadonlySet<string>;
   onOpen: (object: ObjectSpec, source: HTMLButtonElement, gift?: Gift) => void;
+  onTrash?: (id: string) => void | Promise<void>;
 }) {
   const viewport = useRef<HTMLDivElement>(null);
   const world = useRef<HTMLDivElement>(null);
+  const trashRef = useRef<HTMLDivElement>(null);
   const nodes = useRef(new Map<string, HTMLButtonElement>());
   const engine = useRef<SceneEngine | null>(null);
   const grabbed = useRef<Grab | null>(null);
@@ -44,6 +59,9 @@ export function HouseClump({ gifts, inspectedIds, visitedIds = EMPTY_VISITED, th
   const clickSuppressed = useRef<{ id: string; until: number } | null>(null);
   const [displayed, setDisplayed] = useState<Gift[]>(() => [...gifts]);
   const [grabId, setGrabId] = useState<string | null>(null);
+  const [isOverTrash, setIsOverTrash] = useState(false);
+  const [trashStatus, setTrashStatus] = useState<"idle" | "over" | "trashed" | "rejected">("idle");
+  const [knownRemovable, setKnownRemovable] = useState<Set<string>>(() => new Set());
   const [scale, setScale] = useState(1);
   const [size, setSize] = useState(INITIAL_SIZE);
   const bounds = useRef(INITIAL_SIZE);
@@ -53,6 +71,12 @@ export function HouseClump({ gifts, inspectedIds, visitedIds = EMPTY_VISITED, th
   const objects = useMemo(() => [...baseObjects, ...giftObjects(displayed)], [baseObjects, displayed]);
   const retiring = retiringGiftIds(displayed, gifts, [...inspectedIds, grabId]);
   const liveIds = new Set(gifts.map((gift) => gift.id));
+
+  const isEligibleForTrash = useCallback((id: string) => {
+    const isGift = displayed.some((g) => g.id === id);
+    if (!isGift) return false;
+    return isAdmin || sentGiftIds.has(id) || knownRemovable.has(id);
+  }, [displayed, isAdmin, sentGiftIds, knownRemovable]);
 
   useLayoutEffect(() => {
     setDisplayed((current) => reconcileGifts(current, gifts));
@@ -125,6 +149,7 @@ export function HouseClump({ gifts, inspectedIds, visitedIds = EMPTY_VISITED, th
       if (grab) {
         grabbed.current = null;
         setGrabId(null);
+        setIsOverTrash(false);
         if (grab.moved) clickSuppressed.current = { id: grab.id, until: performance.now() + 400 };
         const source = nodes.current.get(grab.id);
         if (grab.pointerId !== undefined && source?.hasPointerCapture(grab.pointerId)) source.releasePointerCapture(grab.pointerId);
@@ -144,6 +169,7 @@ export function HouseClump({ gifts, inspectedIds, visitedIds = EMPTY_VISITED, th
           scene.endDrag(true);
           grabbed.current = null;
           setGrabId(null);
+          setIsOverTrash(false);
         }
       } else run();
     };
@@ -184,17 +210,51 @@ export function HouseClump({ gifts, inspectedIds, visitedIds = EMPTY_VISITED, th
     return { x: (event.clientX - rect.left) / scale, y: (event.clientY - rect.top) / scale };
   };
 
-  const finish = (cancel = false) => {
+  const handleDropOnTrash = async (id: string) => {
+    const isGift = displayed.some((g) => g.id === id);
+    if (!isGift) return;
+
+    if (isAdmin || sentGiftIds.has(id) || knownRemovable.has(id)) {
+      setTrashStatus("trashed");
+      setTimeout(() => setTrashStatus("idle"), 400);
+      await onTrash?.(id);
+      return;
+    }
+
+    try {
+      const detail = await getGift(id);
+      if (detail.canReclaim || detail.canRemove) {
+        setKnownRemovable((curr) => new Set(curr).add(id));
+        setTrashStatus("trashed");
+        setTimeout(() => setTrashStatus("idle"), 400);
+        await onTrash?.(id);
+      } else {
+        setTrashStatus("rejected");
+        setTimeout(() => setTrashStatus("idle"), 350);
+      }
+    } catch {
+      setTrashStatus("rejected");
+      setTimeout(() => setTrashStatus("idle"), 350);
+    }
+  };
+
+  const finish = (cancel = false, droppedOnTrash = false) => {
     const grab = grabbed.current;
     if (!grab) return;
     grabbed.current = null;
     setGrabId(null);
-    engine.current?.endDrag(cancel);
+    setIsOverTrash(false);
+    engine.current?.endDrag(cancel || droppedOnTrash);
     if (grab.pointerId !== undefined) {
       const element = nodes.current.get(grab.id);
       if (element?.hasPointerCapture(grab.pointerId)) element.releasePointerCapture(grab.pointerId);
     }
     if (grab.moved) clickSuppressed.current = { id: grab.id, until: performance.now() + 400 };
+
+    if (droppedOnTrash && grab.moved) {
+      void handleDropOnTrash(grab.id);
+    }
+
     start.current();
   };
 
@@ -206,6 +266,15 @@ export function HouseClump({ gifts, inspectedIds, visitedIds = EMPTY_VISITED, th
     const point = position(event);
     grabbed.current = { id, point, origin: point, pointerId: event.pointerId, moved: false };
     setGrabId(id);
+
+    const isGift = displayed.some((g) => g.id === id);
+    if (isGift && !isAdmin && !sentGiftIds.has(id) && !knownRemovable.has(id)) {
+      void getGift(id).then((detail) => {
+        if (detail.canReclaim || detail.canRemove) {
+          setKnownRemovable((curr) => new Set(curr).add(id));
+        }
+      }).catch(() => {});
+    }
   };
 
   const pointerMove = (event: ReactPointerEvent<HTMLButtonElement>) => {
@@ -219,13 +288,38 @@ export function HouseClump({ gifts, inspectedIds, visitedIds = EMPTY_VISITED, th
     }
     grab.point = point;
     engine.current?.moveDrag(point);
+
+    if (trashRef.current) {
+      const rect = trashRef.current.getBoundingClientRect();
+      const pad = 12;
+      const over = event.clientX >= rect.left - pad &&
+                   event.clientX <= rect.right + pad &&
+                   event.clientY >= rect.top - pad &&
+                   event.clientY <= rect.bottom + pad;
+      const eligible = isEligibleForTrash(grab.id);
+      setIsOverTrash(over && eligible);
+    }
+
     start.current();
   };
 
   const keyboard = (event: KeyboardEvent<HTMLButtonElement>, id: string) => {
     const key = event.key.toLowerCase();
     if (key === "escape" && grabbed.current) { event.preventDefault(); finish(true); return; }
-    if (["enter", " "].includes(key) && grabbed.current?.id === id) { event.preventDefault(); finish(); return; }
+    if (["enter", " "].includes(key) && grabbed.current?.id === id) {
+      event.preventDefault();
+      let droppedOnTrash = false;
+      if (trashRef.current && grabbed.current?.moved) {
+        const objEl = nodes.current.get(id);
+        if (objEl) {
+          const r1 = objEl.getBoundingClientRect();
+          const r2 = trashRef.current.getBoundingClientRect();
+          droppedOnTrash = !(r1.right < r2.left || r1.left > r2.right || r1.bottom < r2.top || r1.top > r2.bottom);
+        }
+      }
+      finish(false, droppedOnTrash);
+      return;
+    }
     if (retiring.has(id) || !["arrowleft", "arrowright", "arrowup", "arrowdown", "q", "e"].includes(key)) return;
     event.preventDefault();
     if (grabbed.current?.pointerId !== undefined) return;
@@ -243,47 +337,85 @@ export function HouseClump({ gifts, inspectedIds, visitedIds = EMPTY_VISITED, th
       grab.point.x = Math.max(40, Math.min(size.width - 40, grab.point.x + (key === "arrowleft" ? -distance : key === "arrowright" ? distance : 0)));
       grab.point.y = Math.max(40, Math.min(size.height - 40, grab.point.y + (key === "arrowup" ? -distance : key === "arrowdown" ? distance : 0)));
       scene.moveDrag(grab.point);
+
+      if (trashRef.current) {
+        const objEl = nodes.current.get(id);
+        if (objEl) {
+          const r1 = objEl.getBoundingClientRect();
+          const r2 = trashRef.current.getBoundingClientRect();
+          const overlaps = !(r1.right < r2.left || r1.left > r2.right || r1.bottom < r2.top || r1.top > r2.bottom);
+          const eligible = isEligibleForTrash(id);
+          setIsOverTrash(overlaps && eligible);
+        }
+      }
     } else scene.nudge(id, 0, 0, (key === "q" ? -1 : 1) * Math.PI / 12);
     start.current();
   };
 
-  return <div ref={viewport} className="house-viewport" role="group" aria-label="Kaio’s things and visitor gifts" aria-describedby="house-movement-help">
-    <div className="house-world-space" style={{ width: size.width * scale, height: size.height * scale }}>
-      <div ref={world} className="house-world" style={{ width: size.width, height: size.height, transform: `scale(${scale})` }}>
-        {objects.map((object) => {
-          const gift = displayed.find((item) => item.id === object.id);
-          const removing = retiring.has(object.id);
-          const opened = inspectedIds.includes(object.id);
-          const isFolder = ("kind" in object && (object as { kind?: string }).kind === "folder") || object.id === PORTFOLIO_FOLDER_OBJECT.id || object.id === WRITING_FOLDER_OBJECT.id || object.id === "lab-folder" || object.id.endsWith("-folder");
-          const shouldTint = thingsConfig[object.id]?.tint_when_visited ?? (isFolder ? false : true);
-          const visited = !isFolder && shouldTint && visitedIds.has(object.id);
-          const iconImage = ("image" in object && (object as { image?: string | null }).image)
-            || (isImageUrl(object.emoji) ? object.emoji : null);
-          const bgStyle = getBackgroundStyle(object);
-          return <button type="button" key={object.id} className="house-object" data-object={object.id} data-shape={object.shape === "circle" ? "circle" : undefined} data-has-bg={bgStyle ? true : undefined} data-gift={Boolean(gift)} data-visited={visited} data-grabbed={grabId === object.id} data-removing={removing} data-window-open={opened}
-            ref={(element) => { if (element) nodes.current.set(object.id, element); else nodes.current.delete(object.id); }}
-            style={{ width: Math.max(44, object.width), height: Math.max(44, object.height), fontSize: Math.max(object.width, object.height) * .87, ...bgStyle }}
-            aria-disabled={removing || undefined} tabIndex={removing || opened ? -1 : 0} aria-expanded={opened} aria-haspopup="dialog"
-            aria-label={gift ? `${object.name}, gift${gift.authorName === null ? "" : ` from ${gift.authorName}`}. Open gift or use arrow keys to move.` : `${object.name}. Open window or use arrow keys to move.`} aria-describedby="house-movement-help"
-            onAnimationEnd={(event) => {
-              if (event.target !== event.currentTarget || event.animationName !== "house-depart" || !removing) return;
-              if (document.activeElement === event.currentTarget) document.querySelector<HTMLButtonElement>('[data-object="leave-gift"]')?.focus({ preventScroll: true });
-              setDisplayed((current) => current.filter((item) => item.id !== object.id));
-            }}
-            onPointerDown={(event) => pointerDown(event, object.id)} onPointerMove={pointerMove}
-            onPointerUp={(event) => { if (grabbed.current?.pointerId === event.pointerId) finish(); }}
-            onPointerCancel={(event) => { if (grabbed.current?.pointerId === event.pointerId) finish(true); }}
-            onLostPointerCapture={(event) => { if (grabbed.current?.pointerId === event.pointerId) finish(true); }}
-            onKeyDown={(event) => keyboard(event, object.id)}
-            onBlur={() => { if (grabbed.current?.id === object.id && grabbed.current.pointerId === undefined) finish(); }}
-            onClick={(event) => {
-              const suppressed = clickSuppressed.current;
-              if (!opened && !removing && (!gift || liveIds.has(gift.id)) && !(suppressed?.id === object.id && performance.now() < suppressed.until)) onOpen(object, event.currentTarget, gift);
-            }}
-          ><span className="house-object-art" aria-hidden="true">{iconImage ? <img src={iconImage} alt="" className="house-object-image" loading="lazy" decoding="async" /> : object.emoji}</span></button>;
-        })}
+  return <div className="house-clump-area">
+    <div ref={viewport} className="house-viewport" role="group" aria-label="Kaio’s things and visitor gifts" aria-describedby="house-movement-help">
+      <div className="house-world-space" style={{ width: size.width * scale, height: size.height * scale }}>
+        <div ref={world} className="house-world" style={{ width: size.width, height: size.height, transform: `scale(${scale})` }}>
+          {objects.map((object) => {
+            const gift = displayed.find((item) => item.id === object.id);
+            const removing = retiring.has(object.id);
+            const opened = inspectedIds.includes(object.id);
+            const isFolder = ("kind" in object && (object as { kind?: string }).kind === "folder") || object.id === PORTFOLIO_FOLDER_OBJECT.id || object.id === WRITING_FOLDER_OBJECT.id || object.id === "lab-folder" || object.id.endsWith("-folder");
+            const shouldTint = thingsConfig[object.id]?.tint_when_visited ?? (isFolder ? false : true);
+            const visited = !isFolder && shouldTint && visitedIds.has(object.id);
+            const iconImage = ("image" in object && (object as { image?: string | null }).image)
+              || (isImageUrl(object.emoji) ? object.emoji : null);
+            const bgStyle = getBackgroundStyle(object);
+            return <button type="button" key={object.id} className="house-object" data-object={object.id} data-shape={object.shape === "circle" ? "circle" : undefined} data-has-bg={bgStyle ? true : undefined} data-gift={Boolean(gift)} data-visited={visited} data-grabbed={grabId === object.id} data-removing={removing} data-window-open={opened}
+              ref={(element) => { if (element) nodes.current.set(object.id, element); else nodes.current.delete(object.id); }}
+              style={{ width: Math.max(44, object.width), height: Math.max(44, object.height), fontSize: Math.max(object.width, object.height) * .87, ...bgStyle }}
+              aria-disabled={removing || undefined} tabIndex={removing || opened ? -1 : 0} aria-expanded={opened} aria-haspopup="dialog"
+              aria-label={gift ? `${object.name}, gift${gift.authorName === null ? "" : ` from ${gift.authorName}`}. Open gift or use arrow keys to move.` : `${object.name}. Open window or use arrow keys to move.`} aria-describedby="house-movement-help"
+              onAnimationEnd={(event) => {
+                if (event.target !== event.currentTarget || event.animationName !== "house-depart" || !removing) return;
+                if (document.activeElement === event.currentTarget) document.querySelector<HTMLButtonElement>('[data-object="leave-gift"]')?.focus({ preventScroll: true });
+                setDisplayed((current) => current.filter((item) => item.id !== object.id));
+              }}
+              onPointerDown={(event) => pointerDown(event, object.id)} onPointerMove={pointerMove}
+              onPointerUp={(event) => {
+                if (grabbed.current?.pointerId === event.pointerId) {
+                  let droppedOnTrash = false;
+                  if (trashRef.current && grabbed.current?.moved) {
+                    const rect = trashRef.current.getBoundingClientRect();
+                    const pad = 12;
+                    droppedOnTrash = event.clientX >= rect.left - pad &&
+                                     event.clientX <= rect.right + pad &&
+                                     event.clientY >= rect.top - pad &&
+                                     event.clientY <= rect.bottom + pad;
+                  }
+                  finish(false, droppedOnTrash);
+                }
+              }}
+              onPointerCancel={(event) => { if (grabbed.current?.pointerId === event.pointerId) finish(true); }}
+              onLostPointerCapture={(event) => { if (grabbed.current?.pointerId === event.pointerId) finish(true); }}
+              onKeyDown={(event) => keyboard(event, object.id)}
+              onBlur={() => { if (grabbed.current?.id === object.id && grabbed.current.pointerId === undefined) finish(); }}
+              onClick={(event) => {
+                const suppressed = clickSuppressed.current;
+                if (!opened && !removing && (!gift || liveIds.has(gift.id)) && !(suppressed?.id === object.id && performance.now() < suppressed.until)) onOpen(object, event.currentTarget, gift);
+              }}
+            ><span className="house-object-art" aria-hidden="true">{iconImage ? <img src={iconImage} alt="" className="house-object-image" loading="lazy" decoding="async" /> : object.emoji}</span></button>;
+          })}
+        </div>
       </div>
+      <p id="house-movement-help" className="house-sr-only">Drag to move things in your own arrangement. With a keyboard, arrows move, Q and E turn, Enter places, and Escape cancels. Press Enter on a thing to open its window. When the collection grows, scroll this area to explore more gifts. Senders and admins can drag gifts to the trash icon at the bottom right to remove them.</p>
     </div>
-    <p id="house-movement-help" className="house-sr-only">Drag to move things in your own arrangement. With a keyboard, arrows move, Q and E turn, Enter places, and Escape cancels. Press Enter on a thing to open its window. When the collection grows, scroll this area to explore more gifts.</p>
+    <div
+      ref={trashRef}
+      className="house-trash"
+      data-over={isOverTrash ? "true" : undefined}
+      data-status={trashStatus}
+      data-dragging={grabId !== null ? "true" : undefined}
+      role="region"
+      aria-label="Trash"
+      title="Drag gifts here to remove them"
+    >
+      <span className="house-trash-icon" aria-hidden="true">🗑️</span>
+    </div>
   </div>;
 }
