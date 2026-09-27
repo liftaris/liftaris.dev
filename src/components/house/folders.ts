@@ -6,13 +6,14 @@ export type PostThing = ObjectSpec & { kind: "post"; href: string };
 export type HouseThing = ObjectSpec | PostThing | ThingSpec;
 
 export interface ThingSpec extends ObjectSpec {
-  kind: "object" | "folder" | "link" | "action";
+  kind: "object" | "folder" | "link" | "action" | "page";
   desktop: boolean;
   parent_id?: string | null;
   action?: "none" | "projects" | "experience" | "leave-gift" | null;
   href?: string | null;
   tint_when_visited: boolean;
   sort_order: number;
+  body?: unknown;
 }
 
 export const DEFAULT_THINGS: readonly ThingSpec[] = [

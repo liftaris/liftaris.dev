@@ -20,6 +20,7 @@ import {
   type WritingPost,
 } from "./folders";
 import { PostReader } from "./PostReader";
+import { PageReader } from "./PageReader";
 import { Stage } from "../../../components/Stage";
 import "./house.css";
 
@@ -198,6 +199,7 @@ export function House({
     {opened.map((item) => {
       const folder = "kind" in item.object && item.object.kind === "folder" && "items" in item.object ? (item.object as FolderSpec<HouseThing>) : undefined;
       const post = "kind" in item.object && item.object.kind === "post" ? item.object : undefined;
+      const page = "kind" in item.object && item.object.kind === "page" ? (item.object as ThingSpec) : undefined;
       const fallbackSource = () => document.querySelector<HTMLButtonElement>(`[data-folder-entry="${CSS.escape(item.object.id)}"]`)
         ?? document.querySelector<HTMLButtonElement>(`[data-object="${CSS.escape(item.object.id)}"]:not([data-removing="true"])`)
         ?? document.querySelector<HTMLButtonElement>(`[data-object="${post ? WRITING_FOLDER_OBJECT.id : PORTFOLIO_FOLDER_OBJECT.id}"]`)
@@ -213,10 +215,10 @@ export function House({
       const icon = ("image" in item.object && (item.object as { image?: string | null }).image) || item.object.emoji;
       const bgStyle = getBackgroundStyle("background_image" in item.object ? item.object : undefined);
       return <ObjectWindow key={item.object.id} title={title} icon={icon} origin={item.origin} source={item.source} fallbackSource={fallbackSource}
-        width={post ? 780 : composing ? 640 : undefined} height={post ? 720 : composing ? 660 : undefined} canClose={!composing || !savingGift}
+        width={post || page ? 780 : composing ? 640 : undefined} height={post || page ? 720 : composing ? 660 : undefined} canClose={!composing || !savingGift}
         initialBounds={item.previewBounds} backgroundStyle={bgStyle} onReady={item.onReady}
         monochrome={!item.gift} closeLabel={item.gift ? "Close gift" : undefined} onClose={() => close(item.object.id)}>
-        {item.gift ? <GiftDialog gift={item.gift} initialDetail={item.detail} onClose={() => close(item.object.id)} onDetail={refreshDetail} mutate={mutate} /> : composing ? <GiftComposer onGift={(gift, bounds, form) => receiveGift(item, gift, bounds, form)} mutate={mutate} onSavingChange={setSavingGift} /> : post ? <PostReader post={post} /> : view ? <Stage view={view} /> : null}
+        {item.gift ? <GiftDialog gift={item.gift} initialDetail={item.detail} onClose={() => close(item.object.id)} onDetail={refreshDetail} mutate={mutate} /> : composing ? <GiftComposer onGift={(gift, bounds, form) => receiveGift(item, gift, bounds, form)} mutate={mutate} onSavingChange={setSavingGift} /> : post ? <PostReader post={post} /> : page ? <PageReader page={page} /> : view ? <Stage view={view} /> : null}
       </ObjectWindow>;
     })}
   </div>;

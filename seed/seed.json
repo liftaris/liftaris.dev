@@ -93,7 +93,8 @@
               "object",
               "folder",
               "link",
-              "action"
+              "action",
+              "page"
             ]
           },
           "searchable": true
@@ -129,8 +130,14 @@
           "type": "string"
         },
         {
+          "slug": "body",
+          "label": "Body",
+          "type": "portableText",
+          "searchable": true
+        },
+        {
           "slug": "tint_when_visited",
-          "label": "Tint when visited",
+          "label": "Indicate when visited",
           "type": "boolean",
           "defaultValue": true
         },

@@ -137,4 +137,40 @@ describe("House Folders and Things model", () => {
     expect(PORTFOLIO_FOLDER_OBJECT.height).toBe(56);
     expect(PORTFOLIO_FOLDER_OBJECT.shape).toBe("rectangle");
   });
+
+  test("ThingSpec supports page kind with rich text body in folders", () => {
+    const pageThing: ThingSpec = {
+      id: "about-page",
+      name: "About Me",
+      emoji: "📄",
+      kind: "page",
+      desktop: false,
+      parent_id: "portfolio-folder",
+      tint_when_visited: true,
+      width: 60,
+      height: 60,
+      shape: "rectangle",
+      anchor: false,
+      sort_order: 3,
+      body: [
+        {
+          _type: "block",
+          style: "normal",
+          children: [{ _type: "span", text: "Hello from the page body!" }],
+        },
+      ],
+    };
+
+    const folder = buildFolder(PORTFOLIO_FOLDER_OBJECT as ThingSpec, [PORTFOLIO_FOLDER_OBJECT as ThingSpec, pageThing]);
+    expect(folder.items.length).toBe(1);
+    const item = folder.items[0];
+    expect(item.kind).toBe("item");
+    expect(item.name).toBe("About Me");
+    expect(item.emoji).toBe("📄");
+    if (item.kind === "item") {
+      const value = item.value as ThingSpec;
+      expect(value.kind).toBe("page");
+      expect(value.body).toBeDefined();
+    }
+  });
 });

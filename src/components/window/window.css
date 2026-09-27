@@ -42,6 +42,12 @@
   user-select: none;
   transform: translateZ(0);
 }
+.object-window-icon,
+.object-window-icon:hover,
+.object-window-icon:focus-visible {
+  text-decoration: none;
+  outline: none;
+}
 .object-window-image {
   display: block;
   width: 56px;
@@ -54,7 +60,6 @@
 }
 .object-window > .wb-header .object-window-icon { cursor: grab; touch-action: none; }
 .object-window > .wb-header .object-window-icon:active { cursor: grabbing; }
-.object-window[data-monochrome="true"] > .wb-header .object-window-icon:not(:has(.object-window-image)) { filter: grayscale(1) brightness(1.6); }
 .object-window .wb-control { display: flex; }
 .object-window .wb-control button {
   width: 28px;

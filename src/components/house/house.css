@@ -41,6 +41,7 @@
   -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
   line-height: 1;
+  overflow: visible;
 }
 .house-object[data-shape="circle"] { border-radius: 50%; }
 .house-object[data-has-bg="true"] { overflow: hidden; }
@@ -65,10 +66,13 @@
   width: 100%;
   height: 100%;
   pointer-events: none;
-  /* A persistent raster layer avoids the rotated bitmap-emoji clipping in color mode. */
+  overflow: visible;
+  /* Rasterize bitmap emoji on their own layer before the parent rotates them.
+     Prevents rotated bitmap-emoji clipping in Firefox on Linux. */
   transform: translateZ(0);
-  filter: grayscale(1) brightness(1.6);
-  opacity: .94;
+  opacity: .99;
+  filter: contrast(100.01%);
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
 }
 .house-object-art:has(.house-object-image) {
   filter: none;
@@ -84,16 +88,39 @@
   pointer-events: none;
   user-select: none;
 }
-.house-object[data-gift="true"] .house-object-art {
-  filter: grayscale(0) drop-shadow(0 0 5px rgb(255 230 161 / .4));
-  opacity: 1;
+.house-object,
+.house-object:hover,
+.house-object:focus-visible {
+  text-decoration: none;
+  outline: none;
 }
-.house-object[data-visited="true"] .house-object-art {
-  filter: grayscale(1) sepia(1) hue-rotate(240deg) saturate(5) brightness(0.38);
+.house-object:not([data-visited="true"]):hover::after,
+.house-object:not([data-visited="true"]):focus-visible::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 4px;
+  right: 4px;
+  height: 2px;
+  background: var(--paper, #fffbed);
+  pointer-events: none;
+}
+.house-object[data-visited="true"]:hover::after,
+.house-object[data-visited="true"]:focus-visible::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 4px;
+  right: 4px;
+  height: 2px;
+  background: #cf5fff;
+  pointer-events: none;
+}
+.house-object[data-gift="true"] .house-object-art {
+  filter: drop-shadow(0 0 5px rgb(255 230 161 / .4));
   opacity: 1;
 }
 .house-object[data-grabbed="true"] .house-object-art { opacity: 1; }
-.house-object:focus-visible { outline: 2px solid var(--paper); outline-offset: 5px; }
 
 .house-composer {
   width: 100%;
@@ -301,6 +328,7 @@
 }
 
 @media (forced-colors: active) {
-  .house-object:focus-visible, .house-composer :focus-visible { outline-color: Highlight; }
+  .house-object:focus-visible::after { background: Highlight; }
+  .house-composer :focus-visible { outline-color: Highlight; }
   .gift-preview, .house-suggestions button[aria-pressed="true"] { border-color: CanvasText; }
 }

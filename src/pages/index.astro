@@ -22,7 +22,7 @@ try {
     Astro.cache.set(thingsResult.cacheHint);
     things = thingsResult.entries.map((entry): ThingSpec => {
       const data = entry.data as Record<string, unknown>;
-      const kind = (data.kind === "folder" || data.kind === "link" || data.kind === "action" || data.kind === "object") ? data.kind : "object";
+      const kind = (data.kind === "folder" || data.kind === "link" || data.kind === "action" || data.kind === "object" || data.kind === "page") ? data.kind : "object";
       const action = (data.action === "projects" || data.action === "experience" || data.action === "leave-gift") ? data.action : "none";
       const shape = data.shape === "circle" ? "circle" : "rectangle";
 
@@ -77,7 +77,8 @@ try {
         desktop: Boolean(data.desktop),
         parent_id: data.parent_id ? String(data.parent_id) : null,
         action,
-        href: data.href ? String(data.href) : null,
+        href: data.href ? String(data.href) : (kind === "page" ? `/p/${encodeURIComponent(entry.id)}` : null),
+        body: data.body,
         tint_when_visited: data.tint_when_visited !== false && data.tint_when_visited !== 0,
         shape,
         anchor: Boolean(data.anchor),

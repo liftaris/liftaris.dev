@@ -3,7 +3,7 @@ import { sql, type Kysely } from "kysely";
 import { DEFAULT_THINGS } from "../../components/house/folders";
 
 const giftSchemaVersion = 2;
-const thingsSchemaVersion = 4;
+const thingsSchemaVersion = 5;
 
 export const thingFields: readonly CreateFieldInput[] = [
   { slug: "name", label: "Name", type: "string", required: true, searchable: true },
@@ -13,12 +13,13 @@ export const thingFields: readonly CreateFieldInput[] = [
   { slug: "background_size", label: "Background Size", type: "select", defaultValue: "cover", validation: { options: ["cover", "contain", "auto", "100% 100%", "50%", "75%", "150%", "200%"] }, searchable: false },
   { slug: "background_position", label: "Background Position", type: "select", defaultValue: "center", validation: { options: ["center", "top", "bottom", "left", "right", "top left", "top right", "bottom left", "bottom right"] }, searchable: false },
   { slug: "background_repeat", label: "Background Repeat (Tile)", type: "select", defaultValue: "no-repeat", validation: { options: ["no-repeat", "repeat", "repeat-x", "repeat-y", "round", "space"] }, searchable: false },
-  { slug: "kind", label: "Kind", type: "select", defaultValue: "object", validation: { options: ["object", "folder", "link", "action"] }, searchable: true },
+  { slug: "kind", label: "Kind", type: "select", defaultValue: "object", validation: { options: ["object", "folder", "link", "action", "page"] }, searchable: true },
   { slug: "desktop", label: "Show on desktop", type: "boolean", defaultValue: false, searchable: false },
   { slug: "parent_id", label: "Parent folder", type: "string", searchable: false },
   { slug: "action", label: "Action", type: "select", defaultValue: "none", validation: { options: ["none", "projects", "experience", "leave-gift"] }, searchable: false },
   { slug: "href", label: "Link URL", type: "string", searchable: false },
-  { slug: "tint_when_visited", label: "Tint when visited", type: "boolean", required: false, defaultValue: true },
+  { slug: "body", label: "Body", type: "portableText", required: false, searchable: true },
+  { slug: "tint_when_visited", label: "Indicate when visited", type: "boolean", required: false, defaultValue: true },
   { slug: "shape", label: "Shape", type: "select", defaultValue: "rectangle", validation: { options: ["circle", "rectangle"] }, searchable: false },
   { slug: "anchor", label: "Anchor", type: "boolean", defaultValue: false, searchable: false },
   { slug: "width", label: "Width", type: "integer", defaultValue: 60, searchable: false },
@@ -58,6 +59,11 @@ export async function initializeThingsCollection(db: Kysely<Database>): Promise<
           widget: null, options: null, sort_order: thingFields.indexOf(field), searchable: field.searchable ? 1 : 0, indexed: 0, translatable: 1,
         }))).onConflict((conflict) => conflict.columns(["collection_id", "slug"]).doNothing()).execute();
       }
+      try {
+        await sql`UPDATE _emdash_fields SET validation = ${JSON.stringify({ options: ["object", "folder", "link", "action", "page"] })} WHERE collection_id = ${collection.id} AND slug = 'kind'`.execute(db);
+      } catch {
+        // Ignore if update fails
+      }
     }
   }
   try {
@@ -76,12 +82,13 @@ export async function initializeThingsCollection(db: Kysely<Database>): Promise<
         await sql`INSERT INTO ec_things (
           id, slug, status, author_id, created_at, updated_at, published_at, version, locale, translation_group,
           name, emoji, image, background_image, background_size, background_position, background_repeat,
-          kind, desktop, parent_id, action, href, tint_when_visited, shape, anchor, width, height, sort_order
+          kind, desktop, parent_id, action, href, body, tint_when_visited, shape, anchor, width, height, sort_order
         ) VALUES (
           ${item.id}, ${item.id}, 'published', ${authorId}, ${now}, ${now}, ${now}, 1, 'en', ${item.id},
           ${item.name}, ${item.emoji}, ${item.image ?? null},
           ${item.background_image ?? null}, ${item.background_size ?? null}, ${item.background_position ?? null}, ${item.background_repeat ?? null},
           ${item.kind}, ${item.desktop ? 1 : 0}, ${item.parent_id ?? null}, ${item.action ?? "none"}, ${item.href ?? null},
+          ${null},
           ${item.tint_when_visited ? 1 : 0}, ${item.shape}, ${item.anchor ? 1 : 0}, ${item.width}, ${item.height}, ${item.sort_order}
         )`.execute(db);
       } else {

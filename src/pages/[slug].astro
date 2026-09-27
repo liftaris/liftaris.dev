@@ -1,0 +1,49 @@
+---
+import { getEmDashEntry, getEmDashCollection } from "emdash";
+import { PortableText } from "emdash/ui";
+import Portfolio from "../layouts/Portfolio.astro";
+import ThemeImage from "../components/ThemeImage.astro";
+
+const slug = Astro.params.slug!;
+let thing: any = null;
+let cacheHint: any = undefined;
+
+try {
+  const { entry, error, cacheHint: hint } = await getEmDashEntry("things", slug);
+  if (!error && entry && entry.data.kind === "page") {
+    thing = entry;
+    cacheHint = hint;
+  }
+} catch {
+  // If slug lookup throws, fall back to collection lookup
+}
+
+if (!thing) {
+  const result = await getEmDashCollection("things", { status: "published", limit: 100 });
+  if (!result.error && result.entries) {
+    thing = result.entries.find((e) => {
+      const data = e.data as Record<string, unknown>;
+      if (data.kind !== "page") return false;
+      const href = typeof data.href === "string" ? data.href.replace(/^\//, "").split("?")[0] : null;
+      return e.id === slug || data.slug === slug || href === slug;
+    });
+    if (thing) cacheHint = result.cacheHint;
+  }
+}
+
+if (!thing) return Astro.rewrite("/404");
+if (cacheHint) Astro.cache.set(cacheHint);
+
+const name = String(thing.data.name ?? "Page");
+const title = `${name} | Kaio Barbosa`;
+const content = { collection: "things", id: thing.data.id ?? thing.id, slug: thing.id };
+const body = thing.data.body;
+---
+<Portfolio embedded={Astro.url.searchParams.get("window") === "1"} title={title} content={content}>
+  <article class="article-content">
+    <h1 {...thing.edit?.name}>{name}</h1>
+    {body && Array.isArray(body) && body.length > 0 ? (
+      <PortableText value={body} components={{ type: { themeImage: ThemeImage } }} />
+    ) : null}
+  </article>
+</Portfolio>

@@ -31,16 +31,14 @@ a { color: inherit; text-decoration: none; }
 .object-stage::before, .object-stage::after { position: absolute; width: 5px; height: 5px; content: ""; background: #b6b1a3; border-radius: 50%; opacity: .6; pointer-events: none; }
 .object-stage::before { left: 9px; top: 9px; }
 .object-stage::after { bottom: 9px; right: 9px; }
-.thing { position: absolute; left: 0; top: 0; padding: 0; display: flex; justify-content: center; align-items: center; border: 0; border-radius: 7px; background: transparent; line-height: 1; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; will-change: transform; }
+.thing { position: absolute; left: 0; top: 0; padding: 0; display: flex; justify-content: center; align-items: center; border: 0; border-radius: 7px; background: transparent; line-height: 1; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; will-change: transform; overflow: visible; }
 /* Rasterize bitmap emoji on their own layer before the parent rotates them.
-   Keep the filter in color mode too; switching to none can clip rotated glyphs. */
-.thing-art { display: block; pointer-events: none; transform: translateZ(0); filter: grayscale(1); transition: filter .15s; font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
-.object-stage[data-color="true"] .thing-art { filter: grayscale(0); }
+   Keep the layer active in color mode to prevent clipping rotated glyphs. */
+.thing-art { display: block; pointer-events: none; transform: translateZ(0); opacity: .99; filter: contrast(100.01%); font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
 .object-stage:not([data-ready="true"]) .thing { visibility: hidden; }
 .thing:hover { z-index: 2; }
 .thing[data-grabbed="true"] { cursor: grabbing; z-index: 4; }
-.thing[data-grabbed="true"] .thing-art { filter: grayscale(1) drop-shadow(0 5px 3px #3b342824); }
-.object-stage[data-color="true"] .thing[data-grabbed="true"] .thing-art { filter: grayscale(0) drop-shadow(0 5px 3px #3b342824); }
+.thing[data-grabbed="true"] .thing-art { filter: drop-shadow(0 5px 3px #3b342824); }
 .thing:focus-visible { outline-offset: 3px; outline-style: dashed; z-index: 3; }
 .thing[data-fixed="true"] { cursor: default; }
 .anchor-mark { position: absolute; right: 0; bottom: 0; width: 5px; height: 5px; border-radius: 50%; background: #555044; box-shadow: 0 0 0 3px #f0eee7; }

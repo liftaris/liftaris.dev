@@ -53,13 +53,27 @@
 .folder[data-has-bg="true"] { border-radius: 4px; }
 .folder-entry-art[data-has-bg="true"] { border-radius: 8px; overflow: hidden; }
 .folder-entry-art[data-shape="circle"] { border-radius: 50%; }
-.folder[data-monochrome="true"] .folder-entry-art:not(:has(.folder-entry-image)):not([data-has-bg="true"]) { filter: grayscale(1); }
-.folder-entry[data-visited="true"] .folder-entry-art {
-  filter: grayscale(1) sepia(1) hue-rotate(240deg) saturate(5) brightness(0.38);
-  opacity: 1;
+.folder-entry,
+.folder-entry:hover,
+.folder-entry:focus-visible {
+  text-decoration: none;
+  outline: none;
+}
+.folder-entry:not([aria-disabled="true"]):not([data-visited="true"]):hover > span:last-child,
+.folder-entry:not([aria-disabled="true"]):not([data-visited="true"]):focus-visible > span:last-child {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+.folder-entry:not([aria-disabled="true"])[data-visited="true"]:hover > span:last-child,
+.folder-entry:not([aria-disabled="true"])[data-visited="true"]:focus-visible > span:last-child {
+  text-decoration: underline;
+  text-decoration-color: #cf5fff;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
 }
 .folder-entry[aria-disabled="true"] { cursor: default; opacity: .65; }
-.folder-entry:focus-visible { border-color: currentColor; }
+.folder-entry:focus-visible { border-color: transparent; }
 .folder-empty { margin: 0; font-size: 12px; }
 @media (hover: hover) {
   .folder-entry:not([aria-disabled="true"]):hover { background: rgb(19 19 186 / .07); }
