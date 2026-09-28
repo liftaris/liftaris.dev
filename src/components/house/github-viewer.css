@@ -1,10 +1,24 @@
+/* Container adjustments for the GitHub commit graph window */
+.winbox.github-window .wb-body,
+.winbox.object-window:has(.github-viewer) .wb-body {
+  overflow: hidden !important;
+}
+
+.winbox.github-window .object-window-content,
+.winbox.object-window:has(.github-viewer) .object-window-content {
+  padding: 16px 20px;
+  min-height: auto;
+  box-sizing: border-box;
+}
+
 .github-viewer {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   font-family: var(--font-mono), monospace;
   color: var(--blue, #1313ba);
   user-select: none;
+  width: fit-content;
 }
 
 .github-header {
@@ -13,6 +27,7 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 8px;
+  line-height: 1.2;
 }
 
 .github-profile {
@@ -20,11 +35,12 @@
   align-items: baseline;
   gap: 8px;
   font-size: 13px;
+  line-height: 1.2;
 }
 
 .github-handle {
   font-weight: 700;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .github-separator {
@@ -38,18 +54,14 @@
 
 .github-graph-container {
   width: 100%;
-  overflow-x: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-  scrollbar-color: var(--blue, #1313ba) transparent;
-  padding-bottom: 6px;
+  overflow: visible !important;
+  padding-bottom: 0;
 }
 
 .github-graph-inner {
   display: flex;
   flex-direction: column;
   width: fit-content;
-  min-width: 100%;
 }
 
 .github-months {
@@ -58,8 +70,8 @@
   grid-auto-columns: 10px;
   gap: 3px;
   margin-left: 28px;
-  margin-bottom: 5px;
-  height: 14px;
+  margin-bottom: 4px;
+  height: 12px;
   position: relative;
 }
 
@@ -67,7 +79,7 @@
   position: absolute;
   top: 0;
   font-size: 10px;
-  line-height: 1;
+  line-height: 12px;
   color: var(--blue, #1313ba);
   white-space: nowrap;
 }
@@ -151,7 +163,7 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
 .github-legend {
@@ -159,6 +171,7 @@
   align-items: center;
   gap: 4px;
   font-size: 10px;
+  line-height: 10px;
   color: var(--blue, #1313ba);
 }
 
@@ -178,21 +191,22 @@
 .github-actions {
   display: flex;
   justify-content: flex-start;
-  margin-top: 6px;
+  margin-top: 2px;
 }
 
 .github-view-button {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 18px;
+  gap: 6px;
+  padding: 6px 14px;
   background: transparent;
   color: var(--blue, #1313ba);
   border: 1.5px solid var(--blue, #1313ba);
-  border-radius: 6px;
+  border-radius: 4px;
   font-family: var(--font-mono), monospace;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
+  line-height: 14px;
   text-decoration: none;
   cursor: pointer;
   transition: background-color 150ms ease, color 150ms ease, transform 120ms ease;
@@ -215,17 +229,30 @@
 }
 
 .github-btn-icon {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   flex-shrink: 0;
 }
 
 .github-btn-arrow {
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1;
   transition: transform 120ms ease;
 }
 
 .github-view-button:hover .github-btn-arrow {
   transform: translate(2px, -2px);
+}
+
+@media (max-width: 780px) {
+  .winbox.github-window .wb-body,
+  .winbox.object-window:has(.github-viewer) .wb-body {
+    overflow-x: auto;
+  }
+  .github-graph-container {
+    overflow-x: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--blue, #1313ba) transparent;
+  }
 }

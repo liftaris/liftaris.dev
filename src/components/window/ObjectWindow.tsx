@@ -16,6 +16,8 @@ type ObjectWindowProps = {
   closeLabel?: string;
   width?: number;
   height?: number;
+  className?: string;
+  autoFit?: boolean;
   canClose?: boolean;
   initialBounds?: DOMRect;
   backgroundStyle?: CSSProperties;
@@ -24,10 +26,10 @@ type ObjectWindowProps = {
   children?: ReactNode;
 };
 
-export function ObjectWindow({ title, icon, source, fallbackSource, origin, monochrome = false, closeLabel = "Close window", width = 480, height = 380, canClose = true, initialBounds, backgroundStyle, onReady, onClose, children }: ObjectWindowProps) {
+export function ObjectWindow({ title, icon, source, fallbackSource, origin, monochrome = false, closeLabel = "Close window", width = 480, height = 380, className, autoFit = false, canClose = true, initialBounds, backgroundStyle, onReady, onClose, children }: ObjectWindowProps) {
   const [body, setBody] = useState<HTMLElement | null>(null);
   const [error, setError] = useState(false);
-  const initial = useRef({ source, origin, width, height, initialBounds });
+  const initial = useRef({ source, origin, width, height, initialBounds, className });
   const windowInstance = useRef<WinBox | null>(null);
   const readyFired = useRef(false);
   const close = useRef(onClose);
@@ -44,6 +46,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
     const frame = win.window as HTMLElement;
     frame.setAttribute("aria-label", title);
     frame.dataset.monochrome = String(monochrome);
+    if (className) frame.classList.add(className);
     const iconButton = frame.querySelector<HTMLButtonElement>(".object-window-icon")!;
     if (isImageUrl(icon)) {
       iconButton.replaceChildren();
@@ -58,15 +61,51 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
     iconButton.setAttribute("aria-label", `Collapse ${title} window`);
     frame.querySelector(".wb-close")!.setAttribute("aria-label", closeLabel);
     frame.querySelector(".object-window-handle")!.setAttribute("aria-label", `Move ${title} window. Use arrow keys; Escape collapses.`);
-  }, [body, title, icon, monochrome, closeLabel]);
+  }, [body, title, icon, monochrome, closeLabel, className]);
   useLayoutEffect(() => {
     if (body && onReady && !readyFired.current) { readyFired.current = true; onReady(); }
   }, [body, onReady]);
 
+  useLayoutEffect(() => {
+    const win = windowInstance.current;
+    if (!body || !win || !autoFit) return;
+    const content = body.firstElementChild as HTMLElement | null;
+    if (!content) return;
+
+    const measureAndResize = () => {
+      const target = (content.firstElementChild as HTMLElement) || content;
+      const rect = target.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const style = window.getComputedStyle(content);
+      const padX = parseFloat(style.paddingLeft || "0") + parseFloat(style.paddingRight || "0");
+      const padY = parseFloat(style.paddingTop || "0") + parseFloat(style.paddingBottom || "0");
+
+      const targetWidth = Math.ceil(rect.width + padX + 6);
+      const targetHeight = Math.ceil(rect.height + padY + 35 + 6);
+
+      const maxWidth = innerWidth - 48;
+      const maxHeight = innerHeight - Number(win.top) - Number(win.bottom);
+
+      win.resize(Math.min(targetWidth, maxWidth), Math.min(targetHeight, maxHeight));
+      win.move(
+        Math.max(Number(win.left), Math.min(Number(win.x), innerWidth - Number(win.width) - Number(win.right))),
+        Math.max(Number(win.top), Math.min(Number(win.y), innerHeight - Number(win.height) - Number(win.bottom))),
+      );
+    };
+
+    measureAndResize();
+    if (typeof ResizeObserver !== "undefined") {
+      const ro = new ResizeObserver(measureAndResize);
+      ro.observe(content);
+      if (content.firstElementChild) ro.observe(content.firstElementChild);
+      return () => ro.disconnect();
+    }
+  }, [body, autoFit]);
+
   // Capture focus before React removes portal children on parent-driven close.
   useLayoutEffect(() => {
     // Geometry and source belong to this mounted window, not its changing content.
-    const { source, origin, width, height, initialBounds } = initial.current;
+    const { source, origin, width, height, initialBounds, className: windowClass } = initial.current;
     let disposed = false;
     let instance: WinBox | undefined;
     let restoreFocus = false;
@@ -89,7 +128,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
       let closing = false;
       const options: WinBox.Params & { template: HTMLElement } = {
         template, index: 20, header: 18,
-        class: "object-window no-max no-full no-resize no-animation",
+        class: ["object-window", "no-max", "no-full", "no-resize", "no-animation", windowClass].filter(Boolean).join(" "),
         width, height, minwidth: 1, minheight: 44,
         top: 58, left: 36, right: 12, bottom: 12,
         x: initialBounds?.left ?? origin.left + 24, y: initialBounds?.top ?? origin.top + 16,

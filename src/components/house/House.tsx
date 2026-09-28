@@ -375,7 +375,9 @@ export function House({
       const icon = ("image" in item.object && (item.object as { image?: string | null }).image) || item.object.emoji;
       const bgStyle = getBackgroundStyle("background_image" in item.object ? item.object : undefined);
       return <ObjectWindow key={item.object.id} title={title} icon={icon} origin={item.origin} source={item.source} fallbackSource={fallbackSource}
-        width={isGitHub ? 740 : post || page ? 780 : composing ? 640 : undefined} height={isGitHub ? 340 : post || page ? 720 : composing ? 660 : undefined} canClose={!composing || !savingGift}
+        className={isGitHub ? "github-window" : undefined}
+        autoFit={isGitHub}
+        width={isGitHub ? 770 : post || page ? 780 : composing ? 640 : undefined} height={isGitHub ? 272 : post || page ? 720 : composing ? 660 : undefined} canClose={!composing || !savingGift}
         initialBounds={item.previewBounds} backgroundStyle={bgStyle} onReady={item.onReady}
         monochrome={!item.gift} closeLabel={item.gift ? "Close gift" : undefined} onClose={() => close(item.object.id)}>
         {item.gift ? <GiftDialog gift={item.gift} initialDetail={item.detail} onClose={() => close(item.object.id)} onDetail={refreshDetail} mutate={mutate} /> : composing ? <GiftComposer onGift={(gift, bounds, form) => receiveGift(item, gift, bounds, form)} mutate={mutate} onSavingChange={setSavingGift} /> : post ? <PostReader post={post} /> : page ? <PageReader page={page} /> : isGitHub ? <GitHubViewer /> : view ? <Stage view={view} /> : null}

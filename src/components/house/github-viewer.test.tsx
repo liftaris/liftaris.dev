@@ -50,4 +50,11 @@ describe("GitHub custom Thing", () => {
     expect(Array.isArray(body.days)).toBe(true);
     expect(body.days.length).toBeGreaterThan(0);
   });
+
+  test("github-viewer.css styles window to fit commit graph without scrollbars", async () => {
+    const css = await Bun.file(new URL("./github-viewer.css", import.meta.url).pathname).text();
+    expect(css).toContain(".winbox.github-window .wb-body");
+    expect(css).toContain("overflow: hidden !important;");
+    expect(css).toContain("overflow: visible !important;");
+  });
 });
