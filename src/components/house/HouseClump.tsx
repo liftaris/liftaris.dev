@@ -7,7 +7,7 @@ import { giftObjects, worldSize } from "../../lib/house/emoji";
 import { getGift } from "../../lib/house/client";
 import type { Gift } from "../../lib/house/types";
 import { reconcileGifts, retiringGiftIds } from "./gift-presence";
-import { PORTFOLIO_FOLDER_OBJECT, WRITING_FOLDER_OBJECT } from "./folders";
+import { GITHUB_THING, PORTFOLIO_FOLDER_OBJECT, WRITING_FOLDER_OBJECT } from "./folders";
 
 type Grab = { id: string; point: Point; origin: Point; moved: boolean; pointerId?: number };
 const INITIAL_SIZE = { width: 500, height: 600 };
@@ -71,7 +71,7 @@ export function HouseClump({
   const bounds = useRef(INITIAL_SIZE);
   const available = useRef(INITIAL_SIZE);
   const growth = useRef({ width: 0, height: 0 });
-  const baseObjects = useMemo(() => desktopObjects ?? [...OBJECTS, PORTFOLIO_FOLDER_OBJECT, WRITING_FOLDER_OBJECT, GIFT_ENTRY], [desktopObjects]);
+  const baseObjects = useMemo(() => desktopObjects ?? [...OBJECTS, GITHUB_THING, PORTFOLIO_FOLDER_OBJECT, WRITING_FOLDER_OBJECT, GIFT_ENTRY], [desktopObjects]);
   const objects = useMemo(() => [...baseObjects, ...giftObjects(displayed)], [baseObjects, displayed]);
   const retiring = retiringGiftIds(displayed, gifts, [...inspectedIds, grabId]);
   const liveIds = new Set(gifts.map((gift) => gift.id));

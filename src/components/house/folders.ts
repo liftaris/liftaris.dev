@@ -43,6 +43,23 @@ export const PORTFOLIO_FOLDER_OBJECT: ObjectSpec = DEFAULT_THINGS.find((t) => t.
   id: "portfolio-folder", name: "Portfolio", emoji: "📁", width: 64, height: 56, shape: "rectangle",
 };
 
+export const GITHUB_THING: ThingSpec = {
+  id: "github",
+  name: "GitHub",
+  emoji: "🐙",
+  image: "/github.svg",
+  kind: "object",
+  desktop: true,
+  parent_id: null,
+  action: "none",
+  tint_when_visited: true,
+  shape: "circle",
+  anchor: false,
+  width: 58,
+  height: 58,
+  sort_order: 16,
+};
+
 export function buildFolder(
   folderThing: ThingSpec,
   allThings: readonly ThingSpec[] = DEFAULT_THINGS,

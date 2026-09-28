@@ -11,6 +11,7 @@ import { ObjectWindow } from "../window/ObjectWindow";
 import { Folder, type FolderSpec } from "../folder/Folder";
 import {
   DEFAULT_THINGS,
+  GITHUB_THING,
   PORTFOLIO_FOLDER_OBJECT,
   WRITING_FOLDER_OBJECT,
   buildFolder,
@@ -23,6 +24,7 @@ import {
 } from "./folders";
 import { PostReader } from "./PostReader";
 import { PageReader } from "./PageReader";
+import { GitHubViewer } from "./GitHubViewer";
 import { Stage } from "../../../components/Stage";
 import "./house.css";
 
@@ -88,7 +90,11 @@ export function House({
   thingsConfig?: Record<string, { tint_when_visited?: boolean; default_open?: boolean }>;
 }) {
   const effectiveThings = useMemo(() => {
-    return things.map((t) => {
+    const list = [...things];
+    if (!list.some((t) => t.id === GITHUB_THING.id)) {
+      list.push(GITHUB_THING);
+    }
+    return list.map((t) => {
       const override = thingsConfig?.[t.id];
       if (!override) return t;
       return {
@@ -362,16 +368,17 @@ export function House({
         visitedIds={visitedIds} thingsConfig={mergedThingsConfig} onVisit={markVisited}
         onOpen={open} onOpenFolder={open} onClose={() => close(item.object.id)} />;
       const action = "action" in item.object ? item.object.action : undefined;
+      const isGitHub = item.object.id === GITHUB_THING.id;
       const view = action === "projects" || item.object.id === "computer" ? "projects" : action === "experience" || item.object.id === "case" ? "experience" : undefined;
       const composing = action === "leave-gift" || item.object.id === "leave-gift";
-      const title = view === "projects" ? "Projects" : view === "experience" ? "Experience" : item.object.name;
+      const title = isGitHub ? "GitHub" : view === "projects" ? "Projects" : view === "experience" ? "Experience" : item.object.name;
       const icon = ("image" in item.object && (item.object as { image?: string | null }).image) || item.object.emoji;
       const bgStyle = getBackgroundStyle("background_image" in item.object ? item.object : undefined);
       return <ObjectWindow key={item.object.id} title={title} icon={icon} origin={item.origin} source={item.source} fallbackSource={fallbackSource}
-        width={post || page ? 780 : composing ? 640 : undefined} height={post || page ? 720 : composing ? 660 : undefined} canClose={!composing || !savingGift}
+        width={isGitHub ? 740 : post || page ? 780 : composing ? 640 : undefined} height={isGitHub ? 340 : post || page ? 720 : composing ? 660 : undefined} canClose={!composing || !savingGift}
         initialBounds={item.previewBounds} backgroundStyle={bgStyle} onReady={item.onReady}
         monochrome={!item.gift} closeLabel={item.gift ? "Close gift" : undefined} onClose={() => close(item.object.id)}>
-        {item.gift ? <GiftDialog gift={item.gift} initialDetail={item.detail} onClose={() => close(item.object.id)} onDetail={refreshDetail} mutate={mutate} /> : composing ? <GiftComposer onGift={(gift, bounds, form) => receiveGift(item, gift, bounds, form)} mutate={mutate} onSavingChange={setSavingGift} /> : post ? <PostReader post={post} /> : page ? <PageReader page={page} /> : view ? <Stage view={view} /> : null}
+        {item.gift ? <GiftDialog gift={item.gift} initialDetail={item.detail} onClose={() => close(item.object.id)} onDetail={refreshDetail} mutate={mutate} /> : composing ? <GiftComposer onGift={(gift, bounds, form) => receiveGift(item, gift, bounds, form)} mutate={mutate} onSavingChange={setSavingGift} /> : post ? <PostReader post={post} /> : page ? <PageReader page={page} /> : isGitHub ? <GitHubViewer /> : view ? <Stage view={view} /> : null}
       </ObjectWindow>;
     })}
   </div>;
