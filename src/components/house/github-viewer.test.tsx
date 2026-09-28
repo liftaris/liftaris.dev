@@ -51,10 +51,20 @@ describe("GitHub custom Thing", () => {
     expect(body.days.length).toBeGreaterThan(0);
   });
 
-  test("github-viewer.css styles window to fit commit graph without scrollbars", async () => {
+  test("github-viewer.css styles window to fit commit graph with responsive scrolling", async () => {
     const css = await Bun.file(new URL("./github-viewer.css", import.meta.url).pathname).text();
     expect(css).toContain(".winbox.github-window .wb-body");
-    expect(css).toContain("overflow: hidden !important;");
-    expect(css).toContain("overflow: visible !important;");
+    expect(css).toContain("overflow: auto;");
+    expect(css).toContain("overflow-x: auto;");
+  });
+
+  test("window.css styles window titlebar icon to fit within header", async () => {
+    const css = await Bun.file(new URL("../window/window.css", import.meta.url).pathname).text();
+    expect(css).toContain(".object-window-icon");
+    expect(css).toContain("width: 18px;");
+    expect(css).toContain("height: 18px;");
+    expect(css).toContain(".object-window-image");
+    expect(css).toContain("width: 16px;");
+    expect(css).toContain("height: 16px;");
   });
 });

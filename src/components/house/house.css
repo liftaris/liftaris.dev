@@ -146,7 +146,7 @@
 .gift-intro p:last-child { font-size: 12px; }
 .gift-preview {
   position: relative;
-  margin: 60px 0 0 24px;
+  margin: 20px 0 0;
   border: 1px solid currentColor;
   background: var(--paper, #fffbed);
 }
@@ -154,15 +154,15 @@
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  height: 18px;
-  padding: 0 8px 0 48px;
+  gap: 6px;
+  height: 24px;
+  padding: 0 8px;
   color: var(--paper, #fffbed);
   background: var(--blue, #1313ba);
   font-size: 12px;
-  line-height: 18px;
+  line-height: 24px;
 }
-.gift-preview-header > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gift-preview-header > span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gift-change-object {
   flex-shrink: 0;
   border: 0;

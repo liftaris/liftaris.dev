@@ -1,7 +1,10 @@
 /* Container adjustments for the GitHub commit graph window */
 .winbox.github-window .wb-body,
 .winbox.object-window:has(.github-viewer) .wb-body {
-  overflow: hidden !important;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--blue, #1313ba) transparent;
 }
 
 .winbox.github-window .object-window-content,
@@ -54,8 +57,11 @@
 
 .github-graph-container {
   width: 100%;
-  overflow: visible !important;
-  padding-bottom: 0;
+  overflow-x: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--blue, #1313ba) transparent;
+  padding-bottom: 2px;
 }
 
 .github-graph-inner {
@@ -244,15 +250,3 @@
   transform: translate(2px, -2px);
 }
 
-@media (max-width: 780px) {
-  .winbox.github-window .wb-body,
-  .winbox.object-window:has(.github-viewer) .wb-body {
-    overflow-x: auto;
-  }
-  .github-graph-container {
-    overflow-x: auto;
-    overscroll-behavior: contain;
-    scrollbar-width: thin;
-    scrollbar-color: var(--blue, #1313ba) transparent;
-  }
-}
