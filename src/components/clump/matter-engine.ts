@@ -59,6 +59,7 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
   let size = { ...options.size };
   let disposed = false;
   let drag: Drag | null = null;
+  const frozenBefore = new Map<string, Pose>();
   const apartment = options.scene === "apartment";
   const engine = Engine.create({
     enableSleeping: true,
@@ -185,6 +186,7 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
         if (!ids.has(item.object.id)) {
           Composite.remove(engine.world, item.body);
           byId.delete(item.object.id);
+          frozenBefore.delete(item.object.id);
         }
       }
       items = objects.map((object, index) => {
@@ -284,6 +286,52 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
 
     endDrag,
 
+    freeze(id, targetPoint) {
+      const item = byId.get(id);
+      if (!item) return;
+      if (drag?.item === item) {
+        if (drag.constraint) Composite.remove(engine.world, drag.constraint);
+        frozenBefore.set(id, drag.before);
+        const finalX = targetPoint ? targetPoint.x : (drag.target.x - drag.offset.x);
+        const finalY = targetPoint ? targetPoint.y : (drag.target.y - drag.offset.y);
+        const currentAngle = item.body.angle;
+        drag = null;
+        if (targetPoint) {
+          Body.setPosition(item.body, { x: finalX, y: finalY });
+          Body.setAngle(item.body, currentAngle);
+          wake(item);
+        } else {
+          setPose(item, { id, x: finalX, y: finalY, angle: currentAngle });
+        }
+      } else {
+        if (!frozenBefore.has(id)) {
+          frozenBefore.set(id, poseOf(id, item.body));
+        }
+        if (targetPoint) {
+          Body.setPosition(item.body, { x: targetPoint.x, y: targetPoint.y });
+          wake(item);
+        }
+      }
+      Body.setVelocity(item.body, { x: 0, y: 0 });
+      Body.setAngularVelocity(item.body, 0);
+      Body.setStatic(item.body, true);
+    },
+
+    unfreeze(id, resetToBefore = false) {
+      const item = byId.get(id);
+      if (!item) return;
+      Body.setStatic(item.body, isFixed(item.object, options.scene));
+      const before = frozenBefore.get(id);
+      frozenBefore.delete(id);
+      if (resetToBefore && before) {
+        setPose(item, before);
+      } else {
+        Body.setVelocity(item.body, { x: 0, y: 0 });
+        Body.setAngularVelocity(item.body, 0);
+        wake(item);
+      }
+    },
+
     nudge(id, dx, dy, angle = 0) {
       const item = byId.get(id);
       if (disposed || !item || item.body.isStatic) return;
@@ -324,6 +372,7 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
       if (disposed) return;
       endDrag();
       disposed = true;
+      frozenBefore.clear();
       Composite.clear(engine.world, false);
       Engine.clear(engine);
     },

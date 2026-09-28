@@ -267,8 +267,9 @@ export function House({
         saveSentGiftIds(next);
         return next;
       });
-    } catch {
-      // Ignore if unauthorized or failed
+    } catch (error) {
+      // Re-throw so caller knows deletion failed and can revert UI
+      throw error;
     }
   }, [mutate]);
   useEffect(() => {

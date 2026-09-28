@@ -60,6 +60,9 @@
 /* Transform/visibility belong to the local renderer, not React snapshots. */
 .house-object { visibility: hidden; }
 .house-object[data-gift="true"] { animation: house-arrive 220ms ease-out; }
+.house-object[data-trashing="true"] {
+  pointer-events: none;
+}
 .house-object[data-removing="true"] {
   pointer-events: none;
   animation: house-depart 260ms ease-in forwards;

@@ -65,6 +65,7 @@ export function HouseClump({
   const [isOverTrash, setIsOverTrash] = useState(false);
   const [trashStatus, setTrashStatus] = useState<"idle" | "over" | "trashed" | "rejected">("idle");
   const [knownRemovable, setKnownRemovable] = useState<Set<string>>(() => new Set());
+  const [pendingTrashIds, setPendingTrashIds] = useState<Set<string>>(() => new Set());
   const [scale, setScale] = useState(1);
   const [size, setSize] = useState(INITIAL_SIZE);
   const bounds = useRef(INITIAL_SIZE);
@@ -83,7 +84,7 @@ export function HouseClump({
 
   const activeDragId = testDragId !== undefined ? testDragId : draggedId;
   const isDraggingDeletable = activeDragId !== null && isEligibleForTrash(activeDragId);
-  const canShowTrash = isDraggingDeletable || trashStatus !== "idle";
+  const canShowTrash = isDraggingDeletable || trashStatus !== "idle" || pendingTrashIds.size > 0;
 
   useLayoutEffect(() => {
     setDisplayed((current) => reconcileGifts(current, gifts));
@@ -221,12 +222,35 @@ export function HouseClump({
 
   const handleDropOnTrash = async (id: string) => {
     const isGift = displayed.some((g) => g.id === id);
-    if (!isGift) return;
+    if (!isGift) {
+      engine.current?.unfreeze(id, true);
+      paint.current();
+      return;
+    }
+
+    setPendingTrashIds((curr) => new Set(curr).add(id));
+
+    const revert = () => {
+      setPendingTrashIds((curr) => {
+        const next = new Set(curr);
+        next.delete(id);
+        return next;
+      });
+      engine.current?.unfreeze(id, true);
+      paint.current();
+      start.current();
+    };
 
     if (isAdmin || sentGiftIds.has(id) || knownRemovable.has(id)) {
       setTrashStatus("trashed");
       setTimeout(() => setTrashStatus("idle"), 400);
-      await onTrash?.(id);
+      try {
+        await onTrash?.(id);
+      } catch {
+        setTrashStatus("rejected");
+        setTimeout(() => setTrashStatus("idle"), 350);
+        revert();
+      }
       return;
     }
 
@@ -236,14 +260,22 @@ export function HouseClump({
         setKnownRemovable((curr) => new Set(curr).add(id));
         setTrashStatus("trashed");
         setTimeout(() => setTrashStatus("idle"), 400);
-        await onTrash?.(id);
+        try {
+          await onTrash?.(id);
+        } catch {
+          setTrashStatus("rejected");
+          setTimeout(() => setTrashStatus("idle"), 350);
+          revert();
+        }
       } else {
         setTrashStatus("rejected");
         setTimeout(() => setTrashStatus("idle"), 350);
+        revert();
       }
     } catch {
       setTrashStatus("rejected");
       setTimeout(() => setTrashStatus("idle"), 350);
+      revert();
     }
   };
 
@@ -254,22 +286,34 @@ export function HouseClump({
     setGrabId(null);
     setDraggedId(null);
     setIsOverTrash(false);
-    engine.current?.endDrag(cancel || droppedOnTrash);
     if (grab.pointerId !== undefined) {
       const element = nodes.current.get(grab.id);
       if (element?.hasPointerCapture(grab.pointerId)) element.releasePointerCapture(grab.pointerId);
     }
     if (grab.moved) clickSuppressed.current = { id: grab.id, until: performance.now() + 400 };
 
-    if (droppedOnTrash && grab.moved) {
+    if (!cancel && droppedOnTrash && grab.moved) {
+      let targetPoint: Point | undefined;
+      if (trashRef.current && world.current) {
+        const trashRect = trashRef.current.getBoundingClientRect();
+        const worldRect = world.current.getBoundingClientRect();
+        targetPoint = {
+          x: (trashRect.left + trashRect.width / 2 - worldRect.left) / scale,
+          y: (trashRect.top + trashRect.height / 2 - worldRect.top) / scale,
+        };
+      }
+      engine.current?.freeze(grab.id, targetPoint);
+      paint.current();
       void handleDropOnTrash(grab.id);
+    } else {
+      engine.current?.endDrag(cancel);
     }
 
     start.current();
   };
 
   const pointerDown = (event: ReactPointerEvent<HTMLButtonElement>, id: string) => {
-    if (event.button !== 0 || grabbed.current || retiring.has(id)) return;
+    if (event.button !== 0 || grabbed.current || retiring.has(id) || pendingTrashIds.has(id)) return;
     event.preventDefault();
     event.currentTarget.focus({ preventScroll: true });
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -334,7 +378,7 @@ export function HouseClump({
       finish(false, droppedOnTrash);
       return;
     }
-    if (retiring.has(id) || !["arrowleft", "arrowright", "arrowup", "arrowdown", "q", "e"].includes(key)) return;
+    if (retiring.has(id) || pendingTrashIds.has(id) || !["arrowleft", "arrowright", "arrowup", "arrowdown", "q", "e"].includes(key)) return;
     event.preventDefault();
     if (grabbed.current?.pointerId !== undefined) return;
     const scene = engine.current;
@@ -376,6 +420,8 @@ export function HouseClump({
           {objects.map((object) => {
             const gift = displayed.find((item) => item.id === object.id);
             const removing = retiring.has(object.id);
+            const isPendingTrash = pendingTrashIds.has(object.id);
+            const disabled = removing || isPendingTrash;
             const opened = inspectedIds.includes(object.id);
             const isFolder = ("kind" in object && (object as { kind?: string }).kind === "folder") || object.id === PORTFOLIO_FOLDER_OBJECT.id || object.id === WRITING_FOLDER_OBJECT.id || object.id === "lab-folder" || object.id.endsWith("-folder");
             const shouldTint = thingsConfig[object.id]?.tint_when_visited ?? (isFolder ? false : true);
@@ -383,14 +429,20 @@ export function HouseClump({
             const iconImage = ("image" in object && (object as { image?: string | null }).image)
               || (isImageUrl(object.emoji) ? object.emoji : null);
             const bgStyle = getBackgroundStyle(object);
-            return <button type="button" key={object.id} className="house-object" data-object={object.id} data-shape={object.shape === "circle" ? "circle" : undefined} data-has-bg={bgStyle ? true : undefined} data-gift={Boolean(gift)} data-visited={visited} data-grabbed={grabId === object.id} data-removing={removing} data-window-open={opened}
+            return <button type="button" key={object.id} className="house-object" data-object={object.id} data-shape={object.shape === "circle" ? "circle" : undefined} data-has-bg={bgStyle ? true : undefined} data-gift={Boolean(gift)} data-visited={visited} data-grabbed={grabId === object.id} data-removing={removing} data-trashing={isPendingTrash ? "true" : undefined} data-window-open={opened}
               ref={(element) => { if (element) nodes.current.set(object.id, element); else nodes.current.delete(object.id); }}
               style={{ width: Math.max(44, object.width), height: Math.max(44, object.height), fontSize: Math.max(object.width, object.height) * .87, ...bgStyle }}
-              aria-disabled={removing || undefined} tabIndex={removing || opened ? -1 : 0} aria-expanded={opened} aria-haspopup="dialog"
+              aria-disabled={disabled || undefined} tabIndex={disabled || opened ? -1 : 0} aria-expanded={opened} aria-haspopup="dialog"
               aria-label={gift ? `${object.name}, gift${gift.authorName === null ? "" : ` from ${gift.authorName}`}. Open gift or use arrow keys to move.` : `${object.name}. Open window or use arrow keys to move.`} aria-describedby="house-movement-help"
               onAnimationEnd={(event) => {
                 if (event.target !== event.currentTarget || event.animationName !== "house-depart" || !removing) return;
                 if (document.activeElement === event.currentTarget) document.querySelector<HTMLButtonElement>('[data-object="leave-gift"]')?.focus({ preventScroll: true });
+                setPendingTrashIds((current) => {
+                  if (!current.has(object.id)) return current;
+                  const next = new Set(current);
+                  next.delete(object.id);
+                  return next;
+                });
                 setDisplayed((current) => current.filter((item) => item.id !== object.id));
               }}
               onPointerDown={(event) => pointerDown(event, object.id)} onPointerMove={pointerMove}
@@ -415,7 +467,7 @@ export function HouseClump({
               onBlur={() => { if (grabbed.current?.id === object.id && grabbed.current.pointerId === undefined) finish(); }}
               onClick={(event) => {
                 const suppressed = clickSuppressed.current;
-                if (!opened && !removing && (!gift || liveIds.has(gift.id)) && !(suppressed?.id === object.id && performance.now() < suppressed.until)) onOpen(object, event.currentTarget, gift);
+                if (!opened && !disabled && (!gift || liveIds.has(gift.id)) && !(suppressed?.id === object.id && performance.now() < suppressed.until)) onOpen(object, event.currentTarget, gift);
               }}
             ><span className="house-object-art" aria-hidden="true">{iconImage ? <img src={iconImage} alt="" className="house-object-image" loading="lazy" decoding="async" /> : object.emoji}</span></button>;
           })}

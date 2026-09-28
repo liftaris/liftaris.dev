@@ -128,6 +128,10 @@ export interface SceneEngine {
   beginDrag(id: string, point: Point): boolean;
   moveDrag(point: Point): void;
   endDrag(cancel?: boolean): void;
+  /** Freezes an item in place, making it static and optionally placing it at targetPoint. */
+  freeze(id: string, targetPoint?: Point): void;
+  /** Restores a frozen item to dynamic simulation, optionally resetting to its pre-drag pose. */
+  unfreeze(id: string, resetToBefore?: boolean): void;
   /** Keyboard moves and rotations preserve the same input contract. */
   nudge(id: string, dx: number, dy: number, angle?: number): void;
   /** Growing a shared collection's local stage need not move bodies or release its handle. */

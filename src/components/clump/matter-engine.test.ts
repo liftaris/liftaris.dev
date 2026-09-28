@@ -289,3 +289,36 @@ test("fresh poster clumps are denser, but a saved poster arrangement is not reco
     engine.dispose();
   }
 });
+
+test("freeze keeps an item static at its target position without being pulled back to the clump, and unfreeze restores it", () => {
+  const size = { width: 600, height: 400 };
+  const engine = createSceneEngine({ scene: "clump", collision: "outline", size });
+  try {
+    settle(engine);
+    const original = pose(engine, "octopus");
+    expect(engine.beginDrag(original.id, original)).toBe(true);
+    engine.moveDrag({ x: 550, y: 350 });
+    advance(engine, 50);
+
+    const target = { x: 560, y: 360 };
+    engine.freeze("octopus", target);
+
+    // After freezing, the body should stay at target and not be pulled back
+    expect(pose(engine, "octopus").x).toBeCloseTo(target.x, 0);
+    expect(pose(engine, "octopus").y).toBeCloseTo(target.y, 0);
+
+    // Advance 100 frames - it should remain static
+    advance(engine, 100);
+    expect(pose(engine, "octopus").x).toBeCloseTo(target.x, 0);
+    expect(pose(engine, "octopus").y).toBeCloseTo(target.y, 0);
+
+    // Unfreeze with resetToBefore restores original pose
+    engine.unfreeze("octopus", true);
+    const restored = pose(engine, "octopus");
+    expect(restored.x).toBeCloseTo(original.x, 1);
+    expect(restored.y).toBeCloseTo(original.y, 1);
+  } finally {
+    engine.dispose();
+  }
+});
+
