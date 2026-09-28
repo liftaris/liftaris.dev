@@ -11,7 +11,7 @@ import * as client from "../lib/house/client";
 // Astro generates this configuration module. Only the host module is supplied;
 // the published runtime, dispatcher, authentication policy and DB are real.
 mock.module("virtual:emdash/config", () => ({ default: {} }));
-const { EmDashRuntime, dispatchPluginApiRequest } = await import("emdash/plugin-test-runtime");
+const { EmDashRuntime, dispatchPluginApiRequest } = await import("emdash/internal/plugin-test-runtime");
 
 const cleanups: Array<() => Promise<void>> = [];
 afterEach(async () => { for (const close of cleanups.splice(0)) await close(); });
