@@ -116,6 +116,8 @@ body.embedded-post { background: var(--paper); }
 .embedded-post .article-content > .meta,
 .embedded-post .article-content > h1 { padding-top: clamp(24px, 5vw, 48px); }
 .embedded-post .article-content > .meta + h1 { padding-top: 0; }
+.embedded-post .article-content:not(:has(> h1)):not(:has(> .meta)) { padding-top: 24px; }
+.embedded-post .article-content:not(:has(> h1)):not(:has(> .meta)) > :first-child { margin-top: 0; }
 
 .pane {
   animation: reveal 420ms ease both;

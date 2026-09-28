@@ -38,10 +38,11 @@ const name = String(thing.data.name ?? "Page");
 const title = `${name} | Kaio Barbosa`;
 const content = { collection: "things", id: thing.data.id ?? thing.id, slug: thing.id };
 const body = thing.data.body;
+const isWindow = Astro.url.searchParams.get("window") === "1";
 ---
-<Portfolio embedded={Astro.url.searchParams.get("window") === "1"} title={title} content={content}>
+<Portfolio embedded={isWindow} title={title} content={content}>
   <article class="article-content">
-    <h1 {...thing.edit?.name}>{name}</h1>
+    {!isWindow && <h1 {...thing.edit?.name}>{name}</h1>}
     {body && Array.isArray(body) && body.length > 0 ? (
       <PortableText value={body} components={{ type: { themeImage: ThemeImage } }} />
     ) : null}
