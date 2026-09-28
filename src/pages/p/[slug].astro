@@ -39,7 +39,7 @@ const body = thing.data.body;
 const isWindow = Astro.url.searchParams.get("window") === "1";
 ---
 <Portfolio embedded={isWindow} title={title} content={content}>
-  <article class="article-content">
+  <article class="page-content">
     {!isWindow && <h1 {...thing.edit?.name}>{name}</h1>}
     {body && Array.isArray(body) && body.length > 0 ? (
       <PortableText value={body} components={{ type: { themeImage: ThemeImage } }} />

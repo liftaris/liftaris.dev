@@ -12,6 +12,7 @@ export interface ThingSpec extends ObjectSpec {
   action?: "none" | "projects" | "experience" | "leave-gift" | null;
   href?: string | null;
   tint_when_visited: boolean;
+  default_open?: boolean;
   sort_order: number;
   body?: unknown;
 }
@@ -129,3 +130,58 @@ export const PORTFOLIO_FOLDER: FolderSpec<HouseThing> = buildFolder(
   DEFAULT_THINGS,
   []
 );
+
+/**
+ * Recursively retrieves all items inside a folder that are marked default_open.
+ * If a child is a folder with default_open, it and its default_open descendants are returned.
+ */
+export function getDefaultOpenChildren(
+  folderId: string,
+  allThings: readonly ThingSpec[],
+  visitedFolders = new Set<string>([folderId])
+): ThingSpec[] {
+  const result: ThingSpec[] = [];
+  const children = allThings
+    .filter((t) => t.parent_id === folderId)
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+
+  for (const thing of children) {
+    if (thing.default_open && thing.kind !== "link") {
+      result.push(thing);
+      if (thing.kind === "folder" && !visitedFolders.has(thing.id)) {
+        visitedFolders.add(thing.id);
+        result.push(...getDefaultOpenChildren(thing.id, allThings, visitedFolders));
+      }
+    }
+  }
+  return result;
+}
+
+/**
+ * Returns all windows that should be open on initial page load:
+ * - Desktop or top-level things (desktop: true or !parent_id) with default_open: true.
+ * - If any of those is a folder, its default_open descendants are also included.
+ */
+export function getInitialDefaultOpenThings(allThings: readonly ThingSpec[]): ThingSpec[] {
+  const result: ThingSpec[] = [];
+  const visitedFolders = new Set<string>();
+
+  const topLevel = allThings
+    .filter((t) => t.default_open && (t.desktop || !t.parent_id) && t.kind !== "link")
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+
+  for (const thing of topLevel) {
+    result.push(thing);
+    if (thing.kind === "folder" && !visitedFolders.has(thing.id)) {
+      visitedFolders.add(thing.id);
+      result.push(...getDefaultOpenChildren(thing.id, allThings, visitedFolders));
+    }
+  }
+
+  const seen = new Set<string>();
+  return result.filter((item) => {
+    if (seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
+}

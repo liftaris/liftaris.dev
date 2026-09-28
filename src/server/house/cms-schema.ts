@@ -3,7 +3,7 @@ import { sql, type Kysely } from "kysely";
 import { DEFAULT_THINGS } from "../../components/house/folders";
 
 const giftSchemaVersion = 2;
-const thingsSchemaVersion = 5;
+const thingsSchemaVersion = 6;
 
 export const thingFields: readonly CreateFieldInput[] = [
   { slug: "name", label: "Name", type: "string", required: true, searchable: true },
@@ -20,6 +20,7 @@ export const thingFields: readonly CreateFieldInput[] = [
   { slug: "href", label: "Link URL", type: "string", searchable: false },
   { slug: "body", label: "Body", type: "portableText", required: false, searchable: true },
   { slug: "tint_when_visited", label: "Indicate when visited", type: "boolean", required: false, defaultValue: true },
+  { slug: "default_open", label: "Default open", type: "boolean", required: false, defaultValue: false },
   { slug: "shape", label: "Shape", type: "select", defaultValue: "rectangle", validation: { options: ["circle", "rectangle"] }, searchable: false },
   { slug: "anchor", label: "Anchor", type: "boolean", defaultValue: false, searchable: false },
   { slug: "width", label: "Width", type: "integer", defaultValue: 60, searchable: false },
@@ -67,7 +68,7 @@ export async function initializeThingsCollection(db: Kysely<Database>): Promise<
     }
   }
   try {
-    await sql`UPDATE _emdash_collections SET admin_config = ${JSON.stringify({ listColumns: ["name", "emoji", "kind", "tint_when_visited"] })} WHERE slug = 'things'`.execute(db);
+    await sql`UPDATE _emdash_collections SET admin_config = ${JSON.stringify({ listColumns: ["name", "emoji", "kind", "tint_when_visited", "default_open"] })} WHERE slug = 'things'`.execute(db);
   } catch {
     // Ignore if table doesn't exist
   }
@@ -82,14 +83,14 @@ export async function initializeThingsCollection(db: Kysely<Database>): Promise<
         await sql`INSERT INTO ec_things (
           id, slug, status, author_id, created_at, updated_at, published_at, version, locale, translation_group,
           name, emoji, image, background_image, background_size, background_position, background_repeat,
-          kind, desktop, parent_id, action, href, body, tint_when_visited, shape, anchor, width, height, sort_order
+          kind, desktop, parent_id, action, href, body, tint_when_visited, default_open, shape, anchor, width, height, sort_order
         ) VALUES (
           ${item.id}, ${item.id}, 'published', ${authorId}, ${now}, ${now}, ${now}, 1, 'en', ${item.id},
           ${item.name}, ${item.emoji}, ${item.image ?? null},
           ${item.background_image ?? null}, ${item.background_size ?? null}, ${item.background_position ?? null}, ${item.background_repeat ?? null},
           ${item.kind}, ${item.desktop ? 1 : 0}, ${item.parent_id ?? null}, ${item.action ?? "none"}, ${item.href ?? null},
           ${null},
-          ${item.tint_when_visited ? 1 : 0}, ${item.shape}, ${item.anchor ? 1 : 0}, ${item.width}, ${item.height}, ${item.sort_order}
+          ${item.tint_when_visited ? 1 : 0}, ${item.default_open ? 1 : 0}, ${item.shape}, ${item.anchor ? 1 : 0}, ${item.width}, ${item.height}, ${item.sort_order}
         )`.execute(db);
       } else {
         await sql`UPDATE ec_things SET
@@ -98,6 +99,7 @@ export async function initializeThingsCollection(db: Kysely<Database>): Promise<
           parent_id = COALESCE(parent_id, ${item.parent_id ?? null}),
           action = COALESCE(action, ${item.action ?? "none"}),
           href = COALESCE(href, ${item.href ?? null}),
+          default_open = COALESCE(default_open, ${item.default_open ? 1 : 0}),
           sort_order = COALESCE(sort_order, ${item.sort_order})
           WHERE id = ${item.id}`.execute(db);
       }

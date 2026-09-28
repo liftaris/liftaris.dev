@@ -20,7 +20,7 @@ type FolderProps<T> = Omit<ComponentProps<typeof ObjectWindow>, "title" | "icon"
   folder: FolderSpec<T>;
   openedIds?: readonly string[];
   visitedIds?: ReadonlySet<string>;
-  thingsConfig?: Record<string, { tint_when_visited?: boolean }>;
+  thingsConfig?: Record<string, { tint_when_visited?: boolean; default_open?: boolean }>;
   onVisit?: (id: string) => void;
   onOpen: (item: T, source: HTMLButtonElement) => void;
   onOpenFolder: (folder: FolderSpec<T>, source: HTMLButtonElement) => void;
@@ -30,7 +30,7 @@ export type FolderContentProps<T> = {
   folder: FolderSpec<T>;
   openedIds?: readonly string[];
   visitedIds?: ReadonlySet<string>;
-  thingsConfig?: Record<string, { tint_when_visited?: boolean }>;
+  thingsConfig?: Record<string, { tint_when_visited?: boolean; default_open?: boolean }>;
   monochrome?: boolean;
   onVisit?: (id: string) => void;
   onOpen?: (item: T, source: HTMLButtonElement) => void;

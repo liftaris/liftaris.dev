@@ -344,4 +344,17 @@ test("HouseClump trashcan is hidden by default and only shows when a deletable i
   expect(draggingAdmin).not.toMatch(/class="house-trash"[^>]*aria-hidden="true"/);
 });
 
+test("House accepts thingsConfig with default_open and merges with things specs", () => {
+  const thingsConfig = {
+    computer: { default_open: true, tint_when_visited: false },
+    shoes: { default_open: false, tint_when_visited: true },
+  };
+  const html = renderToStaticMarkup(<House thingsConfig={thingsConfig} />);
+  expect(html).toContain('class="house"');
+  expect(html).toContain('data-object="computer"');
+  // tint_when_visited override applied
+  expect(html).toMatch(/data-object="computer"[^>]*data-visited="false"/);
+});
+
+
 

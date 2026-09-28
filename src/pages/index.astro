@@ -80,6 +80,7 @@ try {
         href: data.href ? String(data.href) : (kind === "page" ? `/p/${encodeURIComponent(entry.id)}` : null),
         body: data.body,
         tint_when_visited: data.tint_when_visited !== false && data.tint_when_visited !== 0,
+        default_open: Boolean(data.default_open),
         shape,
         anchor: Boolean(data.anchor),
         width: Number(data.width) || 60,

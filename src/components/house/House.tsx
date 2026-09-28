@@ -15,6 +15,8 @@ import {
   WRITING_FOLDER_OBJECT,
   buildFolder,
   writingFolder,
+  getDefaultOpenChildren,
+  getInitialDefaultOpenThings,
   type HouseThing,
   type ThingSpec,
   type WritingPost,
@@ -83,40 +85,54 @@ export function House({
 }: {
   posts?: readonly WritingPost[];
   things?: readonly ThingSpec[];
-  thingsConfig?: Record<string, { tint_when_visited?: boolean }>;
+  thingsConfig?: Record<string, { tint_when_visited?: boolean; default_open?: boolean }>;
 }) {
+  const effectiveThings = useMemo(() => {
+    return things.map((t) => {
+      const override = thingsConfig?.[t.id];
+      if (!override) return t;
+      return {
+        ...t,
+        ...(override.tint_when_visited !== undefined ? { tint_when_visited: override.tint_when_visited } : {}),
+        ...(override.default_open !== undefined ? { default_open: override.default_open } : {}),
+      };
+    });
+  }, [things, thingsConfig]);
+
   const foldersById = useMemo(() => {
     const map = new Map<string, FolderSpec<HouseThing>>();
-    for (const thing of things) {
+    for (const thing of effectiveThings) {
       if (thing.kind === "folder") {
-        map.set(thing.id, buildFolder(thing, things, posts));
+        map.set(thing.id, buildFolder(thing, effectiveThings, posts));
       }
     }
     if (!map.has("writing-folder")) {
-      map.set("writing-folder", writingFolder(posts, things));
+      map.set("writing-folder", writingFolder(posts, effectiveThings));
     }
     if (!map.has("portfolio-folder")) {
-      const pfThing = things.find((t) => t.id === "portfolio-folder") ?? DEFAULT_THINGS.find((t) => t.id === "portfolio-folder")!;
-      map.set("portfolio-folder", buildFolder(pfThing, things, posts));
+      const pfThing = effectiveThings.find((t) => t.id === "portfolio-folder") ?? DEFAULT_THINGS.find((t) => t.id === "portfolio-folder")!;
+      map.set("portfolio-folder", buildFolder(pfThing, effectiveThings, posts));
     }
     return map;
-  }, [things, posts]);
+  }, [effectiveThings, posts]);
 
   const desktopThings = useMemo(() => {
-    const dt = things.filter((t) => t.desktop);
+    const dt = effectiveThings.filter((t) => t.desktop);
     return dt.length > 0 ? dt : undefined;
-  }, [things]);
+  }, [effectiveThings]);
 
   const mergedThingsConfig = useMemo(() => {
-    const config: Record<string, { tint_when_visited?: boolean }> = {};
-    for (const thing of things) {
-      config[thing.id] = { tint_when_visited: thing.tint_when_visited };
+    const config: Record<string, { tint_when_visited?: boolean; default_open?: boolean }> = {};
+    for (const thing of effectiveThings) {
+      config[thing.id] = { tint_when_visited: thing.tint_when_visited, default_open: thing.default_open };
     }
     if (thingsConfig) {
-      Object.assign(config, thingsConfig);
+      for (const [id, cfg] of Object.entries(thingsConfig)) {
+        config[id] = { ...config[id], ...cfg };
+      }
     }
     return config;
-  }, [things, thingsConfig]);
+  }, [effectiveThings, thingsConfig]);
 
   const [visitedIds, setVisitedIds] = useState<Set<string>>(() => loadVisitedIds());
   const [sentGiftIds, setSentGiftIds] = useState<Set<string>>(() => loadSentGiftIds());
@@ -168,14 +184,45 @@ export function House({
       ? { ...item, gift, object: giftObjects([gift])[0] } : item));
   }, []);
   const close = (id: string) => setOpened((current) => current.filter((item) => item.object.id !== id));
-  const open = (object: HouseThing | FolderSpec<HouseThing>, source: HTMLButtonElement, gift?: Gift) => {
-    if (!isFolderObject(object.id, "kind" in object ? object.kind : undefined)) {
+  const open = useCallback((object: HouseThing | FolderSpec<HouseThing>, source: HTMLButtonElement, gift?: Gift) => {
+    const isFolder = isFolderObject(object.id, "kind" in object ? object.kind : undefined);
+    if (!isFolder) {
       markVisited(object.id);
     }
     const resolvedObject = foldersById.get(object.id) ?? object;
-    const item = { object: resolvedObject, source, gift, origin: source.getBoundingClientRect() };
-    setOpened((current) => current.some((entry) => entry.object.id === object.id) ? current : [...current, item]);
-  };
+    const parentRect = source.getBoundingClientRect();
+    const item = { object: resolvedObject, source, gift, origin: parentRect };
+
+    setOpened((current) => {
+      const next = [...current];
+      if (!next.some((entry) => entry.object.id === object.id)) {
+        next.push(item);
+      }
+      if (isFolder) {
+        const defaultChildren = getDefaultOpenChildren(object.id, effectiveThings);
+        defaultChildren.forEach((child, idx) => {
+          if (!next.some((entry) => entry.object.id === child.id)) {
+            if (!isFolderObject(child.id, child.kind)) {
+              markVisited(child.id);
+            }
+            const resolvedChild = foldersById.get(child.id) ?? child;
+            const childSource = (typeof document !== "undefined" && (
+              document.querySelector<HTMLButtonElement>(`[data-folder-entry="${CSS.escape(child.id)}"]`) ??
+              document.querySelector<HTMLButtonElement>(`[data-object="${CSS.escape(child.id)}"]`)
+            )) || source;
+            const origin = new DOMRect(
+              parentRect.left + (idx + 1) * 32,
+              parentRect.top + (idx + 1) * 32,
+              parentRect.width,
+              parentRect.height
+            );
+            next.push({ object: resolvedChild, source: childSource, origin });
+          }
+        });
+      }
+      return next;
+    });
+  }, [foldersById, effectiveThings, markVisited]);
   const receiveGift = (composer: OpenedThing, gift: GiftDetail, previewBounds: DOMRect, form: HTMLFormElement) => {
     // Membership was committed on POST; don't reapply its snapshot after this GET.
     const source = document.querySelector<HTMLButtonElement>(`[data-object="${gift.id}"]`)
@@ -242,6 +289,49 @@ export function House({
     return () => { active = false; controller.abort(); };
   }, [accept]);
 
+  const initialOpenDone = useRef(false);
+  useEffect(() => {
+    if (initialOpenDone.current) return;
+    initialOpenDone.current = true;
+
+    const toOpen = getInitialDefaultOpenThings(effectiveThings);
+    if (toOpen.length === 0) return;
+
+    const viewportWidth = typeof window !== "undefined" ? window.innerWidth : 1024;
+    const viewportHeight = typeof window !== "undefined" ? window.innerHeight : 768;
+    const defaultOrigin = new DOMRect(
+      Math.max(40, (viewportWidth - 480) / 2),
+      Math.max(40, (viewportHeight - 380) / 3),
+      48,
+      48
+    );
+
+    setOpened((current) => {
+      const next = [...current];
+      toOpen.forEach((thing, idx) => {
+        if (next.some((entry) => entry.object.id === thing.id)) return;
+        if (!isFolderObject(thing.id, thing.kind)) {
+          markVisited(thing.id);
+        }
+        const resolvedObject = foldersById.get(thing.id) ?? thing;
+        const domSource = typeof document !== "undefined" ? (
+          document.querySelector<HTMLButtonElement>(`[data-object="${CSS.escape(thing.id)}"]`) ??
+          document.querySelector<HTMLButtonElement>(`[data-folder-entry="${CSS.escape(thing.id)}"]`) ??
+          (thing.parent_id ? document.querySelector<HTMLButtonElement>(`[data-object="${CSS.escape(thing.parent_id)}"]`) : null)
+        ) : null;
+
+        const source = domSource ?? (typeof document !== "undefined" ? document.createElement("button") : (null as unknown as HTMLButtonElement));
+        const domRect = domSource?.getBoundingClientRect();
+        const origin = (domRect && domRect.width > 0)
+          ? new DOMRect(domRect.left + idx * 32, domRect.top + idx * 32, domRect.width, domRect.height)
+          : new DOMRect(defaultOrigin.left + idx * 32, defaultOrigin.top + idx * 32, defaultOrigin.width, defaultOrigin.height);
+
+        next.push({ object: resolvedObject, source, origin });
+      });
+      return next;
+    });
+  }, [effectiveThings, foldersById, markVisited]);
+
   return <div className="house" data-ready={ready}>
     <HouseClump
       gifts={snapshot?.gifts ?? EMPTY_GIFTS}
@@ -260,8 +350,10 @@ export function House({
       const folder = "kind" in item.object && item.object.kind === "folder" && "items" in item.object ? (item.object as FolderSpec<HouseThing>) : undefined;
       const post = "kind" in item.object && item.object.kind === "post" ? item.object : undefined;
       const page = "kind" in item.object && item.object.kind === "page" ? (item.object as ThingSpec) : undefined;
+      const parentFolderId = "parent_id" in item.object && item.object.parent_id ? item.object.parent_id : undefined;
       const fallbackSource = () => document.querySelector<HTMLButtonElement>(`[data-folder-entry="${CSS.escape(item.object.id)}"]`)
         ?? document.querySelector<HTMLButtonElement>(`[data-object="${CSS.escape(item.object.id)}"]:not([data-removing="true"])`)
+        ?? (parentFolderId ? document.querySelector<HTMLButtonElement>(`[data-object="${CSS.escape(parentFolderId)}"]`) : null)
         ?? document.querySelector<HTMLButtonElement>(`[data-object="${post ? WRITING_FOLDER_OBJECT.id : PORTFOLIO_FOLDER_OBJECT.id}"]`)
         ?? document.querySelector<HTMLButtonElement>('[data-object="leave-gift"]');
       if (folder) return <Folder key={item.object.id} folder={folder}

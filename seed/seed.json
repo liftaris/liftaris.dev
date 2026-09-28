@@ -142,6 +142,12 @@
           "defaultValue": true
         },
         {
+          "slug": "default_open",
+          "label": "Default open",
+          "type": "boolean",
+          "defaultValue": false
+        },
+        {
           "slug": "shape",
           "label": "Shape",
           "type": "select",

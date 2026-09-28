@@ -42,7 +42,7 @@ export function HouseClump({
   gifts: readonly Gift[];
   inspectedIds: readonly string[];
   visitedIds?: ReadonlySet<string>;
-  thingsConfig?: Record<string, { tint_when_visited?: boolean }>;
+  thingsConfig?: Record<string, { tint_when_visited?: boolean; default_open?: boolean }>;
   desktopObjects?: readonly ObjectSpec[];
   isAdmin?: boolean;
   sentGiftIds?: ReadonlySet<string>;

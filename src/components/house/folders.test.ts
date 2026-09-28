@@ -6,6 +6,8 @@ import {
   WRITING_FOLDER_OBJECT,
   buildFolder,
   writingFolder,
+  getDefaultOpenChildren,
+  getInitialDefaultOpenThings,
   type ThingSpec,
   type WritingPost,
 } from "./folders";
@@ -172,5 +174,42 @@ describe("House Folders and Things model", () => {
       expect(value.kind).toBe("page");
       expect(value.body).toBeDefined();
     }
+  });
+
+  test("getDefaultOpenChildren finds direct and recursive default_open children in folders", () => {
+    const customThings: ThingSpec[] = [
+      { id: "parent-folder", name: "Parent", emoji: "📁", kind: "folder", desktop: true, tint_when_visited: false, width: 64, height: 56, shape: "rectangle", anchor: false, sort_order: 1 },
+      { id: "normal-child", name: "Normal", emoji: "📄", kind: "page", desktop: false, parent_id: "parent-folder", default_open: false, tint_when_visited: true, width: 60, height: 60, shape: "rectangle", anchor: false, sort_order: 1 },
+      { id: "open-child", name: "Open Page", emoji: "📄", kind: "page", desktop: false, parent_id: "parent-folder", default_open: true, tint_when_visited: true, width: 60, height: 60, shape: "rectangle", anchor: false, sort_order: 2 },
+      { id: "open-link", name: "Open Link", emoji: "🔗", kind: "link", desktop: false, parent_id: "parent-folder", href: "https://example.com", default_open: true, tint_when_visited: true, width: 60, height: 60, shape: "rectangle", anchor: false, sort_order: 3 },
+      { id: "sub-folder", name: "Sub", emoji: "📁", kind: "folder", desktop: false, parent_id: "parent-folder", default_open: true, tint_when_visited: false, width: 64, height: 56, shape: "rectangle", anchor: false, sort_order: 4 },
+      { id: "nested-child", name: "Nested Child", emoji: "⚙️", kind: "object", desktop: false, parent_id: "sub-folder", default_open: true, tint_when_visited: true, width: 60, height: 60, shape: "rectangle", anchor: false, sort_order: 1 },
+    ];
+
+    const children = getDefaultOpenChildren("parent-folder", customThings);
+    expect(children.map((c) => c.id)).toEqual(["open-child", "sub-folder", "nested-child"]);
+  });
+
+  test("getInitialDefaultOpenThings selects top-level items and children of default-open folders", () => {
+    const customThings: ThingSpec[] = [
+      // Top-level page with default_open: true -> should open on page load
+      { id: "top-page", name: "Top Page", emoji: "📄", kind: "page", desktop: true, parent_id: null, default_open: true, tint_when_visited: true, width: 60, height: 60, shape: "rectangle", anchor: false, sort_order: 1 },
+      // Top-level object with default_open: false -> should not open
+      { id: "closed-obj", name: "Closed Obj", emoji: "📦", kind: "object", desktop: true, parent_id: null, default_open: false, tint_when_visited: true, width: 60, height: 60, shape: "rectangle", anchor: false, sort_order: 2 },
+      // Closed folder containing an open child -> neither folder nor child should open initially
+      { id: "closed-folder", name: "Closed Folder", emoji: "📁", kind: "folder", desktop: true, parent_id: null, default_open: false, tint_when_visited: false, width: 64, height: 56, shape: "rectangle", anchor: false, sort_order: 3 },
+      { id: "hidden-child", name: "Hidden Child", emoji: "📄", kind: "page", desktop: false, parent_id: "closed-folder", default_open: true, tint_when_visited: true, width: 60, height: 60, shape: "rectangle", anchor: false, sort_order: 1 },
+      // Open folder containing an open child -> both folder and child should open initially
+      { id: "open-folder", name: "Open Folder", emoji: "📁", kind: "folder", desktop: true, parent_id: null, default_open: true, tint_when_visited: false, width: 64, height: 56, shape: "rectangle", anchor: false, sort_order: 4 },
+      { id: "visible-child", name: "Visible Child", emoji: "📄", kind: "page", desktop: false, parent_id: "open-folder", default_open: true, tint_when_visited: true, width: 60, height: 60, shape: "rectangle", anchor: false, sort_order: 1 },
+      { id: "not-open-child", name: "Not Open Child", emoji: "📄", kind: "page", desktop: false, parent_id: "open-folder", default_open: false, tint_when_visited: true, width: 60, height: 60, shape: "rectangle", anchor: false, sort_order: 2 },
+    ];
+
+    const initial = getInitialDefaultOpenThings(customThings);
+    expect(initial.map((item) => item.id)).toEqual(["top-page", "open-folder", "visible-child"]);
+
+    // But opening the closed folder later DOES open its default_open child!
+    const fromClosedFolder = getDefaultOpenChildren("closed-folder", customThings);
+    expect(fromClosedFolder.map((c) => c.id)).toEqual(["hidden-child"]);
   });
 });
