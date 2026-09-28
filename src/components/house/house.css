@@ -347,8 +347,9 @@
   user-select: none;
   -webkit-user-select: none;
   z-index: 4;
-  pointer-events: auto;
-  opacity: .75;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(0.7);
   transition: transform 180ms cubic-bezier(0.2, 0, 0, 1),
               background-color 180ms ease,
               border-color 180ms ease,
@@ -356,8 +357,13 @@
               opacity 180ms ease;
 }
 
-.house-trash:hover,
-.house-trash[data-dragging="true"] {
+.house-trash[data-visible="true"] {
+  opacity: .85;
+  pointer-events: auto;
+  transform: scale(1);
+}
+
+.house-trash[data-visible="true"]:hover {
   opacity: 1;
   background: rgb(255 251 237 / .14);
   border-color: rgb(255 251 237 / .32);

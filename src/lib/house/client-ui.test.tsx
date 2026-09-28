@@ -284,3 +284,64 @@ test("House renders HouseClump containing the trash zone", () => {
   expect(html).toContain("🗑️");
 });
 
+test("HouseClump trashcan is hidden by default and only shows when a deletable item is dragged", () => {
+  // 1. Resting state: no item is dragged -> trashcan is hidden
+  const resting = renderToStaticMarkup(
+    <HouseClump gifts={[gift]} inspectedIds={[]} onOpen={() => {}} />
+  );
+  expect(resting).toContain('class="house-trash"');
+  expect(resting).not.toContain('data-visible="true"');
+  expect(resting).toMatch(/class="house-trash"[^>]*aria-hidden="true"/);
+
+  // 2. Dragging a desktop object (non-gift) -> trashcan remains hidden
+  const draggingDesktop = renderToStaticMarkup(
+    <HouseClump gifts={[gift]} inspectedIds={[]} testDragId="computer" onOpen={() => {}} />
+  );
+  expect(draggingDesktop).not.toContain('data-visible="true"');
+  expect(draggingDesktop).toMatch(/class="house-trash"[^>]*aria-hidden="true"/);
+
+  // 3. Dragging another visitor's gift when not admin -> trashcan remains hidden
+  const otherGift: Gift = { id: "other-gift-99", emojiId: "cake", authorName: "Someone else", createdAt: "2026-09-27", visibility: "public", message: "Hello" };
+  const draggingOtherGift = renderToStaticMarkup(
+    <HouseClump
+      gifts={[gift, otherGift]}
+      inspectedIds={[]}
+      isAdmin={false}
+      sentGiftIds={new Set(["gift-1"])}
+      testDragId="other-gift-99"
+      onOpen={() => {}}
+    />
+  );
+  expect(draggingOtherGift).not.toContain('data-visible="true"');
+  expect(draggingOtherGift).toMatch(/class="house-trash"[^>]*aria-hidden="true"/);
+
+  // 4. Dragging own gift (in sentGiftIds) as non-admin -> trashcan IS visible
+  const draggingOwnGift = renderToStaticMarkup(
+    <HouseClump
+      gifts={[gift, otherGift]}
+      inspectedIds={[]}
+      isAdmin={false}
+      sentGiftIds={new Set(["gift-1"])}
+      testDragId="gift-1"
+      onOpen={() => {}}
+    />
+  );
+  expect(draggingOwnGift).toContain('data-visible="true"');
+  expect(draggingOwnGift).not.toMatch(/class="house-trash"[^>]*aria-hidden="true"/);
+
+  // 5. Dragging any gift as admin -> trashcan IS visible
+  const draggingAdmin = renderToStaticMarkup(
+    <HouseClump
+      gifts={[gift, otherGift]}
+      inspectedIds={[]}
+      isAdmin={true}
+      sentGiftIds={new Set()}
+      testDragId="other-gift-99"
+      onOpen={() => {}}
+    />
+  );
+  expect(draggingAdmin).toContain('data-visible="true"');
+  expect(draggingAdmin).not.toMatch(/class="house-trash"[^>]*aria-hidden="true"/);
+});
+
+

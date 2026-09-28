@@ -37,6 +37,7 @@ export function HouseClump({
   sentGiftIds = EMPTY_VISITED,
   onOpen,
   onTrash,
+  testDragId,
 }: {
   gifts: readonly Gift[];
   inspectedIds: readonly string[];
@@ -47,6 +48,7 @@ export function HouseClump({
   sentGiftIds?: ReadonlySet<string>;
   onOpen: (object: ObjectSpec, source: HTMLButtonElement, gift?: Gift) => void;
   onTrash?: (id: string) => void | Promise<void>;
+  testDragId?: string | null;
 }) {
   const viewport = useRef<HTMLDivElement>(null);
   const world = useRef<HTMLDivElement>(null);
@@ -59,6 +61,7 @@ export function HouseClump({
   const clickSuppressed = useRef<{ id: string; until: number } | null>(null);
   const [displayed, setDisplayed] = useState<Gift[]>(() => [...gifts]);
   const [grabId, setGrabId] = useState<string | null>(null);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
   const [isOverTrash, setIsOverTrash] = useState(false);
   const [trashStatus, setTrashStatus] = useState<"idle" | "over" | "trashed" | "rejected">("idle");
   const [knownRemovable, setKnownRemovable] = useState<Set<string>>(() => new Set());
@@ -77,6 +80,10 @@ export function HouseClump({
     if (!isGift) return false;
     return isAdmin || sentGiftIds.has(id) || knownRemovable.has(id);
   }, [displayed, isAdmin, sentGiftIds, knownRemovable]);
+
+  const activeDragId = testDragId !== undefined ? testDragId : draggedId;
+  const isDraggingDeletable = activeDragId !== null && isEligibleForTrash(activeDragId);
+  const canShowTrash = isDraggingDeletable || trashStatus !== "idle";
 
   useLayoutEffect(() => {
     setDisplayed((current) => reconcileGifts(current, gifts));
@@ -149,6 +156,7 @@ export function HouseClump({
       if (grab) {
         grabbed.current = null;
         setGrabId(null);
+        setDraggedId(null);
         setIsOverTrash(false);
         if (grab.moved) clickSuppressed.current = { id: grab.id, until: performance.now() + 400 };
         const source = nodes.current.get(grab.id);
@@ -169,6 +177,7 @@ export function HouseClump({
           scene.endDrag(true);
           grabbed.current = null;
           setGrabId(null);
+          setDraggedId(null);
           setIsOverTrash(false);
         }
       } else run();
@@ -243,6 +252,7 @@ export function HouseClump({
     if (!grab) return;
     grabbed.current = null;
     setGrabId(null);
+    setDraggedId(null);
     setIsOverTrash(false);
     engine.current?.endDrag(cancel || droppedOnTrash);
     if (grab.pointerId !== undefined) {
@@ -285,19 +295,22 @@ export function HouseClump({
       if (Math.hypot(point.x - grab.origin.x, point.y - grab.origin.y) * scale < 5) return;
       if (!engine.current?.beginDrag(grab.id, grab.origin)) return;
       grab.moved = true;
+      setDraggedId(grab.id);
     }
     grab.point = point;
     engine.current?.moveDrag(point);
 
-    if (trashRef.current) {
+    const eligible = isEligibleForTrash(grab.id);
+    if (trashRef.current && eligible) {
       const rect = trashRef.current.getBoundingClientRect();
       const pad = 12;
       const over = event.clientX >= rect.left - pad &&
                    event.clientX <= rect.right + pad &&
                    event.clientY >= rect.top - pad &&
                    event.clientY <= rect.bottom + pad;
-      const eligible = isEligibleForTrash(grab.id);
-      setIsOverTrash(over && eligible);
+      setIsOverTrash(over);
+    } else {
+      setIsOverTrash(false);
     }
 
     start.current();
@@ -309,7 +322,8 @@ export function HouseClump({
     if (["enter", " "].includes(key) && grabbed.current?.id === id) {
       event.preventDefault();
       let droppedOnTrash = false;
-      if (trashRef.current && grabbed.current?.moved) {
+      const eligible = isEligibleForTrash(id);
+      if (trashRef.current && grabbed.current?.moved && eligible) {
         const objEl = nodes.current.get(id);
         if (objEl) {
           const r1 = objEl.getBoundingClientRect();
@@ -330,6 +344,7 @@ export function HouseClump({
       if (!pose || !scene.beginDrag(id, pose)) return;
       grabbed.current = { id, point: { x: pose.x, y: pose.y }, origin: pose, moved: true };
       setGrabId(id);
+      setDraggedId(id);
     }
     const grab = grabbed.current;
     const distance = event.shiftKey ? 20 : 7;
@@ -338,15 +353,17 @@ export function HouseClump({
       grab.point.y = Math.max(40, Math.min(size.height - 40, grab.point.y + (key === "arrowup" ? -distance : key === "arrowdown" ? distance : 0)));
       scene.moveDrag(grab.point);
 
-      if (trashRef.current) {
+      const eligible = isEligibleForTrash(id);
+      if (trashRef.current && eligible) {
         const objEl = nodes.current.get(id);
         if (objEl) {
           const r1 = objEl.getBoundingClientRect();
           const r2 = trashRef.current.getBoundingClientRect();
           const overlaps = !(r1.right < r2.left || r1.left > r2.right || r1.bottom < r2.top || r1.top > r2.bottom);
-          const eligible = isEligibleForTrash(id);
-          setIsOverTrash(overlaps && eligible);
+          setIsOverTrash(overlaps);
         }
+      } else {
+        setIsOverTrash(false);
       }
     } else scene.nudge(id, 0, 0, (key === "q" ? -1 : 1) * Math.PI / 12);
     start.current();
@@ -380,7 +397,8 @@ export function HouseClump({
               onPointerUp={(event) => {
                 if (grabbed.current?.pointerId === event.pointerId) {
                   let droppedOnTrash = false;
-                  if (trashRef.current && grabbed.current?.moved) {
+                  const eligible = isEligibleForTrash(grabbed.current.id);
+                  if (trashRef.current && grabbed.current?.moved && eligible) {
                     const rect = trashRef.current.getBoundingClientRect();
                     const pad = 12;
                     droppedOnTrash = event.clientX >= rect.left - pad &&
@@ -408,11 +426,12 @@ export function HouseClump({
     <div
       ref={trashRef}
       className="house-trash"
+      data-visible={canShowTrash ? "true" : undefined}
       data-over={isOverTrash ? "true" : undefined}
       data-status={trashStatus}
-      data-dragging={grabId !== null ? "true" : undefined}
       role="region"
       aria-label="Trash"
+      aria-hidden={!canShowTrash ? "true" : undefined}
       title="Drag gifts here to remove them"
     >
       <span className="house-trash-icon" aria-hidden="true">🗑️</span>
