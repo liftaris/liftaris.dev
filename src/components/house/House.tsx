@@ -339,49 +339,161 @@ export function House({
     });
   }, [effectiveThings, foldersById, markVisited]);
 
-  return <div className="house" data-ready={ready}>
-    <HouseClump
-      gifts={snapshot?.gifts ?? EMPTY_GIFTS}
-      inspectedIds={opened.map((item) => item.object.id)}
-      visitedIds={visitedIds}
-      thingsConfig={mergedThingsConfig}
-      desktopObjects={desktopThings}
-      isAdmin={isAdmin}
-      sentGiftIds={sentGiftIds}
-      onOpen={open}
-      onTrash={trashGift}
-    />
-    {loadError && <p className="house-connection" role="status">{loadError}</p>}
-    {sessionError && <p className="house-connection" role="status">{sessionError}</p>}
-    {opened.map((item) => {
-      const folder = "kind" in item.object && item.object.kind === "folder" && "items" in item.object ? (item.object as FolderSpec<HouseThing>) : undefined;
-      const post = "kind" in item.object && item.object.kind === "post" ? item.object : undefined;
-      const page = "kind" in item.object && item.object.kind === "page" ? (item.object as ThingSpec) : undefined;
-      const parentFolderId = "parent_id" in item.object && item.object.parent_id ? item.object.parent_id : undefined;
-      const fallbackSource = () => document.querySelector<HTMLButtonElement>(`[data-folder-entry="${CSS.escape(item.object.id)}"]`)
-        ?? document.querySelector<HTMLButtonElement>(`[data-object="${CSS.escape(item.object.id)}"]:not([data-removing="true"])`)
-        ?? (parentFolderId ? document.querySelector<HTMLButtonElement>(`[data-object="${CSS.escape(parentFolderId)}"]`) : null)
-        ?? document.querySelector<HTMLButtonElement>(`[data-object="${post ? WRITING_FOLDER_OBJECT.id : PORTFOLIO_FOLDER_OBJECT.id}"]`)
-        ?? document.querySelector<HTMLButtonElement>('[data-object="leave-gift"]');
-      if (folder) return <Folder key={item.object.id} folder={folder}
-        origin={item.origin} source={item.source} fallbackSource={fallbackSource} monochrome openedIds={opened.map((entry) => entry.object.id)}
-        visitedIds={visitedIds} thingsConfig={mergedThingsConfig} onVisit={markVisited}
-        onOpen={open} onOpenFolder={open} onClose={() => close(item.object.id)} />;
-      const action = "action" in item.object ? item.object.action : undefined;
-      const isGitHub = item.object.id === GITHUB_THING.id;
-      const view = action === "projects" || item.object.id === "computer" ? "projects" : action === "experience" || item.object.id === "case" ? "experience" : undefined;
-      const composing = action === "leave-gift" || item.object.id === "leave-gift";
-      const title = isGitHub ? "GitHub" : view === "projects" ? "Projects" : view === "experience" ? "Experience" : item.object.name;
-      const icon = ("image" in item.object && (item.object as { image?: string | null }).image) || item.object.emoji;
-      const bgStyle = getBackgroundStyle("background_image" in item.object ? item.object : undefined);
-      return <ObjectWindow key={item.object.id} title={title} icon={icon} origin={item.origin} source={item.source} fallbackSource={fallbackSource}
-        className={isGitHub ? "github-window" : undefined}
-        autoFit={isGitHub}
-        width={isGitHub ? 770 : post || page ? 780 : composing ? 640 : undefined} height={isGitHub ? 272 : post || page ? 720 : composing ? 660 : undefined} canClose={!composing || !savingGift}
-        initialBounds={item.previewBounds} backgroundStyle={bgStyle} onReady={item.onReady}
-        monochrome={!item.gift} closeLabel={item.gift ? "Close gift" : undefined} onClose={() => close(item.object.id)}>
-        {item.gift ? <GiftDialog gift={item.gift} initialDetail={item.detail} onClose={() => close(item.object.id)} onDetail={refreshDetail} mutate={mutate} /> : composing ? <GiftComposer onGift={(gift, bounds, form) => receiveGift(item, gift, bounds, form)} mutate={mutate} onSavingChange={setSavingGift} /> : post ? <PostReader post={post} /> : page ? <PageReader page={page} /> : isGitHub ? <GitHubViewer /> : view ? <Stage view={view} /> : null}
-      </ObjectWindow>;
-    })}
-  </div>;
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
+  const faceAvatarRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (isCollapsed) {
+      document.body.classList.add("desktop-collapsed");
+      faceAvatarRef.current?.focus();
+    } else {
+      document.body.classList.remove("desktop-collapsed");
+    }
+    return () => {
+      document.body.classList.remove("desktop-collapsed");
+    };
+  }, [isCollapsed]);
+
+  useEffect(() => {
+    if (!isCollapsed) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsCollapsed(false);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isCollapsed]);
+
+  return (
+    <div className="house" data-ready={ready} data-collapsed={isCollapsed} data-maximized={isMaximized}>
+      <div
+        className={`desktop-window ${isMaximized ? "is-maximized" : ""}`}
+        data-collapsed={isCollapsed}
+        aria-label="Desktop Window"
+      >
+        <div className="desktop-window-header">
+          <div className="desktop-window-drag">
+            <button
+              type="button"
+              className="object-window-icon"
+              onClick={() => setIsCollapsed(true)}
+              aria-label="Collapse desktop"
+              title="Click to collapse"
+            >
+              <img src="/face.svg" alt="" className="object-window-image" />
+            </button>
+            <div className="desktop-window-handle">
+              <span className="desktop-window-title">Kaio Barbosa</span>
+            </div>
+          </div>
+          <div className="desktop-window-controls">
+            <button
+              type="button"
+              className="wb-collapse"
+              aria-label="Minimize desktop"
+              title="Minimize desktop"
+              onClick={() => setIsCollapsed(true)}
+            >
+              −
+            </button>
+            <button
+              type="button"
+              className="wb-max"
+              aria-label={isMaximized ? "Restore desktop" : "Maximize desktop"}
+              title={isMaximized ? "Restore desktop" : "Maximize desktop"}
+              onClick={() => setIsMaximized((prev) => !prev)}
+            >
+              <span className="wb-max-square" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              className="wb-close"
+              aria-label="Close desktop"
+              title="Close desktop"
+              onClick={() => setIsCollapsed(true)}
+            >
+              ×
+            </button>
+          </div>
+        </div>
+
+        <div className="desktop-window-body">
+          <HouseClump
+            gifts={snapshot?.gifts ?? EMPTY_GIFTS}
+            inspectedIds={opened.map((item) => item.object.id)}
+            visitedIds={visitedIds}
+            thingsConfig={mergedThingsConfig}
+            desktopObjects={desktopThings}
+            isAdmin={isAdmin}
+            sentGiftIds={sentGiftIds}
+            onOpen={open}
+            onTrash={trashGift}
+          />
+          {loadError && <p className="house-connection" role="status">{loadError}</p>}
+          {sessionError && <p className="house-connection" role="status">{sessionError}</p>}
+        </div>
+      </div>
+
+      {isCollapsed && (
+        <button
+          ref={faceAvatarRef}
+          type="button"
+          className="pinned-face-avatar"
+          onClick={() => setIsCollapsed(false)}
+          aria-label="Restore desktop"
+          title="Click to restore desktop"
+        >
+          <span className="pinned-face-badge">
+            <img src="/face.svg" alt="Kaio Barbosa" className="pinned-face-image" />
+          </span>
+          <span className="pinned-face-label">Kaio Barbosa</span>
+        </button>
+      )}
+
+      {opened.map((item) => {
+        const folder = "kind" in item.object && item.object.kind === "folder" && "items" in item.object ? (item.object as FolderSpec<HouseThing>) : undefined;
+        const post = "kind" in item.object && item.object.kind === "post" ? item.object : undefined;
+        const page = "kind" in item.object && item.object.kind === "page" ? (item.object as ThingSpec) : undefined;
+        const parentFolderId = "parent_id" in item.object && item.object.parent_id ? item.object.parent_id : undefined;
+        const fallbackSource = () => document.querySelector<HTMLButtonElement>(`[data-folder-entry="${CSS.escape(item.object.id)}"]`)
+          ?? document.querySelector<HTMLButtonElement>(`[data-object="${CSS.escape(item.object.id)}"]:not([data-removing="true"])`)
+          ?? (parentFolderId ? document.querySelector<HTMLButtonElement>(`[data-object="${CSS.escape(parentFolderId)}"]`) : null)
+          ?? document.querySelector<HTMLButtonElement>(`[data-object="${post ? WRITING_FOLDER_OBJECT.id : PORTFOLIO_FOLDER_OBJECT.id}"]`)
+          ?? document.querySelector<HTMLButtonElement>('[data-object="leave-gift"]');
+        if (folder) return <Folder key={item.object.id} folder={folder}
+          origin={item.origin} source={item.source} fallbackSource={fallbackSource} monochrome openedIds={opened.map((entry) => entry.object.id)}
+          visitedIds={visitedIds} thingsConfig={mergedThingsConfig} onVisit={markVisited}
+          onOpen={open} onOpenFolder={open} onClose={() => close(item.object.id)} />;
+        const action = "action" in item.object ? item.object.action : undefined;
+        const isGitHub = item.object.id === GITHUB_THING.id;
+        const view = action === "projects" || item.object.id === "computer" ? "projects" : action === "experience" || item.object.id === "case" ? "experience" : undefined;
+        const composing = action === "leave-gift" || item.object.id === "leave-gift";
+        const title = isGitHub ? "GitHub" : view === "projects" ? "Projects" : view === "experience" ? "Experience" : item.object.name;
+        const icon = ("image" in item.object && (item.object as { image?: string | null }).image) || item.object.emoji;
+        const bgStyle = getBackgroundStyle("background_image" in item.object ? item.object : undefined);
+        const maximizeUrl = isGitHub
+          ? "/github"
+          : view === "projects"
+          ? "/projects"
+          : view === "experience"
+          ? "/experience"
+          : post
+          ? post.href
+          : page
+          ? page.href || `/p/${encodeURIComponent(page.id)}`
+          : undefined;
+        return <ObjectWindow key={item.object.id} title={title} icon={icon} origin={item.origin} source={item.source} fallbackSource={fallbackSource}
+          className={isGitHub ? "github-window" : undefined}
+          autoFit={isGitHub}
+          maximizeUrl={maximizeUrl}
+          width={isGitHub ? 770 : post || page ? 780 : composing ? 640 : undefined} height={isGitHub ? 272 : post || page ? 720 : composing ? 660 : undefined} canClose={!composing || !savingGift}
+          initialBounds={item.previewBounds} backgroundStyle={bgStyle} onReady={item.onReady}
+          monochrome={!item.gift} closeLabel={item.gift ? "Close gift" : undefined} onClose={() => close(item.object.id)}>
+          {item.gift ? <GiftDialog gift={item.gift} initialDetail={item.detail} onClose={() => close(item.object.id)} onDetail={refreshDetail} mutate={mutate} /> : composing ? <GiftComposer onGift={(gift, bounds, form) => receiveGift(item, gift, bounds, form)} mutate={mutate} onSavingChange={setSavingGift} /> : post ? <PostReader post={post} /> : page ? <PageReader page={page} /> : isGitHub ? <GitHubViewer /> : view ? <Stage view={view} /> : null}
+        </ObjectWindow>;
+      })}
+    </div>
+  );
 }

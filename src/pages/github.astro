@@ -1,0 +1,29 @@
+---
+import Portfolio from "../layouts/Portfolio.astro";
+import { GitHubViewer } from "../components/house/GitHubViewer";
+---
+<Portfolio title="GitHub | Kaio Barbosa">
+  <div class="pane github-page-pane">
+    <div class="github-page-card">
+      <GitHubViewer client:load />
+    </div>
+  </div>
+</Portfolio>
+
+<style>
+  .github-page-pane {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: clamp(16px, 4svh, 48px);
+  }
+  .github-page-card {
+    background: var(--paper, #fffbed);
+    border: 1px solid var(--paper, #fffbed);
+    padding: 24px;
+    box-shadow: 4px 4px 0 rgb(0 0 0 / .22);
+    width: fit-content;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+</style>

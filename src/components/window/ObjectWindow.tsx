@@ -21,12 +21,14 @@ type ObjectWindowProps = {
   canClose?: boolean;
   initialBounds?: DOMRect;
   backgroundStyle?: CSSProperties;
+  maximizeUrl?: string;
+  onMaximize?: () => void;
   onReady?: () => void;
   onClose: () => void;
   children?: ReactNode;
 };
 
-export function ObjectWindow({ title, icon, source, fallbackSource, origin, monochrome = false, closeLabel = "Close window", width = 480, height = 380, className, autoFit = false, canClose = true, initialBounds, backgroundStyle, onReady, onClose, children }: ObjectWindowProps) {
+export function ObjectWindow({ title, icon, source, fallbackSource, origin, monochrome = false, closeLabel = "Close window", width = 480, height = 380, className, autoFit = false, canClose = true, initialBounds, backgroundStyle, maximizeUrl, onMaximize, onReady, onClose, children }: ObjectWindowProps) {
   const [body, setBody] = useState<HTMLElement | null>(null);
   const [error, setError] = useState(false);
   const initial = useRef({ source, origin, width, height, initialBounds, className });
@@ -36,6 +38,10 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
   close.current = onClose;
   const closeAllowed = useRef(canClose);
   closeAllowed.current = canClose;
+  const maxUrl = useRef(maximizeUrl);
+  maxUrl.current = maximizeUrl;
+  const maxHandler = useRef(onMaximize);
+  maxHandler.current = onMaximize;
 
   const fallback = useRef(fallbackSource);
   fallback.current = fallbackSource;
@@ -59,6 +65,8 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
       iconButton.textContent = icon;
     }
     iconButton.setAttribute("aria-label", `Collapse ${title} window`);
+    const maxBtn = frame.querySelector<HTMLButtonElement>(".wb-max");
+    if (maxBtn) maxBtn.setAttribute("aria-label", `Maximize ${title} window`);
     frame.querySelector(".wb-close")!.setAttribute("aria-label", closeLabel);
     frame.querySelector(".object-window-handle")!.setAttribute("aria-label", `Move ${title} window. Use arrow keys; Escape collapses.`);
   }, [body, title, icon, monochrome, closeLabel, className]);
@@ -118,6 +126,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
       template.innerHTML = `<div class="wb-header">
         <div class="wb-control">
           <button type="button" class="wb-collapse" aria-label="Minimize window">−</button>
+          <button type="button" class="wb-max" aria-label="Maximize window"><span class="wb-max-square" aria-hidden="true"></span></button>
           <button type="button" class="wb-close">×</button>
         </div>
         <div class="wb-drag">
@@ -128,7 +137,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
       let closing = false;
       const options: WinBox.Params & { template: HTMLElement } = {
         template, index: 20, header: 18,
-        class: ["object-window", "no-max", "no-full", "no-resize", "no-animation", windowClass].filter(Boolean).join(" "),
+        class: ["object-window", "no-full", "no-resize", "no-animation", windowClass].filter(Boolean).join(" "),
         width, height, minwidth: 1, minheight: 44,
         top: 58, left: 36, right: 12, bottom: 12,
         x: initialBounds?.left ?? origin.left + 24, y: initialBounds?.top ?? origin.top + 16,
@@ -180,6 +189,56 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
       iconButton.onclick = (event) => { if (event.detail === 0) win.close(); };
       const handle = frame.querySelector<HTMLElement>(".object-window-handle")!;
       frame.querySelector<HTMLButtonElement>(".wb-collapse")!.onclick = () => { win.close(); };
+      const maxButton = frame.querySelector<HTMLButtonElement>(".wb-max")!;
+      const handleMaximize = () => {
+        if (closing) return;
+        if (maxHandler.current) {
+          maxHandler.current();
+          return;
+        }
+        const url = maxUrl.current;
+        if (!url) {
+          win.maximize();
+          return;
+        }
+
+        frame.classList.add("maximizing");
+        frame.style.pointerEvents = "none";
+        frame.style.zIndex = "999999";
+        frame.style.transition = "top 220ms cubic-bezier(0.16, 1, 0.3, 1), left 220ms cubic-bezier(0.16, 1, 0.3, 1), width 220ms cubic-bezier(0.16, 1, 0.3, 1), height 220ms cubic-bezier(0.16, 1, 0.3, 1)";
+        frame.style.top = "0px";
+        frame.style.left = "0px";
+        frame.style.width = "100vw";
+        frame.style.height = "100vh";
+        frame.style.boxShadow = "none";
+
+        const redirect = () => {
+          if (typeof document !== "undefined" && "startViewTransition" in document && typeof (document as unknown as { startViewTransition?: (cb: () => void) => unknown }).startViewTransition === "function") {
+            (document as unknown as { startViewTransition: (cb: () => void) => unknown }).startViewTransition(() => {
+              window.location.href = url;
+            });
+          } else {
+            window.location.href = url;
+          }
+        };
+
+        if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+          redirect();
+        } else {
+          setTimeout(redirect, 200);
+        }
+      };
+      maxButton.addEventListener("click", (event) => {
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        event.preventDefault();
+        handleMaximize();
+      }, true);
+      handle.ondblclick = (event) => {
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        handleMaximize();
+      };
 
       const move = (x: number, y: number) => win.move(
         Math.max(Number(win.left), Math.min(x, innerWidth - Number(win.width) - Number(win.right))),

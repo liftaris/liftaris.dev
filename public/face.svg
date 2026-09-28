@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none">
+  <circle cx="32" cy="32" r="30" fill="#1313ba" stroke="#fffbed" stroke-width="2"/>
+  <!-- Head silhouette -->
+  <path d="M32 14C23.16 14 18 20.27 18 29.5C18 36.8 21.6 42.4 25.5 44.5V47.5C25.5 48.33 26.17 49 27 49H37C37.83 49 38.5 48.33 38.5 47.5V44.5C42.4 42.4 46 36.8 46 29.5C46 20.27 40.84 14 32 14Z" fill="#fffbed"/>
+  <!-- Hair / top cap -->
+  <path d="M19 26C19.5 20 24 16 32 16C40 16 44.5 20 45 26C42 22 37 21 32 21C27 21 22 22 19 26Z" fill="#1313ba"/>
+  <!-- Eyes -->
+  <circle cx="26.5" cy="31" r="2.5" fill="#1313ba"/>
+  <circle cx="37.5" cy="31" r="2.5" fill="#1313ba"/>
+  <!-- Glasses bridge (optional character touch) -->
+  <path d="M29 31H35" stroke="#1313ba" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Smile -->
+  <path d="M26.5 37.5C28.5 40 33.5 40 35.5 37.5" stroke="#1313ba" stroke-width="2" stroke-linecap="round"/>
+</svg>

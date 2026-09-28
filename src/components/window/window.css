@@ -86,6 +86,28 @@
   font-size: 16px;
   line-height: 1;
   text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.object-window .wb-max .wb-max-square {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid currentColor;
+  box-sizing: border-box;
+}
+.winbox.object-window.maximizing {
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+body.desktop-collapsed .winbox.object-window {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transition: opacity 180ms ease, transform 180ms ease;
+  transform: scale(0.95);
 }
 .object-window .wb-body {
   background: var(--paper, #fffbed);

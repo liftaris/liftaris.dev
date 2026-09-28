@@ -67,4 +67,41 @@ describe("GitHub custom Thing", () => {
     expect(css).toContain("width: 16px;");
     expect(css).toContain("height: 16px;");
   });
+
+  test("window.css styles maximize button with square glyph", async () => {
+    const css = await Bun.file(new URL("../window/window.css", import.meta.url).pathname).text();
+    expect(css).toContain(".wb-max .wb-max-square");
+    expect(css).toContain("border: 1.5px solid currentColor;");
+    expect(css).toContain("body.desktop-collapsed .winbox.object-window");
+  });
+
+  test("House renders outermost desktop window with header and controls", () => {
+    const html = renderToStaticMarkup(<House />);
+    expect(html).toContain('class="desktop-window "');
+    expect(html).toContain('class="desktop-window-header"');
+    expect(html).toContain('class="desktop-window-title">Kaio Barbosa</span>');
+    expect(html).toContain('src="/face.svg"');
+    expect(html).toContain('class="wb-collapse"');
+    expect(html).toContain('class="wb-max"');
+    expect(html).toContain('class="wb-close"');
+  });
+
+  test("public/face.svg exists as an SVG avatar icon", async () => {
+    const svg = await Bun.file(new URL("../../../public/face.svg", import.meta.url).pathname).text();
+    expect(svg).toContain("<svg");
+    expect(svg).toContain("</svg>");
+  });
+
+  test("src/pages/github.astro exists and renders GitHubViewer", async () => {
+    const pageText = await Bun.file(new URL("../../pages/github.astro", import.meta.url).pathname).text();
+    expect(pageText).toContain("GitHubViewer");
+    expect(pageText).toContain("Portfolio");
+  });
+
+  test("house.css defines desktop-window and pinned-face-avatar", async () => {
+    const css = await Bun.file(new URL("./house.css", import.meta.url).pathname).text();
+    expect(css).toContain(".desktop-window");
+    expect(css).toContain(".pinned-face-avatar");
+    expect(css).toContain("position: fixed;");
+  });
 });
