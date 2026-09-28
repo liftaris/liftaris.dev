@@ -91,7 +91,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
       const targetWidth = Math.ceil(rect.width + padX + 6);
       const targetHeight = Math.ceil(rect.height + padY + 35 + 6);
 
-      const maxWidth = innerWidth - 48;
+      const maxWidth = innerWidth - Number(win.left) - Number(win.right);
       const maxHeight = innerHeight - Number(win.top) - Number(win.bottom);
 
       win.resize(Math.min(targetWidth, maxWidth), Math.min(targetHeight, maxHeight));
@@ -139,7 +139,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
         template, index: 20, header: 18,
         class: ["object-window", "no-full", "no-resize", "no-animation", windowClass].filter(Boolean).join(" "),
         width, height, minwidth: 1, minheight: 44,
-        top: 58, left: 36, right: 12, bottom: 12,
+        top: 12, left: 12, right: 12, bottom: 12,
         x: initialBounds?.left ?? origin.left + 24, y: initialBounds?.top ?? origin.top + 16,
         onclose(force) {
           if (force) return false;
@@ -246,7 +246,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
       );
       // WinBox bounds dragging but does not resize open windows on viewport changes.
       const fit = () => {
-        win.resize(Math.min(initialBounds?.width ?? width, innerWidth - 48), Math.min(initialBounds?.height ?? height, innerHeight - Number(win.top) - Number(win.bottom)));
+        win.resize(Math.min(initialBounds?.width ?? width, innerWidth - Number(win.left) - Number(win.right)), Math.min(initialBounds?.height ?? height, innerHeight - Number(win.top) - Number(win.bottom)));
         move(Number(win.x), Number(win.y));
       };
       const keyboard = (event: KeyboardEvent) => {
