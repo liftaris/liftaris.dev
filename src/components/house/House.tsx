@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal, flushSync } from "react-dom";
 import { ensureViewer, getHouse, houseMutations, reclaimGift } from "../../lib/house/client";
 import type { Gift, GiftDetail, HouseSnapshot } from "../../lib/house/types";
-import { giftObjects } from "../../lib/house/emoji";
-import { GiftComposer } from "./GiftComposer";
+import { findEmoji, giftObjects } from "../../lib/house/emoji";
+import { GiftPaintComposer } from "./GiftPaintComposer";
 import { GiftDialog } from "./GiftDialog";
 import { HouseClump } from "./HouseClump";
 import { getBackgroundStyle, isImageUrl } from "../clump/model";
@@ -491,8 +491,8 @@ export function House({
         const isGitHub = item.object.id === GITHUB_THING.id;
         const view = action === "projects" || item.object.id === "computer" ? "projects" : action === "experience" || item.object.id === "case" ? "experience" : undefined;
         const composing = action === "leave-gift" || item.object.id === "leave-gift";
-        const title = isGitHub ? "GitHub" : view === "projects" ? "Projects" : view === "experience" ? "Experience" : item.object.name;
-        const icon = ("image" in item.object && (item.object as { image?: string | null }).image) || item.object.emoji;
+        const title = item.gift ? `from: ${item.gift.authorName || item.detail?.authorName || "Anonymous"}` : composing ? "Paint" : isGitHub ? "GitHub" : view === "projects" ? "Projects" : view === "experience" ? "Experience" : item.object.name;
+        const icon = item.gift ? findEmoji(item.gift.emojiId)?.emoji || item.object.emoji || "🎁" : composing ? "🎨" : ("image" in item.object && (item.object as { image?: string | null }).image) || item.object.emoji;
         const bgStyle = getBackgroundStyle("background_image" in item.object ? item.object : undefined);
         const maximizeUrl = isGitHub
           ? "/github"
@@ -506,14 +506,14 @@ export function House({
           ? page.href || `/p/${encodeURIComponent(page.id)}`
           : undefined;
         return <ObjectWindow key={item.object.id} title={title} icon={icon} origin={item.origin} source={item.source} fallbackSource={fallbackSource}
-          className={isGitHub ? "github-window" : undefined}
+          className={item.gift ? "gift-window" : composing ? "paint-window" : isGitHub ? "github-window" : undefined}
           autoFit={isGitHub}
           maximizeUrl={maximizeUrl}
           restoreAnimation={item.restoreAnimation}
-          width={isGitHub ? 770 : post || page ? 780 : composing ? 640 : undefined} height={isGitHub ? 272 : post || page ? 720 : composing ? 660 : undefined} canClose={!composing || !savingGift}
+          width={item.gift ? 500 : composing ? 620 : isGitHub ? 770 : post || page ? 780 : undefined} height={item.gift ? 500 : composing ? 660 : isGitHub ? 272 : post || page ? 720 : undefined} canClose={!composing || !savingGift}
           initialBounds={item.previewBounds} backgroundStyle={bgStyle} onReady={item.onReady}
           monochrome={!item.gift} closeLabel={item.gift ? "Close gift" : undefined} onClose={() => close(item.object.id)}>
-          {item.gift ? <GiftDialog gift={item.gift} initialDetail={item.detail} onClose={() => close(item.object.id)} onDetail={refreshDetail} mutate={mutate} /> : composing ? <GiftComposer onGift={(gift, bounds, form) => receiveGift(item, gift, bounds, form)} mutate={mutate} onSavingChange={setSavingGift} /> : post ? <PostReader post={post} /> : page ? <PageReader page={page} /> : isGitHub ? <GitHubViewer /> : view ? <Stage view={view} /> : null}
+          {item.gift ? <GiftDialog gift={item.gift} initialDetail={item.detail} onClose={() => close(item.object.id)} onDetail={refreshDetail} mutate={mutate} /> : composing ? <GiftPaintComposer onGift={(gift, bounds, form) => receiveGift(item, gift, bounds, form)} mutate={mutate} onSavingChange={setSavingGift} onClose={() => close(item.object.id)} /> : post ? <PostReader post={post} /> : page ? <PageReader page={page} /> : isGitHub ? <GitHubViewer /> : view ? <Stage view={view} /> : null}
         </ObjectWindow>;
       })}
     </div>

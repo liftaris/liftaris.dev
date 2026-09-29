@@ -11,7 +11,7 @@ import { GITHUB_THING, PORTFOLIO_FOLDER_OBJECT, WRITING_FOLDER_OBJECT } from "./
 
 type Grab = { id: string; point: Point; origin: Point; moved: boolean; pointerId?: number };
 const INITIAL_SIZE = { width: 500, height: 600 };
-const GIFT_ENTRY: ObjectSpec = { id: "leave-gift", name: "Leave a gift", emoji: "🎁", width: 64, height: 64, shape: "rectangle" };
+const GIFT_ENTRY: ObjectSpec = { id: "leave-gift", name: "Paint", emoji: "🎨", width: 64, height: 64, shape: "rectangle" };
 
 function measureViewport(element: HTMLDivElement) {
   // Measure the fixed outer box: scrollbars appearing as the crowd grows must

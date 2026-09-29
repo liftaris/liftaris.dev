@@ -435,6 +435,14 @@ body.embedded-post {
   padding: 0;
 }
 
+.winbox.paint-window .object-window-content,
+.winbox.gift-window .object-window-content:has(.house-gift-doodle) {
+  padding: 0;
+}
+.winbox.gift-window .object-window-content:has(.house-gift-doodle) {
+  height: 100%;
+}
+
 /* WinBox object window integration */
 .winbox.object-window {
   z-index: 50;

@@ -28,7 +28,7 @@ export const DEFAULT_THINGS: readonly ThingSpec[] = [
   { id: "boots", name: "Climbing shoes", emoji: "🥾", kind: "object", desktop: true, parent_id: null, action: "none", href: null, tint_when_visited: true, shape: "rectangle", anchor: false, width: 47, height: 54, sort_order: 8 },
   { id: "light", name: "Light", emoji: "💡", kind: "object", desktop: true, parent_id: null, action: "none", href: null, tint_when_visited: true, shape: "rectangle", anchor: true, width: 38, height: 52, sort_order: 9 },
   { id: "case", name: "Briefcase", emoji: "💼", kind: "object", desktop: true, parent_id: "portfolio-folder", action: "experience", href: null, tint_when_visited: true, shape: "rectangle", anchor: false, width: 52, height: 44, sort_order: 10 },
-  { id: "leave-gift", name: "Leave a gift", emoji: "🎁", kind: "action", desktop: true, parent_id: null, action: "leave-gift", href: null, tint_when_visited: true, shape: "rectangle", anchor: false, width: 64, height: 64, sort_order: 11 },
+  { id: "leave-gift", name: "Paint", emoji: "🎨", kind: "action", desktop: true, parent_id: null, action: "leave-gift", href: null, tint_when_visited: true, shape: "rectangle", anchor: false, width: 64, height: 64, sort_order: 11 },
   { id: "portfolio-folder", name: "Portfolio", emoji: "📁", kind: "folder", desktop: true, parent_id: null, action: "none", href: null, tint_when_visited: false, shape: "rectangle", anchor: false, width: 64, height: 56, sort_order: 12 },
   { id: "writing-folder", name: "Writing", emoji: "📂", kind: "folder", desktop: true, parent_id: null, action: "none", href: null, tint_when_visited: false, shape: "rectangle", anchor: false, width: 64, height: 56, sort_order: 13 },
 ];

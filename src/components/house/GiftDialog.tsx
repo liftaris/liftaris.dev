@@ -97,6 +97,22 @@ export function GiftDialog({ gift, initialDetail, onClose, onDetail, mutate }: {
     } finally { mutating.current = false; setRemoving(false); }
   };
   const current = detail ?? gift;
+  if (current.doodle) return <div className="house-gift-body grid size-full min-h-0 place-items-center [container-type:size]">
+    <div className="house-gift-doodle relative aspect-square w-[min(100cqw,100cqh)] bg-white">
+      <img src={current.doodle} alt="Gift doodle" className="block size-full aspect-square object-contain" />
+      <div className="absolute inset-x-0 bottom-0 flex flex-col items-end p-2">
+        {(detail?.canReclaim || detail?.canRemove) && <div className="house-gift-actions">
+          <button
+            className="house-reclaim min-h-11 rounded px-3 py-2 text-xs text-gray-600 bg-white/90 cursor-pointer hover:text-gray-900 hover:bg-gray-100 disabled:cursor-wait disabled:opacity-65"
+            type="button"
+            disabled={saving || removing}
+            onClick={() => { void remove(); }}
+          >{removing ? "Removing…" : detail.canReclaim ? "Take back" : "Remove gift"}</button>
+        </div>}
+        <p className="house-error m-0 mt-1 w-full bg-white/95 p-2 text-xs leading-relaxed text-gray-900 empty:hidden" role="alert">{error}</p>
+      </div>
+    </div>
+  </div>;
   const message = current.message;
   return <div className="house-gift-body flex flex-col items-start w-full min-h-0">
     {draft && detail?.canEdit ? <form className="house-gift-editor w-full text-xs leading-relaxed" aria-label="Edit gift" onSubmit={(event) => { void save(event); }}>
@@ -114,16 +130,6 @@ export function GiftDialog({ gift, initialDetail, onClose, onDetail, mutate }: {
         <button className="house-send flex items-center justify-between gap-6 min-h-11 px-5 py-2.5 border border-blue bg-blue text-paper cursor-pointer font-inherit hover:bg-paper hover:text-blue transition-all active:scale-95 disabled:cursor-wait disabled:opacity-65" type="submit" disabled={saving || removing || conflict}>{saving ? "Saving…" : "Save changes"}</button>
       </div>
     </form> : <>
-    {current.doodle && (
-      <div className="house-gift-doodle mb-5 w-full flex justify-center">
-        <img
-          src={current.doodle}
-          alt="Gift doodle"
-          className="max-h-[260px] max-w-full aspect-square object-contain border border-current bg-white p-2 shadow-sm"
-          loading="lazy"
-        />
-      </div>
-    )}
     {message && <p className="house-gift-message m-0 mb-6 text-lg leading-relaxed whitespace-pre-wrap [overflow-wrap:anywhere]">{message}</p>}
     {current.visibility === "private" && <p className="house-private text-[11px] m-0 mb-5">{message ? "A private note" : "A private note for Kaio"}</p>}
     {current.authorName !== null && <p className="house-attribution text-sm m-0 mb-1.5 [overflow-wrap:anywhere]">From {current.authorName}</p>}

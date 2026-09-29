@@ -2832,8 +2832,8 @@
         "slug": "leave-gift",
         "status": "published",
         "data": {
-          "name": "Leave a gift",
-          "emoji": "🎁",
+          "name": "Paint",
+          "emoji": "🎨",
           "kind": "action",
           "desktop": true,
           "action": "leave-gift",
