@@ -124,9 +124,33 @@ describe("GitHub custom Thing", () => {
   test("ObjectWindow bounds maximize and dragging below 18px outermost titlebar with no border spacing", async () => {
     const code = await Bun.file(new URL("../window/ObjectWindow.tsx", import.meta.url).pathname).text();
     expect(code).toContain("top: 19");
-    expect(code).toContain('frame.style.top = "18px"');
+    expect(code).toContain('frame.style.top = "0px"');
+    expect(code).toContain('frame.style.height = "100vh"');
     expect(code).toContain('frame.style.border = "none"');
     expect(code).toContain("wb-restore-square");
+
+    const windowCss = await Bun.file(new URL("../window/window.css", import.meta.url).pathname).text();
+    expect(windowCss).toContain(".winbox.object-window.max");
+    expect(windowCss).toContain("top: 18px !important");
+    expect(windowCss).toContain("left: 0px !important");
+    expect(windowCss).toContain("width: 100vw !important");
+    expect(windowCss).toContain("height: calc(100vh - 18px) !important");
+    expect(windowCss).toContain(".object-window:has(.folder) .object-window-content");
+    expect(windowCss).toContain(".winbox.object-window.restoring");
+  });
+
+  test("ObjectWindow and Portfolio support minimizing animation and view transition from route", async () => {
+    const code = await Bun.file(new URL("../window/ObjectWindow.tsx", import.meta.url).pathname).text();
+    expect(code).toContain("restoreAnimation");
+    expect(code).toContain('frame.classList.add("restoring")');
+    expect(code).toContain("win.restore()");
+
+    const astroLayout = await Bun.file(new URL("../../layouts/Portfolio.astro", import.meta.url).pathname).text();
+    expect(astroLayout).toContain("startViewTransition");
+    expect(astroLayout).toContain(".site-window-max");
+
+    const houseCode = await Bun.file(new URL("./House.tsx", import.meta.url).pathname).text();
+    expect(houseCode).toContain("restoreAnimation");
   });
 
   test("public/face.webp exists and House renders face.webp", async () => {

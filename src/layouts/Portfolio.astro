@@ -157,6 +157,20 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
         <slot />
       </div>
     )}
+    <script>
+      document.querySelectorAll<HTMLAnchorElement>(".site-window-max, .site-window-close").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          const href = btn.getAttribute("href");
+          if (!href) return;
+          if (typeof document !== "undefined" && "startViewTransition" in document && typeof (document as unknown as { startViewTransition?: (cb: () => void) => unknown }).startViewTransition === "function") {
+            e.preventDefault();
+            (document as unknown as { startViewTransition: (cb: () => void) => unknown }).startViewTransition(() => {
+              window.location.href = href;
+            });
+          }
+        });
+      });
+    </script>
     <EmDashBodyEnd page={page} />
   </body>
 </html>

@@ -123,10 +123,22 @@
   box-sizing: border-box;
 }
 .winbox.object-window.maximizing,
+.winbox.object-window.restoring,
 .winbox.object-window.max {
   box-shadow: none !important;
   border-radius: 0 !important;
   border: none !important;
+}
+.winbox.object-window.max {
+  top: 18px !important;
+  left: 0px !important;
+  width: 100vw !important;
+  height: calc(100vh - 18px) !important;
+}
+.winbox.object-window.maximizing .wb-header {
+  opacity: 0;
+  transition: opacity 160ms ease;
+  pointer-events: none;
 }
 .object-window.max .wb-max .wb-max-square,
 .object-window.maximizing .wb-max .wb-max-square,
@@ -137,6 +149,12 @@
 .object-window.max .wb-max .wb-restore-square,
 .object-window.maximizing .wb-max .wb-restore-square {
   display: inline-block;
+}
+.object-window.restoring .wb-max .wb-max-square {
+  display: inline-block;
+}
+.object-window.restoring .wb-max .wb-restore-square {
+  display: none;
 }
 body.desktop-collapsed .winbox.object-window {
   opacity: 0 !important;
@@ -160,6 +178,12 @@ body.desktop-collapsed .winbox.object-window {
   min-height: 100%;
   box-sizing: border-box;
   overflow-wrap: anywhere;
+}
+.object-window:has(.folder) .object-window-content,
+.winbox.folder-window .object-window-content {
+  max-width: 100%;
+  margin-inline: 0;
+  padding: 16px 20px;
 }
 .object-window:has(.github-viewer) .object-window-content,
 .winbox.github-window .object-window-content {

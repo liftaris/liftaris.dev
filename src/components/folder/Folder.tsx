@@ -113,11 +113,17 @@ export function FolderContent<T>({
 }
 
 /** The caller owns folder and item windows as independent peers. */
-export function Folder<T>({ folder, openedIds = [], visitedIds, thingsConfig, onVisit, onOpen, onOpenFolder, ...windowProps }: FolderProps<T>) {
+export function Folder<T>({ folder, openedIds = [], visitedIds, thingsConfig, onVisit, onOpen, onOpenFolder, className, ...windowProps }: FolderProps<T>) {
   const folderIcon = folder.image || (isImageUrl(folder.emoji) ? folder.emoji : folder.emoji);
   const folderBg = getBackgroundStyle(folder);
   return (
-    <ObjectWindow {...windowProps} title={folder.name} icon={folderIcon} backgroundStyle={folderBg}>
+    <ObjectWindow
+      {...windowProps}
+      className={["folder-window", className].filter(Boolean).join(" ")}
+      title={folder.name}
+      icon={folderIcon}
+      backgroundStyle={folderBg}
+    >
       <FolderContent
         folder={folder}
         openedIds={openedIds}

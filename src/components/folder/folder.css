@@ -6,6 +6,8 @@
   margin: 0;
   padding: 0;
   list-style: none;
+  width: 100%;
+  box-sizing: border-box;
 }
 .folder li { min-width: 0; }
 .folder-entry {

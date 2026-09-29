@@ -30,7 +30,7 @@ import { Stage } from "../../../components/Stage";
 import "./house.css";
 
 const EMPTY_GIFTS: readonly Gift[] = [];
-type OpenedThing = { object: HouseThing | FolderSpec<HouseThing>; gift?: Gift; detail?: GiftDetail; origin: DOMRect; source: HTMLButtonElement; previewBounds?: DOMRect; onReady?: () => void };
+type OpenedThing = { object: HouseThing | FolderSpec<HouseThing>; gift?: Gift; detail?: GiftDetail; origin: DOMRect; source: HTMLButtonElement; previewBounds?: DOMRect; restoreAnimation?: boolean; onReady?: () => void };
 
 const EMPTY_POSTS: readonly WritingPost[] = [];
 const VISITED_STORAGE_KEY = "liftaris:visited_things";
@@ -307,6 +307,7 @@ export function House({
 
     const toOpen = [...getInitialDefaultOpenThings(effectiveThings)];
 
+    let restoredId: string | null = null;
     if (restoreSlug) {
       let restoredThing: HouseThing | undefined;
       if (restoreSlug === "projects") {
@@ -336,8 +337,11 @@ export function House({
         }
       }
 
-      if (restoredThing && !toOpen.some((t) => t.id === (restoredThing as HouseThing).id)) {
-        toOpen.push(restoredThing as ThingSpec);
+      if (restoredThing) {
+        restoredId = (restoredThing as HouseThing).id;
+        if (!toOpen.some((t) => t.id === restoredId)) {
+          toOpen.push(restoredThing as ThingSpec);
+        }
       }
 
       if (typeof window !== "undefined" && window.history?.replaceState) {
@@ -379,7 +383,8 @@ export function House({
           ? new DOMRect(domRect.left + idx * 32, domRect.top + idx * 32, domRect.width, domRect.height)
           : new DOMRect(defaultOrigin.left + idx * 32, defaultOrigin.top + idx * 32, defaultOrigin.width, defaultOrigin.height);
 
-        next.push({ object: resolvedObject, source, origin });
+        const isRestored = Boolean(restoreSlug && (thing.id === restoreSlug || (restoredId && thing.id === restoredId)));
+        next.push({ object: resolvedObject, source, origin, restoreAnimation: isRestored });
       });
       return next;
     });
@@ -481,6 +486,7 @@ export function House({
         if (folder) return <Folder key={item.object.id} folder={folder}
           origin={item.origin} source={item.source} fallbackSource={fallbackSource} monochrome openedIds={opened.map((entry) => entry.object.id)}
           visitedIds={visitedIds} thingsConfig={mergedThingsConfig} onVisit={markVisited}
+          restoreAnimation={item.restoreAnimation}
           onOpen={open} onOpenFolder={open} onClose={() => close(item.object.id)} />;
         const action = "action" in item.object ? item.object.action : undefined;
         const isGitHub = item.object.id === GITHUB_THING.id;
@@ -504,6 +510,7 @@ export function House({
           className={isGitHub ? "github-window" : undefined}
           autoFit={isGitHub}
           maximizeUrl={maximizeUrl}
+          restoreAnimation={item.restoreAnimation}
           width={isGitHub ? 770 : post || page ? 780 : composing ? 640 : undefined} height={isGitHub ? 272 : post || page ? 720 : composing ? 660 : undefined} canClose={!composing || !savingGift}
           initialBounds={item.previewBounds} backgroundStyle={bgStyle} onReady={item.onReady}
           monochrome={!item.gift} closeLabel={item.gift ? "Close gift" : undefined} onClose={() => close(item.object.id)}>

@@ -22,18 +22,20 @@ type ObjectWindowProps = {
   initialBounds?: DOMRect;
   backgroundStyle?: CSSProperties;
   maximizeUrl?: string;
+  restoreAnimation?: boolean;
   onMaximize?: () => void;
   onReady?: () => void;
   onClose: () => void;
   children?: ReactNode;
 };
 
-export function ObjectWindow({ title, icon, source, fallbackSource, origin, monochrome = false, closeLabel = "Close window", width = 480, height = 380, className, autoFit = false, canClose = true, initialBounds, backgroundStyle, maximizeUrl, onMaximize, onReady, onClose, children }: ObjectWindowProps) {
+export function ObjectWindow({ title, icon, source, fallbackSource, origin, monochrome = false, closeLabel = "Close window", width = 480, height = 380, className, autoFit = false, canClose = true, initialBounds, backgroundStyle, maximizeUrl, restoreAnimation = false, onMaximize, onReady, onClose, children }: ObjectWindowProps) {
   const [body, setBody] = useState<HTMLElement | null>(null);
   const [error, setError] = useState(false);
   const initial = useRef({ source, origin, width, height, initialBounds, className });
   const windowInstance = useRef<WinBox | null>(null);
   const readyFired = useRef(false);
+  const isAnimating = useRef(false);
   const close = useRef(onClose);
   close.current = onClose;
   const closeAllowed = useRef(canClose);
@@ -81,6 +83,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
     if (!content) return;
 
     const measureAndResize = () => {
+      if (win.max || isAnimating.current) return;
       const target = (content.firstElementChild as HTMLElement) || content;
       const rect = target.getBoundingClientRect();
       if (!rect.width || !rect.height) return;
@@ -191,35 +194,117 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
       frame.querySelector<HTMLButtonElement>(".wb-collapse")!.onclick = () => { win.close(); };
       const maxButton = frame.querySelector<HTMLButtonElement>(".wb-max")!;
       const handleMaximize = () => {
-        if (closing) return;
+        if (closing || isAnimating.current) return;
         if (maxHandler.current) {
           maxHandler.current();
           return;
         }
+
+        const isReducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
         if (win.max) {
-          win.restore();
-          frame.classList.remove("maximizing");
+          if (isReducedMotion) {
+            win.restore();
+            frame.classList.remove("maximizing", "restoring");
+            maxButton.setAttribute("aria-label", `Maximize ${title} window`);
+            return;
+          }
+
+          isAnimating.current = true;
+          frame.classList.remove("max");
+          frame.classList.add("restoring");
           maxButton.setAttribute("aria-label", `Maximize ${title} window`);
-          return;
-        }
-        const url = maxUrl.current;
-        if (!url) {
-          win.maximize();
-          maxButton.setAttribute("aria-label", `Restore ${title} window`);
+
+          frame.style.top = "18px";
+          frame.style.left = "0px";
+          frame.style.width = "100vw";
+          frame.style.height = "calc(100vh - 18px)";
+          frame.style.boxShadow = "none";
+          frame.style.border = "none";
+          void frame.offsetWidth;
+
+          frame.style.transition = "top 220ms cubic-bezier(0.16, 1, 0.3, 1), left 220ms cubic-bezier(0.16, 1, 0.3, 1), width 220ms cubic-bezier(0.16, 1, 0.3, 1), height 220ms cubic-bezier(0.16, 1, 0.3, 1)";
+          frame.style.top = `${win.y}px`;
+          frame.style.left = `${win.x}px`;
+          frame.style.width = `${win.width}px`;
+          frame.style.height = `${win.height}px`;
+
+          setTimeout(() => {
+            if (disposed) return;
+            frame.style.transition = "";
+            frame.style.boxShadow = "";
+            frame.style.border = "";
+            frame.classList.remove("restoring");
+            win.restore();
+            isAnimating.current = false;
+          }, 220);
           return;
         }
 
+        const url = maxUrl.current;
+        if (!url) {
+          if (isReducedMotion) {
+            win.maximize();
+            maxButton.setAttribute("aria-label", `Restore ${title} window`);
+            return;
+          }
+
+          isAnimating.current = true;
+          frame.classList.add("maximizing");
+          maxButton.setAttribute("aria-label", `Restore ${title} window`);
+          frame.style.transition = "top 220ms cubic-bezier(0.16, 1, 0.3, 1), left 220ms cubic-bezier(0.16, 1, 0.3, 1), width 220ms cubic-bezier(0.16, 1, 0.3, 1), height 220ms cubic-bezier(0.16, 1, 0.3, 1)";
+          frame.style.top = "18px";
+          frame.style.left = "0px";
+          frame.style.width = "100vw";
+          frame.style.height = "calc(100vh - 18px)";
+          frame.style.boxShadow = "none";
+          frame.style.border = "none";
+
+          setTimeout(() => {
+            if (disposed) return;
+            frame.style.transition = "";
+            frame.classList.remove("maximizing");
+            win.maximize();
+            isAnimating.current = false;
+          }, 220);
+          return;
+        }
+
+        isAnimating.current = true;
         frame.classList.add("maximizing");
         maxButton.setAttribute("aria-label", `Restore ${title} window`);
         frame.style.pointerEvents = "none";
         frame.style.zIndex = "999999";
         frame.style.transition = "top 220ms cubic-bezier(0.16, 1, 0.3, 1), left 220ms cubic-bezier(0.16, 1, 0.3, 1), width 220ms cubic-bezier(0.16, 1, 0.3, 1), height 220ms cubic-bezier(0.16, 1, 0.3, 1)";
-        frame.style.top = "18px";
+        frame.style.top = "0px";
         frame.style.left = "0px";
         frame.style.width = "100vw";
-        frame.style.height = "calc(100vh - 18px)";
+        frame.style.height = "100vh";
         frame.style.boxShadow = "none";
         frame.style.border = "none";
+
+        const outerDrag = document.querySelector<HTMLElement>(".site-window-drag");
+        if (outerDrag && !outerDrag.textContent?.trim()) {
+          const iconSpan = document.createElement("span");
+          iconSpan.className = "site-window-icon";
+          if (icon?.startsWith("/") || icon?.startsWith("http")) {
+            const img = document.createElement("img");
+            img.src = icon;
+            img.alt = "";
+            img.className = "site-window-image";
+            iconSpan.appendChild(img);
+          } else if (icon) {
+            iconSpan.textContent = icon;
+          }
+          const handleDiv = document.createElement("div");
+          handleDiv.className = "site-window-handle";
+          const titleSpan = document.createElement("span");
+          titleSpan.className = "site-window-title";
+          titleSpan.textContent = title;
+          handleDiv.appendChild(titleSpan);
+
+          outerDrag.replaceChildren(iconSpan, handleDiv);
+        }
 
         const redirect = () => {
           if (typeof document !== "undefined" && "startViewTransition" in document && typeof (document as unknown as { startViewTransition?: (cb: () => void) => unknown }).startViewTransition === "function") {
@@ -231,7 +316,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
           }
         };
 
-        if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        if (isReducedMotion) {
           redirect();
         } else {
           setTimeout(redirect, 200);
@@ -275,6 +360,41 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
       frame.addEventListener("pointerdown", focus);
       window.addEventListener("resize", fit);
       fit();
+      if (restoreAnimation && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        isAnimating.current = true;
+        const targetX = Number(win.x);
+        const targetY = Number(win.y);
+        const targetW = Number(win.width);
+        const targetH = Number(win.height);
+
+        frame.style.pointerEvents = "none";
+        frame.style.zIndex = "1000001";
+        frame.style.top = "0px";
+        frame.style.left = "0px";
+        frame.style.width = "100vw";
+        frame.style.height = "100vh";
+        frame.style.boxShadow = "none";
+        frame.style.border = "none";
+
+        requestAnimationFrame(() => {
+          if (disposed) return;
+          frame.style.transition = "top 240ms cubic-bezier(0.16, 1, 0.3, 1), left 240ms cubic-bezier(0.16, 1, 0.3, 1), width 240ms cubic-bezier(0.16, 1, 0.3, 1), height 240ms cubic-bezier(0.16, 1, 0.3, 1)";
+          frame.style.top = `${targetY}px`;
+          frame.style.left = `${targetX}px`;
+          frame.style.width = `${targetW}px`;
+          frame.style.height = `${targetH}px`;
+
+          setTimeout(() => {
+            if (disposed) return;
+            frame.style.pointerEvents = "";
+            frame.style.zIndex = "";
+            frame.style.transition = "";
+            frame.style.boxShadow = "";
+            frame.style.border = "";
+            isAnimating.current = false;
+          }, 240);
+        });
+      }
       win.blur().focus();
       handle.focus({ preventScroll: true });
       setBody(win.body);
