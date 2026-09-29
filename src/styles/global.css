@@ -2,7 +2,7 @@
 
 :root {
   --font-mono: "Geist Mono Variable";
-  --font-serif: "Young Serif";
+  --font-serif: "Lora", serif;
   --blue: #1313ba;
   /* Blend grain into blue surfaces, keeping foreground text and artwork clean. */
   --blue-background:
@@ -12,20 +12,8 @@
   --ink: #06113a;
   --site-gutter: clamp(16px, 3vw, 56px);
   --identity-size: clamp(28px, 9vw, 168px);
-  --desktop-bg: black;
+  --desktop-bg: var(--paper, #fffbed);
   --window-bar: #245EDE;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    --desktop-bg: var(--paper, #fffbed);
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --desktop-bg: black;
-  }
 }
 
 * { box-sizing: border-box; }
@@ -80,6 +68,8 @@ button { color: inherit; font: inherit; background: none; border: 0; padding: 0;
   height: calc(100svh - 20px);
   height: calc(100dvh - 20px);
   overflow: hidden;
+  border: 1px solid #7f9cda;
+  border-radius: 3px;
 }
 
 body.desktop-collapsed .site-window {
@@ -268,8 +258,10 @@ body.desktop-collapsed .site-window {
 .name h1 {
   margin: 0;
   font-family: var(--font-serif), Georgia, serif;
+  font-optical-sizing: auto;
   font-size: var(--identity-size);
-  font-weight: 400;
+  font-weight: 500;
+  font-style: normal;
   letter-spacing: -0.025em;
   line-height: 1.4;
 }
@@ -471,8 +463,10 @@ body.embedded-post { background: var(--paper); padding: 0; min-height: 0; }
 .row h3 {
   margin: 8px 0 12px;
   font-family: var(--font-serif), Georgia, serif;
+  font-optical-sizing: auto;
   font-size: clamp(38px, 5vw, 64px);
-  font-weight: 400;
+  font-weight: 500;
+  font-style: normal;
   letter-spacing: -0.04em;
   line-height: 0.86;
 }
@@ -562,7 +556,9 @@ li { margin: 8px 0; }
 .page-content h3,
 .page-content h4 {
   font-family: var(--font-serif), Georgia, serif;
-  font-weight: 400;
+  font-optical-sizing: auto;
+  font-weight: 500;
+  font-style: normal;
   color: var(--blue);
   letter-spacing: -0.03em;
 }
@@ -691,7 +687,9 @@ li { margin: 8px 0; }
 .article-content h2,
 .article-content h3 {
   font-family: var(--font-serif), Georgia, serif;
-  font-weight: 400;
+  font-optical-sizing: auto;
+  font-weight: 500;
+  font-style: normal;
   letter-spacing: -0.035em;
   line-height: 0.95;
   color: var(--ink);
