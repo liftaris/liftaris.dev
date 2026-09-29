@@ -60,7 +60,8 @@ body.desktop-collapsed .site-window {
 }
 
 .site-window-header {
-  height: 35px;
+  height: 18px;
+  line-height: 18px;
   background: var(--blue, #1313ba);
   border-bottom: 1px solid var(--paper, #fffbed);
   display: flex;
@@ -72,12 +73,66 @@ body.desktop-collapsed .site-window {
   position: sticky;
   top: 0;
   z-index: 1000000;
+  font-family: var(--font-mono), monospace;
+  color: var(--paper, #fffbed);
+  box-sizing: border-box;
 }
 
 .site-window-drag {
   flex: 1;
   min-width: 0;
   height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 8px;
+}
+
+.site-window-icon {
+  position: static;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-size: 14px;
+  line-height: 1;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.site-window-image {
+  display: block;
+  width: 16px;
+  height: 16px;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+.site-window-handle {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  min-width: 0;
+  flex: 1;
+}
+
+.site-window-title {
+  font: inherit;
+  font-size: 12px;
+  line-height: 18px;
+  padding-right: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--paper, #fffbed);
 }
 
 .site-window-controls {
@@ -127,7 +182,7 @@ body.desktop-collapsed .site-window {
 .shell {
   position: relative;
   min-width: 0;
-  min-height: calc(100svh - 35px);
+  min-height: calc(100svh - 19px);
   background: var(--blue-background);
   flex: 1 1 0;
 }

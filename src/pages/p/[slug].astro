@@ -34,11 +34,21 @@ if (cacheHint) Astro.cache.set(cacheHint);
 
 const name = String(thing.data.name ?? "Page");
 const title = `${name} | Kaio Barbosa`;
+let thingIcon: string | undefined = undefined;
+if (typeof thing.data.image === "string" && thing.data.image) {
+  thingIcon = thing.data.image;
+} else if (thing.data.image && typeof thing.data.image === "object") {
+  const imgObj = thing.data.image as Record<string, unknown>;
+  thingIcon = (typeof imgObj.src === "string" && imgObj.src) || (typeof imgObj.previewUrl === "string" && imgObj.previewUrl) || (typeof imgObj.url === "string" && imgObj.url) || undefined;
+}
+if (!thingIcon && thing.data.emoji) {
+  thingIcon = String(thing.data.emoji);
+}
 const content = { collection: "things", id: thing.data.id ?? thing.id, slug: thing.id };
 const body = thing.data.body;
 const isWindow = Astro.url.searchParams.get("window") === "1";
 ---
-<Portfolio embedded={isWindow} title={title} content={content}>
+<Portfolio embedded={isWindow} title={title} windowTitle={name} windowIcon={thingIcon || "📄"} content={content}>
   <article class="page-content">
     {!isWindow && <h1 {...thing.edit?.name}>{name}</h1>}
     {body && Array.isArray(body) && body.length > 0 ? (

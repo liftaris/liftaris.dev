@@ -5,12 +5,54 @@ import "@fontsource-variable/geist-mono";
 import "@fontsource-variable/manrope";
 import "@fontsource/young-serif";
 import "../styles/global.css";
+import { isImageUrl } from "../components/clump/model";
 
-interface Props { title?: string; embedded?: boolean; content?: { collection: string; id: string; slug?: string | null } }
-const { title = "Kaio Barbosa", content, embedded = false } = Astro.props;
+interface Props {
+  title?: string;
+  windowTitle?: string;
+  windowIcon?: string;
+  embedded?: boolean;
+  content?: { collection: string; id: string; slug?: string | null };
+}
+const {
+  title = "Kaio Barbosa",
+  windowTitle,
+  windowIcon,
+  content,
+  embedded = false,
+} = Astro.props;
 const pathname = Astro.url.pathname.replace(/\/$/, "") || "/";
 const onBlog = pathname.startsWith("/blog/");
 const isHome = pathname === "/";
+
+let displayTitle = windowTitle;
+let displayIcon = windowIcon;
+
+if (!displayTitle && !isHome) {
+  if (pathname === "/projects") {
+    displayTitle = "Projects";
+  } else if (pathname === "/experience") {
+    displayTitle = "Experience";
+  } else if (pathname === "/github") {
+    displayTitle = "GitHub";
+  } else {
+    displayTitle = title.replace(/\s*\|\s*Kaio Barbosa\s*$/, "");
+  }
+}
+
+if (!displayIcon && !isHome) {
+  if (pathname === "/projects") {
+    displayIcon = "🖥️";
+  } else if (pathname === "/experience") {
+    displayIcon = "💼";
+  } else if (pathname === "/github") {
+    displayIcon = "/github.svg";
+  } else if (onBlog) {
+    displayIcon = "📝";
+  }
+}
+
+const isIconImage = displayIcon ? isImageUrl(displayIcon) : false;
 const page = createPublicPageContext({ Astro, kind: content ? "content" : "custom", title,
   description: "Software engineer building BazaarGhost and Herm TUI.", content,
   canonical: new URL(pathname, Astro.site).href, siteName: "Kaio Barbosa" });
@@ -30,7 +72,26 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
     {!embedded ? (
       <div class="site-window" data-home={isHome}>
         <header class="site-window-header">
-          <div class="site-window-drag" />
+          <div class="site-window-drag">
+            {!isHome && (
+              <>
+                {displayIcon && (
+                  <span class="site-window-icon">
+                    {isIconImage ? (
+                      <img src={displayIcon} alt="" class="site-window-image" />
+                    ) : (
+                      displayIcon
+                    )}
+                  </span>
+                )}
+                {displayTitle && (
+                  <div class="site-window-handle">
+                    <span class="site-window-title">{displayTitle}</span>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
           <div class="site-window-controls">
             {isHome ? (
               <button

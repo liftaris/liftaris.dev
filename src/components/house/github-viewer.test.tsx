@@ -100,10 +100,29 @@ describe("GitHub custom Thing", () => {
     const globalCss = await Bun.file(new URL("../../styles/global.css", import.meta.url).pathname).text();
     expect(globalCss).toContain(".site-window");
     expect(globalCss).toContain(".site-window-header");
+    expect(globalCss).toContain("height: 18px;");
     expect(globalCss).toContain(".site-window-close");
+    expect(globalCss).toContain(".site-window-icon");
+    expect(globalCss).toContain(".site-window-title");
 
     const houseCss = await Bun.file(new URL("./house.css", import.meta.url).pathname).text();
     expect(houseCss).toContain(".pinned-face-avatar");
     expect(houseCss).toContain("position: fixed;");
+  });
+
+  test("Portfolio.astro renders title and icon for subroutes and empty header for home", async () => {
+    const astroLayout = await Bun.file(new URL("../../layouts/Portfolio.astro", import.meta.url).pathname).text();
+    expect(astroLayout).toContain("windowTitle");
+    expect(astroLayout).toContain("windowIcon");
+    expect(astroLayout).toContain("site-window-icon");
+    expect(astroLayout).toContain("site-window-title");
+    expect(astroLayout).toContain("!isHome");
+  });
+
+  test("ObjectWindow bounds maximize and dragging below 18px outermost titlebar", async () => {
+    const code = await Bun.file(new URL("../window/ObjectWindow.tsx", import.meta.url).pathname).text();
+    expect(code).toContain("top: 19");
+    expect(code).toContain('frame.style.top = "19px"');
+    expect(code).toContain('frame.style.height = "calc(100vh - 20px)"');
   });
 });
