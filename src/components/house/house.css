@@ -449,61 +449,22 @@
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 9999999;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
+  display: block;
   cursor: pointer;
   background: none;
   border: none;
   padding: 0;
-  animation: face-pop-in 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
   outline: none;
   user-select: none;
-  text-decoration: none;
-}
-
-.pinned-face-avatar:hover .pinned-face-image,
-.pinned-face-avatar:focus-visible .pinned-face-image {
-  transform: scale(1.08);
-  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.45));
-}
-
-.pinned-face-avatar:focus-visible .pinned-face-label {
-  outline: 2px solid var(--paper, #fffbed);
-  outline-offset: 2px;
+  line-height: 0;
 }
 
 .pinned-face-image {
+  display: block;
   width: 72px;
   height: 98px;
   max-width: 90px;
   object-fit: contain;
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.35));
-  transition: transform 180ms ease, filter 180ms ease;
   pointer-events: none;
-}
-
-.pinned-face-label {
-  font-family: var(--font-mono), monospace;
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  color: var(--paper, #fffbed);
-  background: var(--blue, #1313ba);
-  padding: 2px 8px;
-  border: 1px solid var(--paper, #fffbed);
-  box-shadow: 2px 2px 0 rgb(0 0 0 / .2);
-  white-space: nowrap;
-}
-
-@keyframes face-pop-in {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.6);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-  }
 }
 

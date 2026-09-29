@@ -3,16 +3,5 @@ import Portfolio from "../layouts/Portfolio.astro";
 import { GitHubViewer } from "../components/house/GitHubViewer";
 ---
 <Portfolio title="GitHub | Kaio Barbosa" windowTitle="GitHub" windowIcon="/github.svg" restoreSlug="github">
-  <div class="github-page-container">
-    <GitHubViewer client:load />
-  </div>
+  <GitHubViewer client:load />
 </Portfolio>
-
-<style>
-  .github-page-container {
-    padding: 16px 20px;
-    width: fit-content;
-    max-width: 100%;
-    overflow-x: auto;
-  }
-</style>

@@ -464,7 +464,6 @@ export function House({
           title="Click to restore desktop"
         >
           <img src="/face.webp" alt="Kaio Barbosa" className="pinned-face-image" />
-          <span className="pinned-face-label">Kaio Barbosa</span>
         </button>,
         document.body
       )}

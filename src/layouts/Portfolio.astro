@@ -82,7 +82,7 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
   <body class:list={{ "embedded-post": embedded }}>
     <EmDashBodyStart page={page} />
     {!embedded ? (
-      <div class="site-window" data-home={isHome}>
+      <div class="site-window" class:list={{ "object-window": !isHome }} data-home={isHome}>
         <header class="site-window-header">
           <div class="site-window-drag">
             {!isHome && (
@@ -138,19 +138,23 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
           </div>
         </header>
         <div class="site-window-body">
-          <div class:list={["shell", { onBlog, onHome: isHome }]}>
-            {isHome && (
+          {isHome ? (
+            <div class="shell onHome">
               <div class="identity">
                 <a class="name" href="/" aria-label="Home"><h1><span>Kaio</span><span>Barbosa</span></h1></a>
               </div>
-            )}
-            <section class="stageContent"><slot /></section>
-          </div>
+              <section class="stageContent"><slot /></section>
+            </div>
+          ) : (
+            <div class="object-window-content">
+              <slot />
+            </div>
+          )}
         </div>
       </div>
     ) : (
-      <div class:list={["shell", { onBlog, onHome: isHome }]}>
-        <section class="stageContent"><slot /></section>
+      <div class="object-window-content">
+        <slot />
       </div>
     )}
     <EmDashBodyEnd page={page} />

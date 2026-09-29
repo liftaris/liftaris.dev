@@ -114,11 +114,12 @@
 .wb-restore-square::after {
   content: "";
   position: absolute;
-  bottom: 1px;
-  left: 1px;
-  width: 4px;
-  height: 4px;
-  border: 1px solid currentColor;
+  bottom: 0;
+  left: 0;
+  width: 50%;
+  height: 50%;
+  border-top: 1.5px solid currentColor;
+  border-right: 1.5px solid currentColor;
   box-sizing: border-box;
 }
 .winbox.object-window.maximizing,
@@ -128,7 +129,9 @@
   border: none !important;
 }
 .object-window.max .wb-max .wb-max-square,
-.object-window.maximizing .wb-max .wb-max-square {
+.object-window.maximizing .wb-max .wb-max-square,
+.object-window.max .wb-collapse,
+.object-window.maximizing .wb-collapse {
   display: none;
 }
 .object-window.max .wb-max .wb-restore-square,
@@ -149,7 +152,26 @@ body.desktop-collapsed .winbox.object-window {
   scrollbar-width: thin;
   scrollbar-color: var(--blue) var(--paper);
 }
-.object-window-content { padding: 28px 24px; min-height: 100%; overflow-wrap: anywhere; }
+.object-window-content {
+  width: 100%;
+  max-width: 1040px;
+  margin-inline: auto;
+  padding: 28px 24px;
+  min-height: 100%;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+}
+.object-window:has(.github-viewer) .object-window-content,
+.winbox.github-window .object-window-content {
+  max-width: 100%;
+  padding: 16px 20px;
+  min-height: auto;
+}
+.object-window:has(.article-content) .object-window-content,
+.object-window:has(.page-content) .object-window-content {
+  max-width: 100%;
+  padding: 0;
+}
 .object-window :focus-visible { outline: 2px solid currentColor; outline-offset: -4px; }
 .object-window .wb-body :focus-visible { outline-offset: 3px; }
 .object-window button:disabled { opacity: .65; cursor: wait; }
