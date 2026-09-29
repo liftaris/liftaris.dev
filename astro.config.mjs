@@ -43,6 +43,9 @@ export default defineConfig({
   vite: {
     plugins: [tailwind()],
     resolve: { alias: { "@": fileURLToPath(new URL(".", import.meta.url)) } },
+    define: {
+      "process.env.TLDRAW_API_KEY": JSON.stringify(process.env.TLDRAW_API_KEY || ""),
+    },
   },
   devToolbar: { enabled: false },
 });

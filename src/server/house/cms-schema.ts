@@ -130,6 +130,7 @@ const giftFields: readonly CreateFieldInput[] = [
   { slug: "message", label: "Message", type: "text", searchable: false },
   { slug: "visibility", label: "Message visibility", type: "select", required: true, validation: { options: ["public", "private"] }, searchable: false },
   { slug: "submission_hash", label: "Submission fingerprint", type: "string", searchable: false },
+  { slug: "doodle", label: "Doodle", type: "image", required: false, searchable: false },
 ];
 
 export async function initializeGiftCollection(db: Kysely<Database>): Promise<void> {
@@ -188,6 +189,14 @@ export async function initializeGiftCollection(db: Kysely<Database>): Promise<vo
 }
 
 async function assertGiftColumns(db: Kysely<Database>): Promise<void> {
+  try {
+    const { rows: existing } = await sql<{ name: string }>`PRAGMA table_info(ec_gifts)`.execute(db);
+    if (existing.length > 0 && !existing.some((c) => c.name === "doodle")) {
+      await sql.raw(`ALTER TABLE ec_gifts ADD COLUMN doodle TEXT`).execute(db);
+    }
+  } catch {
+    // Ignore if table does not exist yet
+  }
   const { rows: columns } = await sql<{ name: string; type: string; notnull: number }>`PRAGMA table_info(ec_gifts)`.execute(db);
   if (!giftFields.every((field) => columns.some((column) => column.name === field.slug
     && column.type.toLowerCase() === FIELD_TYPE_TO_COLUMN[field.type].toLowerCase()

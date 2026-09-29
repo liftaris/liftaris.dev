@@ -6,4 +6,5 @@ export const GIFT_METHODS = {
   create: ["POST"],
   gift: ["GET", "DELETE"],
   update: ["PATCH"],
+  "upload-doodle": ["POST"],
 } as const;

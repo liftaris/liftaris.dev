@@ -5,6 +5,7 @@ import { cmsTestDb } from "../server/house/cms-test-db";
 import { cmsVisitorGuard } from "../server/house/visitor";
 import { GIFT_API } from "../lib/house/gift-api";
 import type { CreatedGift, GiftDetail } from "../lib/house/types";
+import type { DoodleStorage } from "../server/house/cms-store";
 import { createPlugin } from "./gifts";
 import * as client from "../lib/house/client";
 
@@ -18,10 +19,14 @@ afterEach(async () => { for (const close of cleanups.splice(0)) await close(); }
 const input = { requestId: "test", emojiId: "seedling", message: "Only the sender and owner", displayName: "Secret sender", visibility: "private" };
 const origin = "https://portfolio.test";
 
-async function fixture() {
+async function fixture(storageFactory?: () => Promise<DoodleStorage | undefined>) {
   const { db, sender, other, owner } = await cmsTestDb();
   cleanups.push(() => db.destroy());
-  const plugin = createPlugin({ database: async () => db, ownerId: async () => owner.id });
+  const plugin = createPlugin({
+    database: async () => db,
+    ownerId: async () => owner.id,
+    ...(storageFactory ? { storage: storageFactory } : {}),
+  });
   const hooks = new HookPipeline([plugin], { db });
   const runtime = new EmDashRuntime({
     db, storage: null, configuredPlugins: [plugin], sandboxedPlugins: new Map(), sandboxedPluginEntries: [],
@@ -153,3 +158,37 @@ test("disabled, malformed and editorial identities fail closed at the plugin per
   await db.updateTable("users").set({ disabled: 0, data: JSON.stringify({ anonymous: "not-a-boolean" }) }).where("id", "=", sender.id).execute();
   expect((await request("create", "POST", sender.id, input)).status).toBe(503);
 });
+
+test("doodle uploads are saved as media and associated with created gifts", async () => {
+  const puts: Array<{ key: string; body: Uint8Array }> = [];
+  const mockStorage: DoodleStorage = {
+    put: async (key: string, body: Uint8Array) => {
+      puts.push({ key, body });
+    },
+  };
+  const { sender, request } = await fixture(async () => mockStorage);
+
+  expect((await request("upload-doodle", "POST", null, { doodle: "data:image/webp;base64,AAAA" })).status).toBe(401);
+  expect((await request("upload-doodle", "POST", sender.id, { doodle: "invalid-url" })).status).toBe(400);
+  expect((await request("upload-doodle", "POST", sender.id, {})).status).toBe(400);
+
+  const testBase64 = "UklGRhoAAABXRUJQVlA4TA0AAAAvAAAAEAcQERGIiP4HAA=="; // 1x1 WebP
+  const res = await request("upload-doodle", "POST", sender.id, { doodle: `data:image/webp;base64,${testBase64}` });
+  expect(res.status).toBe(200);
+  const { url } = await data<{ url: string }>(res);
+  expect(url).toMatch(/^\/_emdash\/api\/media\/file\/gifts\/gift-doodle-[a-zA-Z0-9_-]+\.webp$/);
+  expect(puts.length).toBe(1);
+  expect(puts[0].key).toMatch(/^gifts\/gift-doodle-[a-zA-Z0-9_-]+\.webp$/);
+
+  const created = await data<CreatedGift>(await request("create", "POST", sender.id, {
+    ...input,
+    doodle: url,
+    visibility: "public",
+  }));
+  const id = created.createdGiftId!;
+  expect(created.gifts.find((g) => g.id === id)?.doodle).toBe(url);
+
+  const publicDetail = await data<GiftDetail>(await request(`public-gift?id=${id}`, "GET", null));
+  expect(publicDetail.doodle).toBe(url);
+});
+

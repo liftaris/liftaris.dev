@@ -89,3 +89,51 @@ test("only sender/owner can remove gifts, repeated removal is safe and edits nev
   const second = (await store.create({ ...gift, requestId: "two" }, other)).createdGiftId!;
   expect((await store.remove(second, owner)).gifts).toEqual([]);
 });
+
+test("gifts persist doodles and respect private visibility for doodles", async () => {
+  const puts: Array<{ key: string; body: Uint8Array }> = [];
+  const { db, sender, other, owner } = await cmsTestDb();
+  cleanups.push(() => db.destroy());
+  const store = new CmsHouseStore(db, {
+    put: async (key, body) => {
+      puts.push({ key, body });
+    },
+  });
+  await store.initialize();
+  const senderViewer = { visitor: { id: sender.id, name: sender.name! }, owner: false };
+  const otherViewer = { visitor: { id: other.id, name: other.name! }, owner: false };
+
+  const testDoodleBase64 = "data:image/webp;base64,UklGRhoAAABXRUJQVlA4TA0AAAAvAAAAEAcQERGIiP4HAA==";
+  const doodleUrl = await store.uploadDoodle(testDoodleBase64, senderViewer);
+  expect(doodleUrl).toMatch(/^\/_emdash\/api\/media\/file\/gifts\/gift-doodle-[a-zA-Z0-9_-]+\.webp$/);
+  expect(puts.length).toBe(1);
+
+  // Create public gift with doodle
+  const publicCreated = await store.create({ ...gift, requestId: "doodle-pub", doodle: doodleUrl }, senderViewer);
+  const pubId = publicCreated.createdGiftId!;
+  expect(publicCreated.gifts.find((g) => g.id === pubId)?.doodle).toBe(doodleUrl);
+
+  const pubDetail = await store.detail(pubId, otherViewer);
+  expect(pubDetail.doodle).toBe(doodleUrl);
+
+  // Create private gift with doodle
+  const privateCreated = await store.create({
+    ...gift,
+    requestId: "doodle-priv",
+    doodle: doodleUrl,
+    visibility: "private",
+    message: "Secret doodle",
+  }, senderViewer);
+  const privId = privateCreated.createdGiftId!;
+  // In public snapshot / other viewer, private doodle is redacted
+  expect(privateCreated.gifts.find((g) => g.id === privId)?.doodle).toBe(null);
+  const privOtherDetail = await store.detail(privId, otherViewer);
+  expect(privOtherDetail.doodle).toBe(null);
+
+  // Sender and owner can see the private doodle
+  const privSenderDetail = await store.detail(privId, senderViewer);
+  expect(privSenderDetail.doodle).toBe(doodleUrl);
+  const privOwnerDetail = await store.detail(privId, { visitor: { id: owner.id, name: owner.name! }, owner: true });
+  expect(privOwnerDetail.doodle).toBe(doodleUrl);
+});
+

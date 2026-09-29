@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "skills": {
+    "tldraw-migrate": {
+      "source": "tldraw/tldraw",
+      "sourceType": "github",
+      "skillPath": "skills/tldraw-migrate/SKILL.md",
+      "computedHash": "9342b9a87e63a17a1cdc70c59cbbf9b3ef7b002812af601ad2e43cc92c3a9a8e"
+    },
+    "tldraw-ui-skills": {
+      "source": "ihlamury/design-skills",
+      "sourceType": "github",
+      "skillPath": "skills/tldraw/SKILL.md",
+      "computedHash": "ad0c2b5fb8e6a40cf572c7976be2b205a8170aa73cd6356336e7c6d5a0d1a6dd"
+    },
+    "write-docs": {
+      "source": "tldraw/tldraw",
+      "sourceType": "github",
+      "skillPath": "skills/write-docs/SKILL.md",
+      "computedHash": "bb8ab8017a044c1b44d2f89f3f77f3715ea9ec667bd8bcfa18df658dabc72ac2"
+    },
+    "write-example": {
+      "source": "tldraw/tldraw",
+      "sourceType": "github",
+      "skillPath": "skills/write-example/SKILL.md",
+      "computedHash": "cb519e47f0048e905f8b62c1f8b7454b7aaaa1ec7e6a0f2833e4f837b095f886"
+    }
+  }
+}

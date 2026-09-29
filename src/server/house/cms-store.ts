@@ -1,4 +1,4 @@
-import { ContentRepository, invalidateCollectionCache, type ContentItem, type Database } from "emdash";
+import { ContentRepository, MediaRepository, invalidateCollectionCache, ulid, type ContentItem, type Database } from "emdash";
 import { sql, type Kysely } from "kysely";
 import { DateTime, Schema } from "effect";
 import type { CreatedGift, Gift, GiftDetail, HouseSnapshot, Viewer } from "../../lib/house/types";
@@ -10,9 +10,19 @@ import { takeQuota } from "./rate-limit";
 
 type Receipt = { id: string; author_id: string; fingerprint: string };
 
+export interface DoodleStorage {
+  put?: (
+    key: string,
+    body: Uint8Array,
+    opts?: { httpMetadata?: { contentType?: string } },
+  ) => Promise<unknown>;
+}
+
 export class CmsHouseStore {
   private readonly content: ContentRepository;
-  constructor(private readonly db: Kysely<Database>) { this.content = new ContentRepository(db); }
+  constructor(private readonly db: Kysely<Database>, private readonly storage?: DoodleStorage) {
+    this.content = new ContentRepository(db);
+  }
 
   async initialize(): Promise<void> {
     await initializeGiftCollection(this.db);
@@ -35,7 +45,11 @@ export class CmsHouseStore {
     let command: typeof CreateGiftSchema.Type;
     try { command = Schema.decodeUnknownSync(CreateGiftSchema)(input); }
     catch { throw failure(400, "Check the gift, name, and message and try again."); }
-    const data = giftData(command, viewer.visitor.name);
+    let doodleUrl: string | null = null;
+    if (command.doodle && typeof command.doodle === "string" && command.doodle.trim()) {
+      doodleUrl = await saveDoodleMedia(this.db, viewer.visitor.id, command.doodle.trim(), this.storage);
+    }
+    const data = giftData(command, viewer.visitor.name, doodleUrl);
     const id = `gift-${await digest(`${viewer.visitor.id}:${command.requestId}`)}`;
     const fingerprint = await digest(JSON.stringify(data));
     const retry = async (): Promise<CreatedGift | null> => {
@@ -67,9 +81,11 @@ export class CmsHouseStore {
     const owns = viewer.visitor?.id === item.authorId;
     const gift = publicGift(item);
     const canRead = gift.visibility === "public" || owns || viewer.owner;
+    const doodle = extractDoodleUrl(item.data.doodle);
     return { ...gift, version: item.version,
       authorName: canRead ? String(item.data.author_name) : null,
       message: canRead ? String(item.data.message ?? "") || null : null,
+      doodle: canRead ? doodle : null,
       canEdit: owns || viewer.owner, canReclaim: owns, canRemove: viewer.owner,
     };
   }
@@ -81,7 +97,11 @@ export class CmsHouseStore {
     let command: typeof UpdateGiftSchema.Type;
     try { command = Schema.decodeUnknownSync(UpdateGiftSchema)(input); }
     catch { throw failure(400, "Check the gift, name, and message and try again."); }
-    const data = giftData(command, viewer.visitor.name);
+    let doodleUrl: string | null = null;
+    if (command.doodle && typeof command.doodle === "string" && command.doodle.trim()) {
+      doodleUrl = await saveDoodleMedia(this.db, viewer.visitor.id, command.doodle.trim(), this.storage);
+    }
+    const data = giftData(command, viewer.visitor.name, doodleUrl);
     // EmDash 0.40.1's field update still has no atomic expected-version predicate.
     // Native draft-pointer CAS + publish is possible, but is two commits with
     // failure reconciliation, not a drop-in replacement for immediate edits.
@@ -89,6 +109,7 @@ export class CmsHouseStore {
     const result = await sql`UPDATE ec_gifts
       SET emoji_id = ${data.emoji_id}, author_name = ${data.author_name},
         message = ${data.message}, visibility = ${data.visibility},
+        doodle = ${data.doodle},
         updated_at = ${DateTime.formatIso(DateTime.nowUnsafe())}, version = version + 1
       WHERE id = ${id} AND version = ${command.version}
         AND status = 'published' AND deleted_at IS NULL
@@ -107,19 +128,88 @@ export class CmsHouseStore {
     await this.content.delete("gifts", id);
     return this.snapshot();
   }
+
+  async uploadDoodle(doodleDataUrl: string, viewer: Viewer): Promise<string> {
+    if (!viewer.visitor) throw failure(401, "Your visitor identity is needed for this action.");
+    return await saveDoodleMedia(this.db, viewer.visitor.id, doodleDataUrl, this.storage);
+  }
 }
 
-function giftData(command: Omit<typeof UpdateGiftSchema.Type, "version">, name: string) {
+function extractDoodleUrl(value: unknown): string | null {
+  if (!value) return null;
+  if (typeof value === "string") return value;
+  if (typeof value === "object") {
+    const obj = value as Record<string, unknown>;
+    const url = (obj.url || obj.src || obj.previewUrl) as string | undefined;
+    if (url) return url;
+    if (obj.id) {
+      const key = (obj.meta as Record<string, unknown> | undefined)?.storageKey || obj.id;
+      return `/_emdash/api/media/file/${key}`;
+    }
+  }
+  return null;
+}
+
+async function saveDoodleMedia(
+  db: Kysely<Database>,
+  authorId: string,
+  doodleDataUrl: string,
+  storage?: DoodleStorage
+): Promise<string> {
+  const match = doodleDataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+  if (!match) return doodleDataUrl;
+  const mimeType = match[1];
+  const base64Data = match[2];
+  const binaryStr = atob(base64Data);
+  const bytes = new Uint8Array(binaryStr.length);
+  for (let i = 0; i < binaryStr.length; i++) {
+    bytes[i] = binaryStr.charCodeAt(i);
+  }
+  const mediaRepo = new MediaRepository(db);
+  const id = ulid();
+  const ext = mimeType.includes("png") ? "png" : "webp";
+  const filename = `gift-doodle-${id}.${ext}`;
+  const storageKey = `gifts/${filename}`;
+  if (storage?.put) {
+    try {
+      await storage.put(storageKey, bytes, { httpMetadata: { contentType: mimeType } });
+    } catch {
+      // Continue even if storage put fails
+    }
+  }
+  try {
+    await mediaRepo.create({
+      filename,
+      mimeType,
+      size: bytes.byteLength,
+      storageKey,
+      status: "ready",
+      authorId,
+    });
+  } catch {
+    // If media repo fails, fallback
+  }
+  return `/_emdash/api/media/file/${storageKey}`;
+}
+
+function giftData(command: Omit<typeof UpdateGiftSchema.Type, "version">, name: string, doodle?: string | null) {
   if (!findEmoji(command.emojiId)) throw failure(400, "Choose one of the suggested emoji.");
-  return { emoji_id: command.emojiId, author_name: command.displayName?.trim() || name,
-    message: command.message?.trim() || null, visibility: command.message?.trim() ? command.visibility : "public" };
+  return {
+    emoji_id: command.emojiId,
+    author_name: command.displayName?.trim() || name,
+    message: command.message?.trim() || null,
+    visibility: command.message?.trim() ? command.visibility : "public",
+    doodle: doodle ?? (command.doodle?.trim() || null),
+  };
 }
 
 function publicGift(item: ContentItem): Gift {
   const visibility = item.data.message && item.data.visibility === "private" ? "private" : "public";
+  const doodle = extractDoodleUrl(item.data.doodle);
   return {
     id: item.id, emojiId: String(item.data.emoji_id), authorName: visibility === "public" ? String(item.data.author_name) : null, createdAt: item.createdAt,
     visibility,
     message: visibility === "public" && typeof item.data.message === "string" ? item.data.message : null,
+    doodle: visibility === "public" ? doodle : null,
   };
 }

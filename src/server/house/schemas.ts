@@ -7,6 +7,7 @@ const GiftFields = {
   message: Schema.optional(Schema.String.check(Schema.isMaxLength(2_000))),
   visibility: Schema.Literals(["public", "private"]),
   displayName: Schema.optional(Schema.String.check(Schema.isMaxLength(60))),
+  doodle: Schema.optional(Schema.String.check(Schema.isMaxLength(1_000_000))),
 };
 
 export const CreateGiftSchema = Schema.Struct({ ...GiftFields, requestId: Identifier });

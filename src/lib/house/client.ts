@@ -84,6 +84,7 @@ export async function getGift(id: string, signal?: AbortSignal): Promise<GiftDet
   }
 }
 export const createGift = (gift: CreateGift) => giftRequest<CreatedGift>("create", { method: "POST", body: JSON.stringify(gift) });
+export const uploadDoodle = (doodle: string) => giftRequest<{ url: string }>("upload-doodle", { method: "POST", body: JSON.stringify({ doodle }) });
 export const updateGift = (id: string, gift: UpdateGift) => giftRequest<HouseSnapshot>("update", { method: "PATCH", body: JSON.stringify(gift) }, id);
 export const reclaimGift = (id: string) => giftRequest<HouseSnapshot>("gift", { method: "DELETE" }, id);
 export const suggestEmoji = (text: string, signal?: AbortSignal) => request<{ options: EmojiOption[] }>("/api/house/suggest", { method: "POST", body: JSON.stringify({ text }), signal });

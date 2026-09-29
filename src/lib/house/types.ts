@@ -8,6 +8,7 @@ export interface Gift {
   visibility: Audience;
   /** Only public messages appear in scene snapshots. */
   message: string | null;
+  doodle?: string | null;
 }
 export interface HouseSnapshot {
   gifts: Gift[];
@@ -37,6 +38,7 @@ export interface CreateGift {
   visibility: Audience;
   /** Empty means the visitor's assigned animal name. */
   displayName?: string;
+  doodle?: string;
 }
 
 export type UpdateGift = Omit<CreateGift, "requestId"> & { version: number };

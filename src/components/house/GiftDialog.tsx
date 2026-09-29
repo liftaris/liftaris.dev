@@ -33,7 +33,7 @@ export function GiftDialog({ gift, initialDetail, onClose, onDetail, mutate }: {
 
   const edit = () => {
     if (!detail?.canEdit || mutating.current || conflict) return;
-    setDraft({ version: detail.version, emojiId: detail.emojiId, message: detail.message ?? "", visibility: detail.visibility, displayName: detail.authorName ?? "" });
+    setDraft({ version: detail.version, emojiId: detail.emojiId, message: detail.message ?? "", visibility: detail.visibility, displayName: detail.authorName ?? "", doodle: detail.doodle ?? undefined });
     setError("");
   };
   const save = async (event: SubmitEvent<HTMLFormElement>) => {
@@ -114,6 +114,16 @@ export function GiftDialog({ gift, initialDetail, onClose, onDetail, mutate }: {
         <button className="house-send flex items-center justify-between gap-6 min-h-11 px-5 py-2.5 border border-blue bg-blue text-paper cursor-pointer font-inherit hover:bg-paper hover:text-blue transition-all active:scale-95 disabled:cursor-wait disabled:opacity-65" type="submit" disabled={saving || removing || conflict}>{saving ? "Saving…" : "Save changes"}</button>
       </div>
     </form> : <>
+    {current.doodle && (
+      <div className="house-gift-doodle mb-5 w-full flex justify-center">
+        <img
+          src={current.doodle}
+          alt="Gift doodle"
+          className="max-h-[260px] max-w-full aspect-square object-contain border border-current bg-white p-2 shadow-sm"
+          loading="lazy"
+        />
+      </div>
+    )}
     {message && <p className="house-gift-message m-0 mb-6 text-lg leading-relaxed whitespace-pre-wrap [overflow-wrap:anywhere]">{message}</p>}
     {current.visibility === "private" && <p className="house-private text-[11px] m-0 mb-5">{message ? "A private note" : "A private note for Kaio"}</p>}
     {current.authorName !== null && <p className="house-attribution text-sm m-0 mb-1.5 [overflow-wrap:anywhere]">From {current.authorName}</p>}

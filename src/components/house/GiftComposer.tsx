@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import type { SubmitEvent } from "react";
-import { createGift, ensureVisitor, getGift, suggestEmoji } from "../../lib/house/client";
+import { createGift, ensureVisitor, getGift, suggestEmoji, uploadDoodle } from "../../lib/house/client";
 import type { HouseMutation } from "../../lib/house/client";
 import { EMOJI_CATALOG, findEmoji, localSuggestions } from "../../lib/house/emoji";
 import type { Audience, EmojiOption, GiftDetail, Visitor } from "../../lib/house/types";
+import { GiftDoodleCanvas, type GiftDoodleCanvasHandle } from "./GiftDoodleCanvas";
 
 export function GiftComposer({ onGift, mutate, onSavingChange }: {
   onGift: (gift: GiftDetail, bounds: DOMRect, form: HTMLFormElement) => void;
@@ -13,6 +14,7 @@ export function GiftComposer({ onGift, mutate, onSavingChange }: {
   const [text, setText] = useState("");
   const [query, setQuery] = useState("");
   const [picking, setPicking] = useState(false);
+  const [includingDoodle, setIncludingDoodle] = useState(false);
   const [options, setOptions] = useState<EmojiOption[]>([]);
   const [selected, setSelected] = useState<EmojiOption>(() => findEmoji("gift")!);
   const [visibility, setVisibility] = useState<Audience>("public");
@@ -22,6 +24,7 @@ export function GiftComposer({ onGift, mutate, onSavingChange }: {
   const [error, setError] = useState("");
   const picker = useRef<HTMLButtonElement>(null);
   const preview = useRef<HTMLDivElement>(null);
+  const doodleCanvas = useRef<GiftDoodleCanvasHandle>(null);
   const generation = useRef(0);
   const controller = useRef<AbortController | null>(null);
   const pending = useRef<{ key: string; id: string } | null>(null);
@@ -63,7 +66,25 @@ export function GiftComposer({ onGift, mutate, onSavingChange }: {
     setSaving(true);
     onSavingChange(true);
     setError("");
-    const draft = { emojiId: selected.id, ...(text.trim() ? { message: text.trim() } : {}), visibility: text.trim() ? visibility : "public" as Audience, ...(displayName.trim() ? { displayName: displayName.trim() } : {}) };
+    let doodleUrl: string | undefined = undefined;
+    if (includingDoodle && doodleCanvas.current?.hasDoodle()) {
+      const baked = await doodleCanvas.current.exportDoodle();
+      if (baked) {
+        try {
+          const res = await uploadDoodle(baked);
+          doodleUrl = res.url;
+        } catch {
+          doodleUrl = baked;
+        }
+      }
+    }
+    const draft = {
+      emojiId: selected.id,
+      ...(text.trim() ? { message: text.trim() } : {}),
+      visibility: text.trim() ? visibility : "public" as Audience,
+      ...(displayName.trim() ? { displayName: displayName.trim() } : {}),
+      ...(doodleUrl ? { doodle: doodleUrl } : {}),
+    };
     const key = JSON.stringify(draft);
     if (pending.current?.key !== key) pending.current = { key, id: crypto.randomUUID() };
     try {
@@ -101,6 +122,21 @@ export function GiftComposer({ onGift, mutate, onSavingChange }: {
             {(query.trim() ? options : EMOJI_CATALOG).map((option) => <button type="button" key={option.id} className="grid place-items-center size-full h-11 p-[5px] border border-transparent rounded-none text-inherit bg-transparent text-[27px] leading-none cursor-pointer aria-pressed:border-current aria-pressed:bg-[color-mix(in_srgb,var(--color-blue)_7%,transparent)] hover:bg-[color-mix(in_srgb,var(--color-blue)_7%,transparent)] transition-[scale,background-color] duration-150 ease-linear active:scale-[0.96] disabled:cursor-wait disabled:opacity-65 forced-colors:aria-pressed:border-[CanvasText]" aria-label={option.name} title={option.name} disabled={saving} aria-pressed={selected.id === option.id} onClick={() => { setSelected(option); setPicking(false); setError(""); picker.current?.focus(); }}><span className="pointer-events-none" aria-hidden="true">{option.emoji}</span></button>)}
           </div>
         </div>}
+        <div className="gift-doodle-section mb-3">
+          <button
+            type="button"
+            className="gift-doodle-toggle text-xs underline cursor-pointer hover:opacity-80 py-1 inline-flex items-center gap-1.5 border-0 bg-transparent text-inherit font-inherit disabled:cursor-wait disabled:opacity-65"
+            disabled={saving}
+            onClick={() => setIncludingDoodle(!includingDoodle)}
+          >
+            {includingDoodle ? "✕ Remove doodle" : "✎ Include a doodle"}
+          </button>
+          {includingDoodle && (
+            <div className="gift-doodle-area mt-2 mb-3">
+              <GiftDoodleCanvas ref={doodleCanvas} disabled={saving} />
+            </div>
+          )}
+        </div>
         <label className="house-sr-only sr-only" htmlFor="gift-message">Your message, optional</label>
         <textarea id="gift-message" className="block w-full min-w-0 m-0 p-3 resize-y min-h-[144px] border border-dashed border-current rounded-none bg-transparent text-inherit font-inherit text-base leading-relaxed placeholder:text-inherit placeholder:opacity-60 disabled:cursor-wait disabled:opacity-65" name="message" rows={5} maxLength={2000} placeholder="A message, a link, a terrible pun… (optional)" value={text} onChange={(event) => setText(event.target.value)} disabled={saving} />
         <label className="gift-from flex items-baseline gap-2.5 mt-5" htmlFor="gift-name"><span className="shrink-0">From</span><input id="gift-name" className="w-full min-w-0 min-h-11 py-2 px-0 border-0 border-b border-dashed border-current rounded-none bg-transparent text-inherit font-inherit text-base placeholder:text-inherit placeholder:opacity-60 disabled:cursor-wait disabled:opacity-65" aria-label="Your name, optional" name="nickname" autoComplete="nickname" type="text" placeholder={visitor?.name ?? "Anonymous animal"} value={displayName} maxLength={40} onChange={(event) => setDisplayName(event.target.value)} disabled={saving} /></label>

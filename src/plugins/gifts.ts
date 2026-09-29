@@ -2,7 +2,7 @@ import { definePlugin, PluginRouteError, type Database, type RouteContext } from
 import type { Kysely } from "kysely";
 import { Schema } from "effect";
 import { GIFT_METHODS } from "../lib/house/gift-api";
-import { CmsHouseStore } from "../server/house/cms-store";
+import { CmsHouseStore, type DoodleStorage } from "../server/house/cms-store";
 import { HouseError, failure } from "../server/house/errors";
 import { sameOrigin } from "../server/house/http";
 import { resolveCmsViewer } from "../server/house/visitor";
@@ -13,6 +13,7 @@ const decodeId = Schema.decodeUnknownSync(GiftId);
 interface Dependencies {
   database(): Promise<Kysely<Database>>;
   ownerId(): Promise<string | undefined>;
+  storage?(): Promise<DoodleStorage | undefined>;
 }
 
 /** Request identity stays in the invocation; only dependency factories are shared. */
@@ -21,9 +22,16 @@ export function createPlugin(options: Partial<Dependencies> = {}) {
   const dependencies: Dependencies = {
     database: async () => (await import("emdash/runtime")).getDb(),
     ownerId: async () => (await import("cloudflare:workers")).env.HOUSE_OWNER_ID,
+    storage: async () => {
+      try {
+        return (await import("cloudflare:workers")).env.MEDIA as unknown as DoodleStorage;
+      } catch {
+        return undefined;
+      }
+    },
     ...options,
   };
-  async function invoke(ctx: RouteContext, action: "snapshot" | "public-gift" | "gift" | "create" | "update") {
+  async function invoke(ctx: RouteContext, action: "snapshot" | "public-gift" | "gift" | "create" | "update" | "upload-doodle") {
     try {
       if (ctx.request.method !== "GET") {
         sameOrigin(ctx.request);
@@ -34,13 +42,22 @@ export function createPlugin(options: Partial<Dependencies> = {}) {
       const publicRead = action === "snapshot" || action === "public-gift";
       if (!publicRead && ctx.request.headers.has("Authorization")) throw failure(403, "Use this browser's visitor identity.");
       const db = await dependencies.database();
-      const store = new CmsHouseStore(db);
+      const storage = await dependencies.storage?.();
+      const store = new CmsHouseStore(db, storage);
       await store.initialize();
       if (action === "snapshot") return await store.snapshot();
       const viewer = publicRead ? { visitor: null, owner: false }
         : await resolveCmsViewer(db, ctx.user?.id, await dependencies.ownerId());
       if (!publicRead && !viewer.visitor) throw failure(401, "Your visitor identity is needed for this action.");
       if (action === "create") return await store.create(ctx.input, viewer);
+      if (action === "upload-doodle") {
+        const body = ctx.input as { doodle?: unknown };
+        if (!body || typeof body.doodle !== "string" || !body.doodle.startsWith("data:image/")) {
+          throw failure(400, "Send a valid doodle image.");
+        }
+        const url = await store.uploadDoodle(body.doodle, viewer);
+        return { url };
+      }
       const ids = new URL(ctx.request.url).searchParams.getAll("id");
       let id: string;
       try { id = decodeId(ids.length === 1 ? ids[0] : undefined); }
@@ -79,6 +96,10 @@ export function createPlugin(options: Partial<Dependencies> = {}) {
       gift: {
         public: false, permission: "content:read", methods: [...GIFT_METHODS.gift], request: { body: "none" },
         handler: (ctx) => invoke(ctx, "gift"),
+      },
+      "upload-doodle": {
+        public: false, permission: "content:read", methods: [...GIFT_METHODS["upload-doodle"]], request: { body: "json", maxBytes: 524_288 },
+        handler: (ctx) => invoke(ctx, "upload-doodle"),
       },
     },
   });

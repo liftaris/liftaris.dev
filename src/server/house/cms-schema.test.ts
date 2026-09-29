@@ -30,6 +30,7 @@ const expectedFields = [
   { slug: "message", type: "text", required: false, searchable: false },
   { slug: "visibility", type: "select", required: true, searchable: false },
   { slug: "submission_hash", type: "string", required: false, searchable: false },
+  { slug: "doodle", type: "image", required: false, searchable: false },
 ];
 
 test("does not mark an incompatible registered gift schema ready", async () => {
