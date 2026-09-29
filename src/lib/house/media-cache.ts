@@ -8,7 +8,7 @@ export async function handleMediaCache(
   waitUntil?: (promise: Promise<unknown>) => void,
 ): Promise<Response> {
   const url = new URL(request.url);
-  const isMediaFile = url.pathname.startsWith(MEDIA_FILE_PREFIX);
+  const isMediaFile = url.pathname.startsWith(MEDIA_FILE_PREFIX) || url.pathname === "/_image";
 
   if (isMediaFile && (request.method === "GET" || request.method === "HEAD")) {
     const cache = typeof caches !== "undefined" ? (caches as unknown as { default?: Cache }).default : undefined;

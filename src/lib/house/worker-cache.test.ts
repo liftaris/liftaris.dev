@@ -30,6 +30,32 @@ describe("Cloudflare media cache handler", () => {
     expect(waitUntilCalled).toBe(true);
   });
 
+  test("transformed image requests receive 30-day edge cache headers", async () => {
+    const mockRequest = new Request("https://www.liftaris.dev/_image?href=%2F_emdash%2Fapi%2Fmedia%2Ffile%2Fpic.png&w=140&f=webp");
+    let putCalled = false;
+    let waitUntilCalled = false;
+    const mockCache = {
+      match: async () => null,
+      put: async () => { putCalled = true; },
+    };
+    (globalThis as unknown as { caches: { default: unknown } }).caches = { default: mockCache };
+
+    const originResponse = new Response("webp-bytes", {
+      status: 200,
+      headers: { "Content-Type": "image/webp" },
+    });
+
+    const response = await handleMediaCache(
+      mockRequest,
+      async () => originResponse,
+      (p) => { waitUntilCalled = true; void p; },
+    );
+
+    expect(response.headers.get("Cache-Control")).toBe(MEDIA_EDGE_CACHE_CONTROL);
+    expect(putCalled).toBe(true);
+    expect(waitUntilCalled).toBe(true);
+  });
+
   test("cached media response is returned without calling origin", async () => {
     const mockRequest = new Request("https://www.liftaris.dev/_emdash/api/media/file/cached.png");
     const cachedResponse = new Response("cached-data", {

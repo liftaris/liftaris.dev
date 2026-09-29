@@ -3,6 +3,7 @@ import { getEmDashEntry } from "emdash";
 import { PortableText } from "emdash/ui";
 import Portfolio from "../../layouts/Portfolio.astro";
 import ThemeImage from "../../components/ThemeImage.astro";
+import ContentImage from "../../components/ContentImage.astro";
 
 const { entry: post, error, cacheHint } = await getEmDashEntry("posts", Astro.params.slug!);
 if (error && error.name !== "LiveEntryNotFoundError") throw error;
@@ -13,6 +14,6 @@ Astro.cache.set(cacheHint);
   <article class="article-content">
     <p class="meta">{new Date(post.data.date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })}</p>
     <h1 {...post.edit.title}>{post.data.title}</h1>
-    <PortableText value={post.data.content} components={{ type: { themeImage: ThemeImage } }} />
+    <PortableText value={post.data.content} components={{ type: { themeImage: ThemeImage, image: ContentImage } }} />
   </article>
 </Portfolio>

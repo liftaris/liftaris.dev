@@ -5,6 +5,14 @@ import { getEmDashCollection } from "emdash";
 import { isImageUrl } from "../components/clump/model";
 import type { ThingSpec, WritingPost } from "../components/house/folders";
 
+function optimizeMediaUrl(url: string | null, targetWidth: number): string | null {
+  if (!url) return null;
+  if (url.startsWith("/_emdash/api/media/file/") && !url.endsWith(".gif") && !url.endsWith(".svg")) {
+    return `/_image?href=${encodeURIComponent(url)}&w=${targetWidth}&f=webp`;
+  }
+  return url;
+}
+
 const posts: WritingPost[] = [];
 let cursor: string | undefined;
 do {
@@ -25,6 +33,9 @@ try {
       const kind = (data.kind === "folder" || data.kind === "link" || data.kind === "action" || data.kind === "object" || data.kind === "page") ? data.kind : "object";
       const action = (data.action === "projects" || data.action === "experience" || data.action === "leave-gift") ? data.action : "none";
       const shape = data.shape === "circle" ? "circle" : "rectangle";
+      const width = Number(data.width) || 60;
+      const height = Number(data.height) || 60;
+      const targetWidth = Math.max(Math.round(width * 2), 120);
 
       let imageUrl: string | null = null;
       if (typeof data.image === "string" && data.image) {
@@ -46,6 +57,7 @@ try {
       if (!imageUrl && isImageUrl(emojiVal)) {
         imageUrl = emojiVal;
       }
+      imageUrl = optimizeMediaUrl(imageUrl, targetWidth);
 
       let bgImageUrl: string | null = null;
       if (typeof data.background_image === "string" && data.background_image) {
@@ -63,6 +75,7 @@ try {
           bgImageUrl = `/_emdash/api/media/file/${key}`;
         }
       }
+      bgImageUrl = optimizeMediaUrl(bgImageUrl, Math.max(Math.round(Math.max(width, height) * 2), 120));
 
       return {
         id: entry.id,
@@ -83,8 +96,8 @@ try {
         default_open: Boolean(data.default_open),
         shape,
         anchor: Boolean(data.anchor),
-        width: Number(data.width) || 60,
-        height: Number(data.height) || 60,
+        width,
+        height,
         sort_order: Number(data.sort_order) || 0,
       };
     }).sort((a, b) => a.sort_order - b.sort_order);
@@ -93,4 +106,4 @@ try {
   // Gracefully fallback to defaults if things collection not yet initialized
 }
 ---
-<Portfolio><House posts={posts} things={things} client:load /></Portfolio>
+<Portfolio><House posts={posts} things={things} client:idle /></Portfolio>

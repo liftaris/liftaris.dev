@@ -1,16 +1,13 @@
 @import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
 
 :root {
   --font-mono: "Geist Mono Variable";
-  --font-sans: "Manrope Variable";
   --font-serif: "Young Serif";
   --blue: #1313ba;
   /* Blend grain into blue surfaces, keeping foreground text and artwork clean. */
   --blue-background:
     linear-gradient(color-mix(in srgb, var(--blue) 70%, transparent) 0 0) fixed,
-    url("/noise.png?v=3") 0 0 / 100px 100px fixed var(--blue);
+    url("/noise.webp?v=4") 0 0 / 100px 100px fixed var(--blue);
   --paper: #fffbed;
   --ink: #06113a;
   --site-gutter: clamp(16px, 3vw, 56px);
@@ -21,6 +18,10 @@
 html { background: var(--blue-background); }
 body {
   margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  min-height: 100svh;
+  min-height: 100dvh;
   color: var(--paper);
   background: var(--blue-background);
   font-family: var(--font-mono), monospace;
@@ -28,11 +29,21 @@ body {
   text-rendering: geometricPrecision;
 }
 
+body.on-home,
+body:has(> .site-window[data-home="true"]) {
+  padding: 10px;
+  background: #06113a;
+}
+
+html:has(> body.on-home) {
+  background: #06113a;
+}
+
 a { color: inherit; text-decoration: none; }
 a:hover, button:hover { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }
 button { color: inherit; font: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; }
 
-/* Outermost Site Window covering the entire site edge-to-edge */
+/* Outermost Site Window */
 .site-window {
   display: flex;
   flex-direction: column;
@@ -40,16 +51,20 @@ button { color: inherit; font: inherit; background: none; border: 0; padding: 0;
   min-height: 100dvh;
   width: 100%;
   border: 1px solid var(--paper, #fffbed);
+  border-bottom: none;
   box-sizing: border-box;
   background: var(--blue-background);
   position: relative;
+  z-index: 1;
   transition: transform 240ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease;
   transform-origin: center center;
 }
 
 .site-window[data-home="true"] {
-  height: 100svh;
-  height: 100dvh;
+  min-height: calc(100svh - 20px);
+  min-height: calc(100dvh - 20px);
+  height: calc(100svh - 20px);
+  height: calc(100dvh - 20px);
   overflow: hidden;
 }
 
@@ -76,6 +91,10 @@ body.desktop-collapsed .site-window {
   font-family: var(--font-mono), monospace;
   color: var(--paper, #fffbed);
   box-sizing: border-box;
+}
+
+.site-window[data-home="true"] .site-window-header {
+  border-bottom: none;
 }
 
 .site-window-drag {
@@ -233,10 +252,9 @@ body.desktop-collapsed .site-window {
 .name {
   display: block;
   margin: 0;
-  background: var(--blue-background);
+  background: none;
   white-space: nowrap;
 }
-.name:hover h1 { text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 4px; }
 .name h1 {
   margin: 0;
   font-family: var(--font-serif), Georgia, serif;
@@ -255,26 +273,32 @@ body.desktop-collapsed .site-window {
   padding: clamp(32px, 7svh, 88px) var(--site-gutter) calc(var(--identity-size) + 48px + env(safe-area-inset-bottom));
 }
 
-/* The name has its own row; the scene gets the rest of the actual screen. */
+/* The scene fills the whole window; the name floats over it at the bottom. */
 .shell.onHome {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr) auto;
-  gap: clamp(16px, 2.5svh, 32px);
+  grid-template-rows: minmax(0, 1fr);
   height: 100%;
   min-height: 0;
-  padding: max(16px, env(safe-area-inset-top)) max(var(--site-gutter), env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(var(--site-gutter), env(safe-area-inset-left));
+  position: relative;
 }
 .shell.onHome .stageContent {
   grid-row: 1;
   width: 100%;
+  height: 100%;
   min-height: 0;
   padding: 0;
 }
 .shell.onHome .identity {
-  grid-row: 2;
-  position: static;
+  position: absolute;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  left: 0;
+  right: 0;
+  width: 100%;
   max-width: 100%;
+  text-align: center;
+  pointer-events: none;
+  z-index: 5;
 }
 
 /* Direct links stay readable without resurrecting the old sidebar rails. */
@@ -286,7 +310,7 @@ body.desktop-collapsed .site-window {
 
 /* A native post iframe contains only the article, not another full site. */
 html:has(> body.embedded-post),
-body.embedded-post { background: var(--paper); }
+body.embedded-post { background: var(--paper); padding: 0; min-height: 0; }
 .embedded-post .shell {
   min-height: 0;
   padding: 0;
@@ -306,6 +330,8 @@ body.embedded-post { background: var(--paper); }
 
 /* Subroute window matches WinBox window */
 .site-window:not([data-home="true"]) {
+  min-height: 100svh;
+  min-height: 100dvh;
   height: 100svh;
   height: 100dvh;
   overflow: hidden;

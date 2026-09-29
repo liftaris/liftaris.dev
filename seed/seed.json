@@ -954,8 +954,10 @@
               "_type": "image",
               "_key": "m11",
               "alt": "Vercel Analytics",
+              "width": 2488,
+              "height": 1256,
               "asset": {
-                "url": "/BazaarGhost/vercel_analytics.png"
+                "url": "/BazaarGhost/vercel_analytics.webp"
               }
             },
             {
@@ -1662,8 +1664,10 @@
               "_type": "image",
               "_key": "m107",
               "alt": "Reddit search for \"see your ghost\"",
+              "width": 984,
+              "height": 1494,
               "asset": {
-                "url": "/BazaarGhost/reddit_ghost_interest.png"
+                "url": "/BazaarGhost/reddit_ghost_interest.webp"
               }
             },
             {
@@ -1883,9 +1887,11 @@
             {
               "_type": "themeImage",
               "_key": "m138",
-              "lightSrc": "/BazaarGhost/BG-Vod_Processing_Diagram-Light.png",
-              "darkSrc": "/BazaarGhost/BG-Vod_Processing_Diagram-Dark.png",
-              "alt": "VOD Processing Diagram"
+              "lightSrc": "/BazaarGhost/BG-Vod_Processing_Diagram-Light.webp",
+              "darkSrc": "/BazaarGhost/BG-Vod_Processing_Diagram-Dark.webp",
+              "alt": "VOD Processing Diagram",
+              "width": 1419,
+              "height": 1836
             },
             {
               "_type": "block",

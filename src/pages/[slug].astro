@@ -3,6 +3,7 @@ import { getEmDashEntry, getEmDashCollection } from "emdash";
 import { PortableText } from "emdash/ui";
 import Portfolio from "../layouts/Portfolio.astro";
 import ThemeImage from "../components/ThemeImage.astro";
+import ContentImage from "../components/ContentImage.astro";
 
 const slug = Astro.params.slug!;
 let thing: any = null;
@@ -54,7 +55,7 @@ const isWindow = Astro.url.searchParams.get("window") === "1";
   <article class="page-content">
     {!isWindow && <h1 {...thing.edit?.name}>{name}</h1>}
     {body && Array.isArray(body) && body.length > 0 ? (
-      <PortableText value={body} components={{ type: { themeImage: ThemeImage } }} />
+      <PortableText value={body} components={{ type: { themeImage: ThemeImage, image: ContentImage } }} />
     ) : null}
   </article>
 </Portfolio>

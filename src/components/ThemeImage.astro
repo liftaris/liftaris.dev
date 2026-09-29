@@ -1,6 +1,14 @@
 ---
-import { ThemeImage } from "../../components/ThemeImage";
 import type { ThemeImageProps } from "../../components/ThemeImage";
 interface Props { node: ThemeImageProps }
+const { node } = Astro.props;
+const lightSrc = node.lightSrc;
+const darkSrc = node.darkSrc;
+const alt = node.alt || "";
+const width = node.width || (lightSrc?.includes("BG-Vod_Processing_Diagram") ? 1419 : undefined);
+const height = node.height || (lightSrc?.includes("BG-Vod_Processing_Diagram") ? 1836 : undefined);
 ---
-<ThemeImage {...Astro.props.node} />
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset={darkSrc} />
+  <img src={lightSrc} alt={alt} width={width} height={height} loading="lazy" decoding="async" />
+</picture>

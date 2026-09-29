@@ -10,6 +10,10 @@ export default defineConfig({
   site: "https://www.liftaris.dev",
   output: "server",
   adapter: cloudflare({ imageService: "cloudflare-binding" }),
+  build: {
+    inlineStylesheets: "always",
+  },
+  compressHTML: true,
   session: {
     // Astro forces HttpOnly and defaults Secure to true in production. Keep the
     // native owner cookie browser-scoped; only visitor bootstrap adds Max-Age

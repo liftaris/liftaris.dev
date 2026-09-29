@@ -1,11 +1,13 @@
 ---
 import { EmDashHead, EmDashBodyStart, EmDashBodyEnd } from "emdash/ui";
 import { createPublicPageContext } from "emdash/page";
+import geistMonoLatinUrl from "@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2?url";
+import youngSerifLatinUrl from "@fontsource/young-serif/files/young-serif-latin-400-normal.woff2?url";
 import "@fontsource-variable/geist-mono";
-import "@fontsource-variable/manrope";
 import "@fontsource/young-serif";
 import "../styles/global.css";
 import { isImageUrl } from "../components/clump/model";
+import LandingBackground from "../components/canvas/LandingBackground.astro";
 
 interface Props {
   title?: string;
@@ -75,12 +77,15 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
+    <link rel="preload" href={youngSerifLatinUrl} as="font" type="font/woff2" crossorigin="anonymous" />
+    <link rel="preload" href={geistMonoLatinUrl} as="font" type="font/woff2" crossorigin="anonymous" />
     {embedded && <base target="_top" />}
     <EmDashHead page={page} />
     <link rel="icon" href="/favicon.ico" />
   </head>
-  <body class:list={{ "embedded-post": embedded }}>
+  <body class={embedded ? (isHome ? "embedded-post on-home" : "embedded-post") : (isHome ? "on-home" : undefined)}>
     <EmDashBodyStart page={page} />
+    {isHome && !embedded && <LandingBackground />}
     {!embedded ? (
       <div class="site-window" class:list={{ "object-window": !isHome }} data-home={isHome}>
         <header class="site-window-header">
@@ -141,7 +146,7 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
           {isHome ? (
             <div class="shell onHome">
               <div class="identity">
-                <a class="name" href="/" aria-label="Home"><h1><span>Kaio</span><span>Barbosa</span></h1></a>
+                <span class="name"><h1><span>Kaio</span><span>Barbosa</span></h1></span>
               </div>
               <section class="stageContent"><slot /></section>
             </div>

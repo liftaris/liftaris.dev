@@ -469,7 +469,7 @@ export function HouseClump({
                 const suppressed = clickSuppressed.current;
                 if (!opened && !disabled && (!gift || liveIds.has(gift.id)) && !(suppressed?.id === object.id && performance.now() < suppressed.until)) onOpen(object, event.currentTarget, gift);
               }}
-            ><span className="house-object-art" aria-hidden="true">{iconImage ? <img src={iconImage} alt="" className="house-object-image" loading="lazy" decoding="async" /> : object.emoji}</span></button>;
+            ><span className="house-object-art" aria-hidden="true">{iconImage ? <img src={iconImage} alt="" className="house-object-image" width={Math.round(object.width)} height={Math.round(object.height)} loading="lazy" decoding="async" /> : object.emoji}</span></button>;
           })}
         </div>
       </div>

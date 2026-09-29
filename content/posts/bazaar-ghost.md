@@ -9,7 +9,7 @@ On November 2nd, I released [https://www.bazaarghost.stream](https://www.bazaarg
 
 Today is November 29th, approaching one month since release, and so far BazaarGhost has seen \~18,000 visitors (with a non-peak average of \~550 visitors per day). Today I'm writing about my experience building the site, reflecting on the experience, and putting down my thoughts about it moving forward.
 
-![Vercel Analytics](/BazaarGhost/vercel_analytics.png)
+![Vercel Analytics](/BazaarGhost/vercel_analytics.webp)
 
 # What is it?
 
@@ -55,7 +55,7 @@ The first version of BazaarGhost actually started earlier this year, around Marc
 
 A search for "see your ghost" in r/PlayTheBazaar over the last 12 months shows the demand for a feature to see how your ghost performs against other players
 
-![Reddit search for "see your ghost"](/BazaarGhost/reddit_ghost_interest.png)
+![Reddit search for "see your ghost"](/BazaarGhost/reddit_ghost_interest.webp)
 
 I started with some AI slop-scripts to check if I had any matchups against Kripp, the largest streamer of *The Bazaar.* The prototype was a contrived piece of "works on my machine" ethos, but after seeing it kind of working and letting the concept brew over six months of no-progress while on an intense project at my day job, I got back to work on it towards the end of September/early August.
 
@@ -74,7 +74,7 @@ Github Actions (GHA). As it turns out, you can run babies all day long as long a
 
 With the weight of cost removed, I was giddy to know that my project was feasible at (a relatively small) scale, at little to no cost.
 
-<ThemeImage lightSrc="/BazaarGhost/BG-Vod_Processing_Diagram-Light.png" darkSrc="/BazaarGhost/BG-Vod_Processing_Diagram-Dark.png" alt="VOD Processing Diagram" />
+<ThemeImage lightSrc="/BazaarGhost/BG-Vod_Processing_Diagram-Light.webp" darkSrc="/BazaarGhost/BG-Vod_Processing_Diagram-Dark.webp" alt="VOD Processing Diagram" width={1419} height={1836} />
 
 ### Supabase
 

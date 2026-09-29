@@ -1,0 +1,40 @@
+---
+import { PTImage } from "emdash/ui";
+
+const { node, ...rest } = Astro.props;
+let enrichedNode = node;
+
+if (node?.asset) {
+  const url = String(node.asset.url || "");
+  let w = typeof node.width === "number" ? node.width : undefined;
+  let h = typeof node.height === "number" ? node.height : undefined;
+  let assetUrl = url;
+
+  if (url.includes("vercel_analytics")) {
+    w = w || 2488;
+    h = h || 1256;
+    if (url.endsWith(".png")) {
+      assetUrl = url.replace(/\.png$/, ".webp");
+    }
+  } else if (url.includes("reddit_ghost_interest")) {
+    w = w || 984;
+    h = h || 1494;
+    if (url.endsWith(".png")) {
+      assetUrl = url.replace(/\.png$/, ".webp");
+    }
+  }
+
+  enrichedNode = {
+    ...node,
+    width: w,
+    height: h,
+    displayWidth: node.displayWidth ?? w,
+    displayHeight: node.displayHeight ?? h,
+    asset: {
+      ...node.asset,
+      url: assetUrl,
+    },
+  };
+}
+---
+<PTImage node={enrichedNode} {...rest} />
