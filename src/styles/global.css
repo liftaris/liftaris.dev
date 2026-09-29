@@ -13,6 +13,7 @@
   --site-gutter: clamp(16px, 3vw, 56px);
   --identity-size: clamp(28px, 9vw, 168px);
   --desktop-bg: black;
+  --window-bar: #245EDE;
 }
 
 @media (prefers-color-scheme: light) {
@@ -64,7 +65,7 @@ button { color: inherit; font: inherit; background: none; border: 0; padding: 0;
   min-height: 100svh;
   min-height: 100dvh;
   width: 100%;
-  border: 1px solid var(--ink, #06113a);
+  border: 1px solid var(--window-bar, #245EDE);
   box-sizing: border-box;
   background: var(--blue-background);
   position: relative;
@@ -90,8 +91,8 @@ body.desktop-collapsed .site-window {
 .site-window-header {
   height: 18px;
   line-height: 18px;
-  background: var(--ink, #06113a);
-  border-bottom: 1px solid var(--ink, #06113a);
+  background: var(--window-bar, #245EDE);
+  border-bottom: 1px solid var(--window-bar, #245EDE);
   display: flex;
   align-items: stretch;
   justify-content: space-between;

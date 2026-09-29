@@ -1,7 +1,7 @@
 .winbox.object-window {
-  color: var(--ink, #06113a);
-  background: var(--ink, #06113a);
-  border: 1px solid var(--ink, #06113a);
+  color: var(--window-bar, #245EDE);
+  background: var(--window-bar, #245EDE);
+  border: 1px solid var(--window-bar, #245EDE);
   border-radius: 0;
   box-shadow: 4px 4px 0 rgb(0 0 0 / .22);
   font-family: var(--font-mono), monospace;
@@ -9,8 +9,8 @@
 }
 .object-window .wb-header {
   overflow: hidden;
-  background: var(--ink, #06113a);
-  border-bottom: 1px solid var(--ink, #06113a);
+  background: var(--window-bar, #245EDE);
+  border-bottom: 1px solid var(--window-bar, #245EDE);
   color: var(--paper, #fffbed);
 }
 .object-window .wb-drag {
