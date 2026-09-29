@@ -210,15 +210,27 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
             return;
           }
 
+          const isFolder = frame.classList.contains("folder-window") || Boolean(frame.querySelector(".folder"));
+          const outerBody = isFolder ? document.querySelector<HTMLElement>(".site-window-body") : null;
+          const outerRect = outerBody ? outerBody.getBoundingClientRect() : null;
+
           isAnimating.current = true;
           frame.classList.remove("max");
           frame.classList.add("restoring");
           maxButton.setAttribute("aria-label", `Maximize ${title} window`);
 
-          frame.style.top = "18px";
-          frame.style.left = "0px";
-          frame.style.width = "100vw";
-          frame.style.height = "calc(100vh - 18px)";
+          if (outerRect) {
+            frame.style.top = `${outerRect.top}px`;
+            frame.style.left = `${outerRect.left}px`;
+            frame.style.width = `${outerRect.width}px`;
+            frame.style.height = `${outerRect.height}px`;
+            frame.style.borderRadius = "0 0 3px 3px";
+          } else {
+            frame.style.top = "18px";
+            frame.style.left = "0px";
+            frame.style.width = "100vw";
+            frame.style.height = "calc(100vh - 18px)";
+          }
           frame.style.boxShadow = "none";
           frame.style.border = "none";
           void frame.offsetWidth;
@@ -283,16 +295,27 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
           return;
         }
 
+        const siteWindow = document.querySelector<HTMLElement>(".site-window");
+        const siteRect = siteWindow?.getBoundingClientRect();
+
         isAnimating.current = true;
         frame.classList.add("maximizing");
         maxButton.setAttribute("aria-label", `Restore ${title} window`);
         frame.style.pointerEvents = "none";
         frame.style.zIndex = "999999";
         frame.style.transition = "top 220ms cubic-bezier(0.16, 1, 0.3, 1), left 220ms cubic-bezier(0.16, 1, 0.3, 1), width 220ms cubic-bezier(0.16, 1, 0.3, 1), height 220ms cubic-bezier(0.16, 1, 0.3, 1)";
-        frame.style.top = "0px";
-        frame.style.left = "0px";
-        frame.style.width = "100vw";
-        frame.style.height = "100vh";
+        if (siteRect) {
+          frame.style.top = `${siteRect.top}px`;
+          frame.style.left = `${siteRect.left}px`;
+          frame.style.width = `${siteRect.width}px`;
+          frame.style.height = `${siteRect.height}px`;
+          frame.style.borderRadius = "3px";
+        } else {
+          frame.style.top = "0px";
+          frame.style.left = "0px";
+          frame.style.width = "100vw";
+          frame.style.height = "100vh";
+        }
         frame.style.boxShadow = "none";
         frame.style.border = "none";
 
@@ -380,12 +403,23 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
         const targetW = Number(win.width);
         const targetH = Number(win.height);
 
+        const siteWindow = document.querySelector<HTMLElement>(".site-window");
+        const siteRect = siteWindow?.getBoundingClientRect();
+
         frame.style.pointerEvents = "none";
         frame.style.zIndex = "1000001";
-        frame.style.top = "0px";
-        frame.style.left = "0px";
-        frame.style.width = "100vw";
-        frame.style.height = "100vh";
+        if (siteRect) {
+          frame.style.top = `${siteRect.top}px`;
+          frame.style.left = `${siteRect.left}px`;
+          frame.style.width = `${siteRect.width}px`;
+          frame.style.height = `${siteRect.height}px`;
+          frame.style.borderRadius = "3px";
+        } else {
+          frame.style.top = "0px";
+          frame.style.left = "0px";
+          frame.style.width = "100vw";
+          frame.style.height = "100vh";
+        }
         frame.style.boxShadow = "none";
         frame.style.border = "none";
 
@@ -396,6 +430,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
           frame.style.left = `${targetX}px`;
           frame.style.width = `${targetW}px`;
           frame.style.height = `${targetH}px`;
+          frame.style.borderRadius = "";
 
           setTimeout(() => {
             if (disposed) return;
@@ -404,6 +439,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
             frame.style.transition = "";
             frame.style.boxShadow = "";
             frame.style.border = "";
+            frame.style.borderRadius = "";
             isAnimating.current = false;
           }, 240);
         });

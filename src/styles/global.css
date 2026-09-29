@@ -14,10 +14,55 @@
   --identity-size: clamp(28px, 9vw, 168px);
   --desktop-bg: url("/landing-bg.webp") center / cover no-repeat fixed var(--paper, #fffbed);
   --window-bar: #245EDE;
+
+  /* Responsive Window Geometry */
+  --window-pad: 10px;
+  --window-max-w: 100%;
+  --window-width: calc(100vw - 2 * var(--window-pad));
+  --window-width: calc(100dvw - 2 * var(--window-pad));
+  --window-height: calc(100svh - 2 * var(--window-pad));
+  --window-height: calc(100dvh - 2 * var(--window-pad));
+  --window-left: var(--window-pad);
+  --window-top: var(--window-pad);
+}
+
+@media (min-width: 768px) {
+  :root {
+    --window-pad: 16px;
+    --window-max-w: 720px;
+    --window-width: min(calc(100dvw - 2 * var(--window-pad)), var(--window-max-w));
+    --window-height: calc(100dvh - 2 * var(--window-pad));
+    --window-left: calc((100dvw - var(--window-width)) / 2);
+    --window-top: var(--window-pad);
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --window-max-w: 960px;
+    --window-width: min(calc(100dvw - 2 * var(--window-pad)), var(--window-max-w));
+    --window-left: calc((100dvw - var(--window-width)) / 2);
+  }
+}
+
+@media (min-width: 1280px) {
+  :root {
+    --window-max-w: 1200px;
+    --window-width: min(calc(100dvw - 2 * var(--window-pad)), var(--window-max-w));
+    --window-left: calc((100dvw - var(--window-width)) / 2);
+  }
+}
+
+@media (min-width: 1536px) {
+  :root {
+    --window-max-w: 1360px;
+    --window-width: min(calc(100dvw - 2 * var(--window-pad)), var(--window-max-w));
+    --window-left: calc((100dvw - var(--window-width)) / 2);
+  }
 }
 
 * { box-sizing: border-box; }
-html { background: var(--blue-background); }
+html { background: var(--desktop-bg); }
 body {
   margin: 0;
   padding: 0;
@@ -25,7 +70,7 @@ body {
   min-height: 100svh;
   min-height: 100dvh;
   color: var(--paper);
-  background: var(--blue-background);
+  background: transparent;
   font-family: var(--font-mono), monospace;
   letter-spacing: 0.012em;
   text-rendering: geometricPrecision;
@@ -38,7 +83,6 @@ html:has(> body.on-home) {
 
 body.on-home,
 body:has(> .site-window[data-home="true"]) {
-  padding: 10px;
   background: transparent;
 }
 
@@ -50,26 +94,18 @@ button { color: inherit; font: inherit; background: none; border: 0; padding: 0;
 .site-window {
   display: flex;
   flex-direction: column;
-  min-height: 100svh;
-  min-height: 100dvh;
-  width: 100%;
-  border: 1px solid var(--window-bar, #245EDE);
   box-sizing: border-box;
-  background: var(--blue-background);
   position: relative;
   z-index: 1;
+  overflow: hidden;
+  border-radius: 3px;
   transition: transform 240ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease;
   transform-origin: center center;
 }
 
 .site-window[data-home="true"] {
-  min-height: calc(100svh - 20px);
-  min-height: calc(100dvh - 20px);
-  height: calc(100svh - 20px);
-  height: calc(100dvh - 20px);
-  overflow: hidden;
+  background: var(--blue-background);
   border: 1px solid #7f9cda;
-  border-radius: 3px;
 }
 
 body.desktop-collapsed .site-window {
@@ -330,13 +366,10 @@ body.embedded-post { background: var(--paper); padding: 0; min-height: 0; }
 
 /* Subroute window matches WinBox window */
 .site-window:not([data-home="true"]) {
-  min-height: 100svh;
-  min-height: 100dvh;
-  height: 100svh;
-  height: 100dvh;
   overflow: hidden;
   background: var(--paper, #fffbed);
-  border-bottom: none;
+  border: 1px solid var(--window-bar, #245EDE);
+  border-radius: 3px;
 }
 
 .site-window:not([data-home="true"]) .site-window-body {

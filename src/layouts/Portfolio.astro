@@ -78,7 +78,7 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
     <title>{title}</title>
     <link rel="preload" href={youngSerifLatinUrl} as="font" type="font/woff2" crossorigin="anonymous" />
     <link rel="preload" href={geistMonoLatinUrl} as="font" type="font/woff2" crossorigin="anonymous" />
-    {isHome && <link rel="preload" href="/landing-bg.webp" as="image" type="image/webp" />}
+    {!embedded && <link rel="preload" href="/landing-bg.webp" as="image" type="image/webp" />}
     {embedded && <base target="_top" />}
     <EmDashHead page={page} />
     <link rel="icon" href="/favicon.ico" />
@@ -86,7 +86,16 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
   <body class={embedded ? (isHome ? "embedded-post on-home" : "embedded-post") : (isHome ? "on-home" : undefined)}>
     <EmDashBodyStart page={page} />
     {!embedded ? (
-      <div class="site-window" class:list={{ "object-window": !isHome }} data-home={isHome}>
+      <div data-app="WindowList" class="desktop-viewport flex size-full min-h-dvh justify-center items-center p-2.5 md:p-4">
+        <div
+          data-app="AppWindow"
+          class="site-window"
+          class:list={[
+            "w-full h-[calc(100dvh-20px)] md:h-[calc(100dvh-32px)] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1200px] 2xl:max-w-[1360px]",
+            { "object-window": !isHome },
+          ]}
+          data-home={isHome}
+        >
         <header class="site-window-header">
           <div class="site-window-drag">
             {!isHome && (
@@ -156,7 +165,8 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
           )}
         </div>
       </div>
-    ) : (
+    </div>
+  ) : (
       <div class="object-window-content">
         <slot />
       </div>
