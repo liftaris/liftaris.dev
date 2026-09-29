@@ -472,6 +472,7 @@
   border: 2px solid var(--paper, #fffbed);
   box-shadow: 4px 4px 0 rgb(0 0 0 / .25);
   transition: transform 180ms ease, box-shadow 180ms ease;
+  overflow: hidden;
 }
 
 .pinned-face-avatar:hover .pinned-face-badge,
@@ -486,9 +487,10 @@
 }
 
 .pinned-face-image {
-  width: 56px;
-  height: 56px;
-  object-fit: contain;
+  width: 62px;
+  height: 62px;
+  object-fit: cover;
+  object-position: center 25%;
   pointer-events: none;
 }
 

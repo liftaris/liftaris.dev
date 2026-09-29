@@ -6,7 +6,7 @@ import { giftObjects } from "../../lib/house/emoji";
 import { GiftComposer } from "./GiftComposer";
 import { GiftDialog } from "./GiftDialog";
 import { HouseClump } from "./HouseClump";
-import { getBackgroundStyle } from "../clump/model";
+import { getBackgroundStyle, isImageUrl } from "../clump/model";
 import { ObjectWindow } from "../window/ObjectWindow";
 import { Folder, type FolderSpec } from "../folder/Folder";
 import {
@@ -19,6 +19,7 @@ import {
   getDefaultOpenChildren,
   getInitialDefaultOpenThings,
   type HouseThing,
+  type PostThing,
   type ThingSpec,
   type WritingPost,
 } from "./folders";
@@ -301,7 +302,52 @@ export function House({
     if (initialOpenDone.current) return;
     initialOpenDone.current = true;
 
-    const toOpen = getInitialDefaultOpenThings(effectiveThings);
+    const urlParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+    const restoreSlug = urlParams?.get("restore");
+
+    const toOpen = [...getInitialDefaultOpenThings(effectiveThings)];
+
+    if (restoreSlug) {
+      let restoredThing: HouseThing | undefined;
+      if (restoreSlug === "projects") {
+        restoredThing = effectiveThings.find((t) => t.action === "projects" || t.id === "computer");
+      } else if (restoreSlug === "experience") {
+        restoredThing = effectiveThings.find((t) => t.action === "experience" || t.id === "case");
+      } else if (restoreSlug === "github") {
+        restoredThing = GITHUB_THING;
+      } else {
+        const post = posts.find((p) => p.slug === restoreSlug || p.id === restoreSlug);
+        if (post) {
+          const isImg = isImageUrl(post.icon);
+          const postThing: PostThing = {
+            kind: "post",
+            id: `post:${post.id}`,
+            name: post.title,
+            emoji: isImg ? "📝" : post.icon,
+            image: isImg ? post.icon : undefined,
+            href: `/blog/${encodeURIComponent(post.slug)}`,
+            width: 56,
+            height: 64,
+            shape: "rectangle",
+          };
+          restoredThing = postThing;
+        } else {
+          restoredThing = effectiveThings.find((t) => t.id === restoreSlug || t.href?.includes(restoreSlug));
+        }
+      }
+
+      if (restoredThing && !toOpen.some((t) => t.id === (restoredThing as HouseThing).id)) {
+        toOpen.push(restoredThing as ThingSpec);
+      }
+
+      if (typeof window !== "undefined" && window.history?.replaceState) {
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.delete("restore");
+        const queryStr = newUrl.searchParams.toString();
+        window.history.replaceState({}, "", newUrl.pathname + (queryStr ? `?${queryStr}` : "") + newUrl.hash);
+      }
+    }
+
     if (toOpen.length === 0) return;
 
     const viewportWidth = typeof window !== "undefined" ? window.innerWidth : 1024;
@@ -337,7 +383,7 @@ export function House({
       });
       return next;
     });
-  }, [effectiveThings, foldersById, markVisited]);
+  }, [effectiveThings, foldersById, markVisited, posts]);
 
   const [isCollapsed, setIsCollapsed] = useState(false);
   const faceAvatarRef = useRef<HTMLButtonElement>(null);
@@ -397,7 +443,7 @@ export function House({
           title="Click to restore desktop"
         >
           <span className="pinned-face-badge">
-            <img src="/face.svg" alt="Kaio Barbosa" className="pinned-face-image" />
+            <img src="/face.webp" alt="Kaio Barbosa" className="pinned-face-image" />
           </span>
           <span className="pinned-face-label">Kaio Barbosa</span>
         </button>

@@ -11,6 +11,7 @@ interface Props {
   title?: string;
   windowTitle?: string;
   windowIcon?: string;
+  restoreSlug?: string;
   embedded?: boolean;
   content?: { collection: string; id: string; slug?: string | null };
 }
@@ -18,6 +19,7 @@ const {
   title = "Kaio Barbosa",
   windowTitle,
   windowIcon,
+  restoreSlug,
   content,
   embedded = false,
 } = Astro.props;
@@ -27,6 +29,7 @@ const isHome = pathname === "/";
 
 let displayTitle = windowTitle;
 let displayIcon = windowIcon;
+let actualRestoreSlug = restoreSlug;
 
 if (!displayTitle && !isHome) {
   if (pathname === "/projects") {
@@ -50,6 +53,15 @@ if (!displayIcon && !isHome) {
   } else if (onBlog) {
     displayIcon = "📝";
   }
+}
+
+if (!actualRestoreSlug && !isHome) {
+  if (pathname === "/projects") actualRestoreSlug = "projects";
+  else if (pathname === "/experience") actualRestoreSlug = "experience";
+  else if (pathname === "/github") actualRestoreSlug = "github";
+  else if (onBlog) actualRestoreSlug = pathname.replace(/^\/blog\//, "").split("?")[0];
+  else if (pathname.startsWith("/p/")) actualRestoreSlug = pathname.replace(/^\/p\//, "").split("?")[0];
+  else actualRestoreSlug = pathname.replace(/^\//, "").split("?")[0];
 }
 
 const isIconImage = displayIcon ? isImageUrl(displayIcon) : false;
@@ -104,17 +116,34 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
                 ×
               </button>
             ) : (
-              <a href="/" class="site-window-close" aria-label="Close to homepage">
-                ×
-              </a>
+              <>
+                <a
+                  href={`/?restore=${encodeURIComponent(actualRestoreSlug || "")}`}
+                  class="site-window-max"
+                  aria-label="Restore window"
+                  title="Restore window"
+                >
+                  <span class="wb-restore-square" aria-hidden="true" />
+                </a>
+                <a
+                  href="/"
+                  class="site-window-close"
+                  aria-label="Close to homepage"
+                  title="Close window"
+                >
+                  ×
+                </a>
+              </>
             )}
           </div>
         </header>
         <div class="site-window-body">
           <div class:list={["shell", { onBlog, onHome: isHome }]}>
-            <div class="identity">
-              <a class="name" href="/" aria-label="Home"><h1><span>Kaio</span><span>Barbosa</span></h1></a>
-            </div>
+            {isHome && (
+              <div class="identity">
+                <a class="name" href="/" aria-label="Home"><h1><span>Kaio</span><span>Barbosa</span></h1></a>
+              </div>
+            )}
             <section class="stageContent"><slot /></section>
           </div>
         </div>

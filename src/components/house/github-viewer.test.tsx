@@ -119,10 +119,27 @@ describe("GitHub custom Thing", () => {
     expect(astroLayout).toContain("!isHome");
   });
 
-  test("ObjectWindow bounds maximize and dragging below 18px outermost titlebar", async () => {
+  test("ObjectWindow bounds maximize and dragging below 18px outermost titlebar with no border spacing", async () => {
     const code = await Bun.file(new URL("../window/ObjectWindow.tsx", import.meta.url).pathname).text();
     expect(code).toContain("top: 19");
-    expect(code).toContain('frame.style.top = "19px"');
-    expect(code).toContain('frame.style.height = "calc(100vh - 20px)"');
+    expect(code).toContain('frame.style.top = "18px"');
+    expect(code).toContain('frame.style.border = "none"');
+    expect(code).toContain("wb-restore-square");
+  });
+
+  test("public/face.webp exists and House renders face.webp", async () => {
+    const webpExists = await Bun.file(new URL("../../../public/face.webp", import.meta.url).pathname).exists();
+    expect(webpExists).toBe(true);
+
+    const houseCode = await Bun.file(new URL("./House.tsx", import.meta.url).pathname).text();
+    expect(houseCode).toContain('src="/face.webp"');
+    expect(houseCode).toContain('urlParams?.get("restore")');
+  });
+
+  test("subroutes have white paper background and no pane blur animation", async () => {
+    const globalCss = await Bun.file(new URL("../../styles/global.css", import.meta.url).pathname).text();
+    expect(globalCss).toContain(".site-window:not([data-home=\"true\"])");
+    expect(globalCss).toContain(".pane {\n  animation: none;\n}");
+    expect(globalCss).toContain(".wb-restore-square");
   });
 });

@@ -98,9 +98,49 @@
   border: 1.5px solid currentColor;
   box-sizing: border-box;
 }
-.winbox.object-window.maximizing {
+.wb-restore-square {
+  position: relative;
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  box-sizing: border-box;
+}
+.wb-restore-square::before {
+  content: "";
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 7px;
+  height: 7px;
+  border: 1.5px solid currentColor;
+  border-left: none;
+  border-bottom: none;
+  box-sizing: border-box;
+}
+.wb-restore-square::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 7px;
+  height: 7px;
+  border: 1.5px solid currentColor;
+  box-sizing: border-box;
+  background: var(--blue, #1313ba);
+}
+.winbox.object-window.maximizing,
+.winbox.object-window.max {
   box-shadow: none !important;
   border-radius: 0 !important;
+  border: none !important;
+}
+.object-window.max .wb-max .wb-max-square,
+.object-window.maximizing .wb-max .wb-max-square {
+  display: none;
+}
+.object-window.max .wb-max .wb-restore-square,
+.object-window.maximizing .wb-max .wb-restore-square {
+  display: inline-block;
 }
 body.desktop-collapsed .winbox.object-window {
   opacity: 0 !important;

@@ -126,7 +126,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
       template.innerHTML = `<div class="wb-header">
         <div class="wb-control">
           <button type="button" class="wb-collapse" aria-label="Minimize window">−</button>
-          <button type="button" class="wb-max" aria-label="Maximize window"><span class="wb-max-square" aria-hidden="true"></span></button>
+          <button type="button" class="wb-max" aria-label="Maximize window"><span class="wb-max-square" aria-hidden="true"></span><span class="wb-restore-square" aria-hidden="true"></span></button>
           <button type="button" class="wb-close">×</button>
         </div>
         <div class="wb-drag">
@@ -196,21 +196,30 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
           maxHandler.current();
           return;
         }
+        if (win.max) {
+          win.restore();
+          frame.classList.remove("maximizing");
+          maxButton.setAttribute("aria-label", `Maximize ${title} window`);
+          return;
+        }
         const url = maxUrl.current;
         if (!url) {
           win.maximize();
+          maxButton.setAttribute("aria-label", `Restore ${title} window`);
           return;
         }
 
         frame.classList.add("maximizing");
+        maxButton.setAttribute("aria-label", `Restore ${title} window`);
         frame.style.pointerEvents = "none";
         frame.style.zIndex = "999999";
         frame.style.transition = "top 220ms cubic-bezier(0.16, 1, 0.3, 1), left 220ms cubic-bezier(0.16, 1, 0.3, 1), width 220ms cubic-bezier(0.16, 1, 0.3, 1), height 220ms cubic-bezier(0.16, 1, 0.3, 1)";
-        frame.style.top = "19px";
-        frame.style.left = "1px";
-        frame.style.width = "calc(100vw - 2px)";
-        frame.style.height = "calc(100vh - 20px)";
+        frame.style.top = "18px";
+        frame.style.left = "0px";
+        frame.style.width = "100vw";
+        frame.style.height = "calc(100vh - 18px)";
         frame.style.boxShadow = "none";
+        frame.style.border = "none";
 
         const redirect = () => {
           if (typeof document !== "undefined" && "startViewTransition" in document && typeof (document as unknown as { startViewTransition?: (cb: () => void) => unknown }).startViewTransition === "function") {

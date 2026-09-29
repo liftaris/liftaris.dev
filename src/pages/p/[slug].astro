@@ -48,7 +48,7 @@ const content = { collection: "things", id: thing.data.id ?? thing.id, slug: thi
 const body = thing.data.body;
 const isWindow = Astro.url.searchParams.get("window") === "1";
 ---
-<Portfolio embedded={isWindow} title={title} windowTitle={name} windowIcon={thingIcon || "📄"} content={content}>
+<Portfolio embedded={isWindow} title={title} windowTitle={name} windowIcon={thingIcon || "📄"} restoreSlug={slug} content={content}>
   <article class="page-content">
     {!isWindow && <h1 {...thing.edit?.name}>{name}</h1>}
     {body && Array.isArray(body) && body.length > 0 ? (
