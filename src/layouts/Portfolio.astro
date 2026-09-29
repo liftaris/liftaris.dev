@@ -10,6 +10,7 @@ interface Props { title?: string; embedded?: boolean; content?: { collection: st
 const { title = "Kaio Barbosa", content, embedded = false } = Astro.props;
 const pathname = Astro.url.pathname.replace(/\/$/, "") || "/";
 const onBlog = pathname.startsWith("/blog/");
+const isHome = pathname === "/";
 const page = createPublicPageContext({ Astro, kind: content ? "content" : "custom", title,
   description: "Software engineer building BazaarGhost and Herm TUI.", content,
   canonical: new URL(pathname, Astro.site).href, siteName: "Kaio Barbosa" });
@@ -26,12 +27,42 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
   </head>
   <body class:list={{ "embedded-post": embedded }}>
     <EmDashBodyStart page={page} />
-    <div class:list={["shell", { onBlog, onHome: pathname === "/" }]}>
-      {!embedded && <div class="identity">
-        <a class="name" href="/" aria-label="Home"><h1><span>Kaio</span><span>Barbosa</span></h1></a>
-      </div>}
-      <section class="stageContent"><slot /></section>
-    </div>
+    {!embedded ? (
+      <div class="site-window" data-home={isHome}>
+        <header class="site-window-header">
+          <div class="site-window-drag" />
+          <div class="site-window-controls">
+            {isHome ? (
+              <button
+                type="button"
+                class="site-window-close"
+                id="site-window-close-btn"
+                aria-label="Close window"
+                onclick="window.dispatchEvent(new CustomEvent('liftaris:collapse-desktop'))"
+              >
+                ×
+              </button>
+            ) : (
+              <a href="/" class="site-window-close" aria-label="Close to homepage">
+                ×
+              </a>
+            )}
+          </div>
+        </header>
+        <div class="site-window-body">
+          <div class:list={["shell", { onBlog, onHome: isHome }]}>
+            <div class="identity">
+              <a class="name" href="/" aria-label="Home"><h1><span>Kaio</span><span>Barbosa</span></h1></a>
+            </div>
+            <section class="stageContent"><slot /></section>
+          </div>
+        </div>
+      </div>
+    ) : (
+      <div class:list={["shell", { onBlog, onHome: isHome }]}>
+        <section class="stageContent"><slot /></section>
+      </div>
+    )}
     <EmDashBodyEnd page={page} />
   </body>
 </html>

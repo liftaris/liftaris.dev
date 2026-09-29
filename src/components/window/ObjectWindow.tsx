@@ -139,7 +139,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
         template, index: 20, header: 18,
         class: ["object-window", "no-full", "no-resize", "no-animation", windowClass].filter(Boolean).join(" "),
         width, height, minwidth: 1, minheight: 44,
-        top: 12, left: 12, right: 12, bottom: 12,
+        top: 36, left: 12, right: 12, bottom: 12,
         x: initialBounds?.left ?? origin.left + 24, y: initialBounds?.top ?? origin.top + 16,
         onclose(force) {
           if (force) return false;
@@ -206,10 +206,10 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
         frame.style.pointerEvents = "none";
         frame.style.zIndex = "999999";
         frame.style.transition = "top 220ms cubic-bezier(0.16, 1, 0.3, 1), left 220ms cubic-bezier(0.16, 1, 0.3, 1), width 220ms cubic-bezier(0.16, 1, 0.3, 1), height 220ms cubic-bezier(0.16, 1, 0.3, 1)";
-        frame.style.top = "0px";
-        frame.style.left = "0px";
-        frame.style.width = "100vw";
-        frame.style.height = "100vh";
+        frame.style.top = "36px";
+        frame.style.left = "1px";
+        frame.style.width = "calc(100vw - 2px)";
+        frame.style.height = "calc(100vh - 37px)";
         frame.style.boxShadow = "none";
 
         const redirect = () => {

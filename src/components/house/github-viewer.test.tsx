@@ -75,15 +75,13 @@ describe("GitHub custom Thing", () => {
     expect(css).toContain("body.desktop-collapsed .winbox.object-window");
   });
 
-  test("House renders outermost desktop window with header and controls", () => {
-    const html = renderToStaticMarkup(<House />);
-    expect(html).toContain('class="desktop-window "');
-    expect(html).toContain('class="desktop-window-header"');
-    expect(html).toContain('class="desktop-window-title">Kaio Barbosa</span>');
-    expect(html).toContain('src="/face.svg"');
-    expect(html).toContain('class="wb-collapse"');
-    expect(html).toContain('class="wb-max"');
-    expect(html).toContain('class="wb-close"');
+  test("Portfolio.astro defines outermost site-window with close button to homepage", async () => {
+    const astroLayout = await Bun.file(new URL("../../layouts/Portfolio.astro", import.meta.url).pathname).text();
+    expect(astroLayout).toContain('class="site-window"');
+    expect(astroLayout).toContain('class="site-window-header"');
+    expect(astroLayout).toContain('class="site-window-close"');
+    expect(astroLayout).toContain('href="/"');
+    expect(astroLayout).toContain("liftaris:collapse-desktop");
   });
 
   test("public/face.svg exists as an SVG avatar icon", async () => {
@@ -98,10 +96,14 @@ describe("GitHub custom Thing", () => {
     expect(pageText).toContain("Portfolio");
   });
 
-  test("house.css defines desktop-window and pinned-face-avatar", async () => {
-    const css = await Bun.file(new URL("./house.css", import.meta.url).pathname).text();
-    expect(css).toContain(".desktop-window");
-    expect(css).toContain(".pinned-face-avatar");
-    expect(css).toContain("position: fixed;");
+  test("global.css and house.css define site-window and pinned-face-avatar", async () => {
+    const globalCss = await Bun.file(new URL("../../styles/global.css", import.meta.url).pathname).text();
+    expect(globalCss).toContain(".site-window");
+    expect(globalCss).toContain(".site-window-header");
+    expect(globalCss).toContain(".site-window-close");
+
+    const houseCss = await Bun.file(new URL("./house.css", import.meta.url).pathname).text();
+    expect(houseCss).toContain(".pinned-face-avatar");
+    expect(houseCss).toContain("position: fixed;");
   });
 });

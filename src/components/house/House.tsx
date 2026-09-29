@@ -340,8 +340,13 @@ export function House({
   }, [effectiveThings, foldersById, markVisited]);
 
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isMaximized, setIsMaximized] = useState(false);
   const faceAvatarRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const handleCollapse = () => setIsCollapsed(true);
+    window.addEventListener("liftaris:collapse-desktop", handleCollapse);
+    return () => window.removeEventListener("liftaris:collapse-desktop", handleCollapse);
+  }, []);
 
   useEffect(() => {
     if (isCollapsed) {
@@ -367,74 +372,20 @@ export function House({
   }, [isCollapsed]);
 
   return (
-    <div className="house" data-ready={ready} data-collapsed={isCollapsed} data-maximized={isMaximized}>
-      <div
-        className={`desktop-window ${isMaximized ? "is-maximized" : ""}`}
-        data-collapsed={isCollapsed}
-        aria-label="Desktop Window"
-      >
-        <div className="desktop-window-header">
-          <div className="desktop-window-drag">
-            <button
-              type="button"
-              className="object-window-icon"
-              onClick={() => setIsCollapsed(true)}
-              aria-label="Collapse desktop"
-              title="Click to collapse"
-            >
-              <img src="/face.svg" alt="" className="object-window-image" />
-            </button>
-            <div className="desktop-window-handle">
-              <span className="desktop-window-title">Kaio Barbosa</span>
-            </div>
-          </div>
-          <div className="desktop-window-controls">
-            <button
-              type="button"
-              className="wb-collapse"
-              aria-label="Minimize desktop"
-              title="Minimize desktop"
-              onClick={() => setIsCollapsed(true)}
-            >
-              −
-            </button>
-            <button
-              type="button"
-              className="wb-max"
-              aria-label={isMaximized ? "Restore desktop" : "Maximize desktop"}
-              title={isMaximized ? "Restore desktop" : "Maximize desktop"}
-              onClick={() => setIsMaximized((prev) => !prev)}
-            >
-              <span className="wb-max-square" aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              className="wb-close"
-              aria-label="Close desktop"
-              title="Close desktop"
-              onClick={() => setIsCollapsed(true)}
-            >
-              ×
-            </button>
-          </div>
-        </div>
-
-        <div className="desktop-window-body">
-          <HouseClump
-            gifts={snapshot?.gifts ?? EMPTY_GIFTS}
-            inspectedIds={opened.map((item) => item.object.id)}
-            visitedIds={visitedIds}
-            thingsConfig={mergedThingsConfig}
-            desktopObjects={desktopThings}
-            isAdmin={isAdmin}
-            sentGiftIds={sentGiftIds}
-            onOpen={open}
-            onTrash={trashGift}
-          />
-          {loadError && <p className="house-connection" role="status">{loadError}</p>}
-          {sessionError && <p className="house-connection" role="status">{sessionError}</p>}
-        </div>
-      </div>
+    <div className="house" data-ready={ready} data-collapsed={isCollapsed}>
+      <HouseClump
+        gifts={snapshot?.gifts ?? EMPTY_GIFTS}
+        inspectedIds={opened.map((item) => item.object.id)}
+        visitedIds={visitedIds}
+        thingsConfig={mergedThingsConfig}
+        desktopObjects={desktopThings}
+        isAdmin={isAdmin}
+        sentGiftIds={sentGiftIds}
+        onOpen={open}
+        onTrash={trashGift}
+      />
+      {loadError && <p className="house-connection" role="status">{loadError}</p>}
+      {sessionError && <p className="house-connection" role="status">{sessionError}</p>}
 
       {isCollapsed && (
         <button
