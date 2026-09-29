@@ -2,7 +2,7 @@
 
 :root {
   --font-mono: "Geist Mono Variable";
-  --font-serif: "Lora", serif;
+  --font-serif: "Young Serif";
   --blue: #1313ba;
   /* Blend grain into blue surfaces, keeping foreground text and artwork clean. */
   --blue-background:
@@ -12,7 +12,7 @@
   --ink: #06113a;
   --site-gutter: clamp(16px, 3vw, 56px);
   --identity-size: clamp(28px, 9vw, 168px);
-  --desktop-bg: var(--paper, #fffbed);
+  --desktop-bg: url("/landing-bg.webp") center / cover no-repeat fixed var(--paper, #fffbed);
   --window-bar: #245EDE;
 }
 
@@ -39,7 +39,7 @@ html:has(> body.on-home) {
 body.on-home,
 body:has(> .site-window[data-home="true"]) {
   padding: 10px;
-  background: var(--desktop-bg);
+  background: transparent;
 }
 
 a { color: inherit; text-decoration: none; }
@@ -258,10 +258,8 @@ body.desktop-collapsed .site-window {
 .name h1 {
   margin: 0;
   font-family: var(--font-serif), Georgia, serif;
-  font-optical-sizing: auto;
   font-size: var(--identity-size);
-  font-weight: 500;
-  font-style: normal;
+  font-weight: 400;
   letter-spacing: -0.025em;
   line-height: 1.4;
 }
@@ -463,10 +461,8 @@ body.embedded-post { background: var(--paper); padding: 0; min-height: 0; }
 .row h3 {
   margin: 8px 0 12px;
   font-family: var(--font-serif), Georgia, serif;
-  font-optical-sizing: auto;
   font-size: clamp(38px, 5vw, 64px);
-  font-weight: 500;
-  font-style: normal;
+  font-weight: 400;
   letter-spacing: -0.04em;
   line-height: 0.86;
 }
@@ -556,9 +552,7 @@ li { margin: 8px 0; }
 .page-content h3,
 .page-content h4 {
   font-family: var(--font-serif), Georgia, serif;
-  font-optical-sizing: auto;
-  font-weight: 500;
-  font-style: normal;
+  font-weight: 400;
   color: var(--blue);
   letter-spacing: -0.03em;
 }
@@ -687,9 +681,7 @@ li { margin: 8px 0; }
 .article-content h2,
 .article-content h3 {
   font-family: var(--font-serif), Georgia, serif;
-  font-optical-sizing: auto;
-  font-weight: 500;
-  font-style: normal;
+  font-weight: 400;
   letter-spacing: -0.035em;
   line-height: 0.95;
   color: var(--ink);

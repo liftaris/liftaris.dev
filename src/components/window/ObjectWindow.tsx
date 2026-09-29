@@ -234,6 +234,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
             frame.style.transition = "";
             frame.style.boxShadow = "";
             frame.style.border = "";
+            frame.style.borderRadius = "";
             frame.classList.remove("restoring");
             win.restore();
             isAnimating.current = false;
@@ -249,14 +250,26 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
             return;
           }
 
+          const isFolder = frame.classList.contains("folder-window") || Boolean(frame.querySelector(".folder"));
+          const outerBody = isFolder ? document.querySelector<HTMLElement>(".site-window-body") : null;
+          const outerRect = outerBody ? outerBody.getBoundingClientRect() : null;
+
           isAnimating.current = true;
           frame.classList.add("maximizing");
           maxButton.setAttribute("aria-label", `Restore ${title} window`);
           frame.style.transition = "top 220ms cubic-bezier(0.16, 1, 0.3, 1), left 220ms cubic-bezier(0.16, 1, 0.3, 1), width 220ms cubic-bezier(0.16, 1, 0.3, 1), height 220ms cubic-bezier(0.16, 1, 0.3, 1)";
-          frame.style.top = "18px";
-          frame.style.left = "0px";
-          frame.style.width = "100vw";
-          frame.style.height = "calc(100vh - 18px)";
+          if (outerRect) {
+            frame.style.top = `${outerRect.top}px`;
+            frame.style.left = `${outerRect.left}px`;
+            frame.style.width = `${outerRect.width}px`;
+            frame.style.height = `${outerRect.height}px`;
+            frame.style.borderRadius = "0 0 3px 3px";
+          } else {
+            frame.style.top = "18px";
+            frame.style.left = "0px";
+            frame.style.width = "100vw";
+            frame.style.height = "calc(100vh - 18px)";
+          }
           frame.style.boxShadow = "none";
           frame.style.border = "none";
 

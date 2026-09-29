@@ -137,7 +137,17 @@
   width: 100vw !important;
   height: calc(100vh - 18px) !important;
 }
-.winbox.object-window.maximizing .wb-header {
+body.on-home .winbox.folder-window.max,
+body.on-home .winbox.object-window.max:has(.folder) {
+  top: 28px !important;
+  left: 10px !important;
+  width: calc(100vw - 20px) !important;
+  width: calc(100dvw - 20px) !important;
+  height: calc(100vh - 38px) !important;
+  height: calc(100dvh - 38px) !important;
+  border-radius: 0 0 3px 3px !important;
+}
+.winbox.object-window.maximizing:not(.folder-window):not(:has(.folder)) .wb-header {
   opacity: 0;
   transition: opacity 160ms ease;
   pointer-events: none;

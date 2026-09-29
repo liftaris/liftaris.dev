@@ -141,7 +141,7 @@
   font-size: 14px;
   line-height: 1.6;
 }
-.gift-intro h2 { margin: 0 0 16px; font-family: var(--font-serif), serif; font-optical-sizing: auto; font-weight: 500; font-style: normal; font-size: 32px; line-height: 1.2; }
+.gift-intro h2 { margin: 0 0 16px; font-family: var(--font-serif), serif; font-weight: 400; font-size: 32px; line-height: 1.2; }
 .gift-intro p { margin: 0 0 12px; }
 .gift-intro p:last-child { font-size: 12px; }
 .gift-preview {

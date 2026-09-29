@@ -15,7 +15,7 @@ a { color: inherit; text-decoration: none; }
 .lab-topline > a > span, .lab-topline > span { color: #747169; font-weight: 400; }
 .clump-lab main { width: 100%; flex: 1; padding: 42px 0 36px; text-align: center; }
 .lab-eyebrow { margin: 0 0 16px; color: #79766d; font-size: 9px; letter-spacing: .13em; }
-.lab-intro h1 { font-family: "Lora", Georgia, serif; font-optical-sizing: auto; font-size: clamp(30px, 3vw, 44px); font-weight: 500; font-style: normal; letter-spacing: -.04em; margin: 0; line-height: 1.25; }
+.lab-intro h1 { font-family: "Young Serif", Georgia, serif; font-size: clamp(30px, 3vw, 44px); font-weight: 400; letter-spacing: -.04em; margin: 0; line-height: 1.25; }
 .lab-intro > p:last-child { margin: 12px 0 28px; color: #79766d; font-size: 12px; }
 .scene-picker { display: inline-flex; gap: 5px; padding: 4px; border: 1px solid #dedcd4; border-radius: 8px; max-width: 100%; }
 .scene-picker button { display: flex; align-items: center; gap: 9px; border: none; border-radius: 4px; background: transparent; padding: 10px 14px; font-size: 11px; min-height: 40px; white-space: nowrap; }
