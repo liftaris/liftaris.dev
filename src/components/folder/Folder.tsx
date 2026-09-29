@@ -1,7 +1,6 @@
 import type { ComponentProps } from "react";
 import { getBackgroundStyle, isImageUrl, type BackgroundProps } from "../clump/model";
 import { ObjectWindow } from "../window/ObjectWindow";
-import "./folder.css";
 
 type FolderIcon = BackgroundProps & {
   id: string;
@@ -50,7 +49,13 @@ export function FolderContent<T>({
   const folderBg = getBackgroundStyle(folder);
   return (
     <>
-      <ul className="folder" style={folderBg} data-has-bg={folderBg ? true : undefined} aria-label={`${folder.name} contents`} data-monochrome={monochrome}>
+      <ul
+        className="folder grid [grid-template-columns:repeat(auto-fill,minmax(min(100%,96px),1fr))] content-start gap-x-3 gap-y-4 m-0 p-0 list-none w-full box-border data-[has-bg=true]:rounded"
+        style={folderBg}
+        data-has-bg={folderBg ? true : undefined}
+        aria-label={`${folder.name} contents`}
+        data-monochrome={monochrome}
+      >
         {folder.items.map((entry) => {
           const isFolder = entry.kind === "folder" || entry.id === "lab-folder" || entry.id.endsWith("-folder");
           const shouldTint = thingsConfig?.[entry.id]?.tint_when_visited ?? true;
@@ -59,12 +64,18 @@ export function FolderContent<T>({
           const entryBg = getBackgroundStyle(entry);
           const artwork = (
             <>
-              <span className="folder-entry-art" style={entryBg} data-has-bg={entryBg ? true : undefined} data-shape={entry.shape} aria-hidden="true">
+              <span
+                className="folder-entry-art grid place-items-center size-14 text-5xl leading-none pointer-events-none select-none [transform:translateZ(0)] data-[has-bg=true]:rounded-lg data-[has-bg=true]:overflow-hidden data-[shape=circle]:rounded-full"
+                style={entryBg}
+                data-has-bg={entryBg ? true : undefined}
+                data-shape={entry.shape}
+                aria-hidden="true"
+              >
                 {iconImage ? (
                   <img
                     src={iconImage}
                     alt=""
-                    className="folder-entry-image"
+                    className="folder-entry-image block size-12 max-w-full max-h-full object-contain pointer-events-none select-none"
                     loading="lazy"
                     decoding="async"
                   />
@@ -72,19 +83,26 @@ export function FolderContent<T>({
                   entry.emoji
                 )}
               </span>
-              <span>{entry.name}</span>
+              <span className="group-hover:not-[[aria-disabled=true]]:underline group-hover:underline-offset-4 group-hover:decoration-2 group-focus-visible:not-[[aria-disabled=true]]:underline group-focus-visible:underline-offset-4 group-focus-visible:decoration-2 group-data-[visited=true]:group-hover:decoration-visited-purple group-data-[visited=true]:group-focus-visible:decoration-visited-purple">
+                {entry.name}
+              </span>
             </>
           );
           return (
-            <li key={entry.id}>
+            <li key={entry.id} className="min-w-0">
               {entry.kind === "link" ? (
-                <a className="folder-entry" data-visited={visited} href={entry.href} onClick={() => onVisit?.(entry.id)}>
+                <a
+                  className="folder-entry group flex flex-col items-center gap-2 w-full min-h-24 px-1.5 py-2.5 border border-transparent bg-transparent text-inherit font-inherit text-xs leading-[1.4] text-center no-underline [overflow-wrap:anywhere] cursor-pointer touch-manipulation outline-none hover:no-underline hover:bg-blue/7 focus-visible:no-underline focus-visible:outline-none focus-visible:border-transparent aria-disabled:cursor-default aria-disabled:opacity-65"
+                  data-visited={visited}
+                  href={entry.href}
+                  onClick={() => onVisit?.(entry.id)}
+                >
                   {artwork}
                 </a>
               ) : (
                 <button
                   type="button"
-                  className="folder-entry"
+                  className="folder-entry group flex flex-col items-center gap-2 w-full min-h-24 px-1.5 py-2.5 border border-transparent bg-transparent text-inherit font-inherit text-xs leading-[1.4] text-center no-underline [overflow-wrap:anywhere] cursor-pointer touch-manipulation outline-none hover:no-underline hover:bg-blue/7 focus-visible:no-underline focus-visible:outline-none focus-visible:border-transparent aria-disabled:cursor-default aria-disabled:opacity-65"
                   data-folder-entry={entry.id}
                   data-visited={visited}
                   aria-haspopup="dialog"
@@ -107,7 +125,7 @@ export function FolderContent<T>({
           );
         })}
       </ul>
-      {folder.items.length === 0 && <p className="folder-empty">This folder is empty.</p>}
+      {folder.items.length === 0 && <p className="folder-empty m-0 text-xs">This folder is empty.</p>}
     </>
   );
 }

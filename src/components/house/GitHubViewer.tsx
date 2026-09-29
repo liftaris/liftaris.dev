@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { FALLBACK_TOTAL, FALLBACK_DAYS, type ContributionDay } from "./github-data";
-import "./github-viewer.css";
 
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -88,27 +87,27 @@ export function GitHubViewer() {
   }, [data.days]);
 
   return (
-    <div className="github-viewer">
-      <div className="github-header">
-        <div className="github-profile">
-          <span className="github-handle">@liftaris</span>
-          <span className="github-separator">·</span>
-          <span className="github-stats">{data.total.toLocaleString()} contributions in the last year</span>
+    <div className="github-viewer flex flex-col gap-3 font-mono text-blue select-none w-fit">
+      <div className="github-header flex items-baseline justify-between flex-wrap gap-2 leading-tight">
+        <div className="github-profile flex items-baseline gap-2 text-xs leading-tight">
+          <span className="github-handle font-bold text-xs">@liftaris</span>
+          <span className="github-separator opacity-50">·</span>
+          <span className="github-stats text-xs opacity-90">{data.total.toLocaleString()} contributions in the last year</span>
         </div>
       </div>
 
-      <div className="github-graph-container" role="region" aria-label="GitHub contribution calendar">
-        <div className="github-graph-inner">
-          <div className="github-months" aria-hidden="true">
+      <div className="github-graph-container w-full overflow-x-auto overscroll-contain pb-0.5 [scrollbar-width:thin] [scrollbar-color:var(--color-blue)_transparent]" role="region" aria-label="GitHub contribution calendar">
+        <div className="github-graph-inner flex flex-col w-fit">
+          <div className="github-months grid [grid-auto-flow:column] [grid-auto-columns:10px] gap-[3px] ml-7 mb-1 h-3 relative" aria-hidden="true">
             {monthLabels.map((m, idx) => (
-              <span key={idx} className="github-month-label" style={{ left: `${m.left}px` }}>
+              <span key={idx} className="github-month-label absolute top-0 text-[10px] leading-3 text-blue whitespace-nowrap" style={{ left: `${m.left}px` }}>
                 {m.name}
               </span>
             ))}
           </div>
 
-          <div className="github-grid-wrapper">
-            <div className="github-days-labels" aria-hidden="true">
+          <div className="github-grid-wrapper flex gap-1.5 items-start">
+            <div className="github-days-labels grid [grid-template-rows:repeat(7,10px)] gap-[3px] text-[9px] leading-[10px] text-blue opacity-75 w-5.5 text-right shrink-0" aria-hidden="true">
               <span>Sun</span>
               <span>Mon</span>
               <span>Tue</span>
@@ -118,14 +117,14 @@ export function GitHubViewer() {
               <span>Sat</span>
             </div>
 
-            <div className="github-grid" role="grid" aria-label="Contribution grid">
+            <div className="github-grid flex gap-[3px]" role="grid" aria-label="Contribution grid">
               {weeks.map((week, wIdx) => (
-                <div key={wIdx} className="github-week-col" role="row">
+                <div key={wIdx} className="github-week-col flex flex-col gap-[3px]" role="row">
                   {week.map((day, dIdx) =>
                     day ? (
                       <div
                         key={day.date}
-                        className="github-day"
+                        className="github-day size-2.5 box-border rounded-[1px] border border-blue bg-transparent cursor-pointer transition-transform duration-75 hover:scale-140 hover:z-[5] hover:outline hover:outline-[1.5px] hover:outline-blue hover:outline-offset-1 focus-visible:scale-140 focus-visible:z-[5] focus-visible:outline focus-visible:outline-[1.5px] focus-visible:outline-blue focus-visible:outline-offset-1 data-[level='0']:bg-transparent data-[level='1']:bg-blue/30 data-[level='2']:bg-blue/55 data-[level='3']:bg-blue/80 data-[level='4']:bg-blue"
                         data-level={day.level}
                         role="gridcell"
                         tabIndex={0}
@@ -133,7 +132,7 @@ export function GitHubViewer() {
                         title={`${day.count} contribution${day.count === 1 ? "" : "s"} on ${formatDate(day.date)}`}
                       />
                     ) : (
-                      <div key={`empty-${dIdx}`} className="github-day-placeholder" aria-hidden="true" />
+                      <div key={`empty-${dIdx}`} className="github-day-placeholder size-2.5 invisible" aria-hidden="true" />
                     )
                   )}
                 </div>
@@ -141,34 +140,35 @@ export function GitHubViewer() {
             </div>
           </div>
 
-          <div className="github-footer">
-            <div className="github-legend" aria-hidden="true">
+          <div className="github-footer flex justify-end items-center mt-2">
+            <div className="github-legend flex items-center gap-1 text-[10px] leading-[10px] text-blue [&_span]:px-0.5 [&_.github-day]:cursor-default [&_.github-day]:hover:scale-100 [&_.github-day]:hover:outline-none" aria-hidden="true">
               <span>Less</span>
-              <div className="github-day" data-level={0} />
-              <div className="github-day" data-level={1} />
-              <div className="github-day" data-level={2} />
-              <div className="github-day" data-level={3} />
-              <div className="github-day" data-level={4} />
+              <div className="github-day size-2.5 box-border rounded-[1px] border border-blue bg-transparent cursor-pointer transition-transform duration-75 hover:scale-140 hover:z-[5] hover:outline hover:outline-[1.5px] hover:outline-blue hover:outline-offset-1 focus-visible:scale-140 focus-visible:z-[5] focus-visible:outline focus-visible:outline-[1.5px] focus-visible:outline-blue focus-visible:outline-offset-1 data-[level='0']:bg-transparent data-[level='1']:bg-blue/30 data-[level='2']:bg-blue/55 data-[level='3']:bg-blue/80 data-[level='4']:bg-blue" data-level={0} />
+              <div className="github-day size-2.5 box-border rounded-[1px] border border-blue bg-transparent cursor-pointer transition-transform duration-75 hover:scale-140 hover:z-[5] hover:outline hover:outline-[1.5px] hover:outline-blue hover:outline-offset-1 focus-visible:scale-140 focus-visible:z-[5] focus-visible:outline focus-visible:outline-[1.5px] focus-visible:outline-blue focus-visible:outline-offset-1 data-[level='0']:bg-transparent data-[level='1']:bg-blue/30 data-[level='2']:bg-blue/55 data-[level='3']:bg-blue/80 data-[level='4']:bg-blue" data-level={1} />
+              <div className="github-day size-2.5 box-border rounded-[1px] border border-blue bg-transparent cursor-pointer transition-transform duration-75 hover:scale-140 hover:z-[5] hover:outline hover:outline-[1.5px] hover:outline-blue hover:outline-offset-1 focus-visible:scale-140 focus-visible:z-[5] focus-visible:outline focus-visible:outline-[1.5px] focus-visible:outline-blue focus-visible:outline-offset-1 data-[level='0']:bg-transparent data-[level='1']:bg-blue/30 data-[level='2']:bg-blue/55 data-[level='3']:bg-blue/80 data-[level='4']:bg-blue" data-level={2} />
+              <div className="github-day size-2.5 box-border rounded-[1px] border border-blue bg-transparent cursor-pointer transition-transform duration-75 hover:scale-140 hover:z-[5] hover:outline hover:outline-[1.5px] hover:outline-blue hover:outline-offset-1 focus-visible:scale-140 focus-visible:z-[5] focus-visible:outline focus-visible:outline-[1.5px] focus-visible:outline-blue focus-visible:outline-offset-1 data-[level='0']:bg-transparent data-[level='1']:bg-blue/30 data-[level='2']:bg-blue/55 data-[level='3']:bg-blue/80 data-[level='4']:bg-blue" data-level={3} />
+              <div className="github-day size-2.5 box-border rounded-[1px] border border-blue bg-transparent cursor-pointer transition-transform duration-75 hover:scale-140 hover:z-[5] hover:outline hover:outline-[1.5px] hover:outline-blue hover:outline-offset-1 focus-visible:scale-140 focus-visible:z-[5] focus-visible:outline focus-visible:outline-[1.5px] focus-visible:outline-blue focus-visible:outline-offset-1 data-[level='0']:bg-transparent data-[level='1']:bg-blue/30 data-[level='2']:bg-blue/55 data-[level='3']:bg-blue/80 data-[level='4']:bg-blue" data-level={4} />
               <span>More</span>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="github-actions">
+      <div className="github-actions flex justify-start mt-0.5">
         <a
           href="https://github.com/liftaris"
           target="_blank"
           rel="noopener noreferrer"
-          className="github-view-button"
+          className="github-view-button group inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-transparent text-blue border-[1.5px] border-blue rounded font-mono text-xs font-semibold leading-3.5 no-underline cursor-pointer transition-all duration-150 hover:bg-blue hover:text-paper hover:no-underline hover:-translate-y-0.5 active:translate-y-0 focus-visible:outline-2 focus-visible:outline-blue focus-visible:outline-offset-[3px]"
         >
-          <svg className="github-btn-icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true">
+          <svg className="github-btn-icon size-3.5 shrink-0" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true">
             <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
           </svg>
           <span>View on GitHub</span>
-          <span className="github-btn-arrow" aria-hidden="true">↗</span>
+          <span className="github-btn-arrow text-xs leading-none transition-transform duration-120 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden="true">↗</span>
         </a>
       </div>
     </div>
   );
 }
+

@@ -4,7 +4,6 @@ import { createPortal } from "react-dom";
 import type WinBox from "winbox/src/js/winbox.js";
 import { isImageUrl } from "../clump/model";
 import "winbox/dist/css/winbox.min.css";
-import "./window.css";
 
 type ObjectWindowProps = {
   title: string;

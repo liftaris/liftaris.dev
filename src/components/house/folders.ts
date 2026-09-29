@@ -31,8 +31,6 @@ export const DEFAULT_THINGS: readonly ThingSpec[] = [
   { id: "leave-gift", name: "Leave a gift", emoji: "🎁", kind: "action", desktop: true, parent_id: null, action: "leave-gift", href: null, tint_when_visited: true, shape: "rectangle", anchor: false, width: 64, height: 64, sort_order: 11 },
   { id: "portfolio-folder", name: "Portfolio", emoji: "📁", kind: "folder", desktop: true, parent_id: null, action: "none", href: null, tint_when_visited: false, shape: "rectangle", anchor: false, width: 64, height: 56, sort_order: 12 },
   { id: "writing-folder", name: "Writing", emoji: "📂", kind: "folder", desktop: true, parent_id: null, action: "none", href: null, tint_when_visited: false, shape: "rectangle", anchor: false, width: 64, height: 56, sort_order: 13 },
-  { id: "lab-folder", name: "Lab", emoji: "📁", kind: "folder", desktop: false, parent_id: "portfolio-folder", action: "none", href: null, tint_when_visited: false, shape: "rectangle", anchor: false, width: 64, height: 56, sort_order: 14 },
-  { id: "clump-lab", name: "A place for my things", emoji: "🐙", kind: "link", desktop: false, parent_id: "lab-folder", action: "none", href: "/lab/clump", tint_when_visited: true, shape: "rectangle", anchor: false, width: 56, height: 64, sort_order: 15 },
 ];
 
 export const WRITING_FOLDER_OBJECT: ObjectSpec = DEFAULT_THINGS.find((t) => t.id === "writing-folder") ?? {

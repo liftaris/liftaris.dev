@@ -84,14 +84,14 @@ test("HouseClump renders <img> for things with image or image URL emoji", () => 
   );
 
   // Gif thing renders img with GIF url and visited tint
-  expect(scene).toContain('<img src="https://example.com/cat.gif" alt="" class="house-object-image"');
+  expect(scene).toMatch(/<img src="https:\/\/example\.com\/cat\.gif" alt="" class="house-object-image[^"]*"/);
   expect(scene).toMatch(/data-object="gif-thing"[^>]*data-visited="true"/);
 
   // Webp thing renders img from emoji url
-  expect(scene).toContain('<img src="https://example.com/icon.webp" alt="" class="house-object-image"');
+  expect(scene).toMatch(/<img src="https:\/\/example\.com\/icon\.webp" alt="" class="house-object-image[^"]*"/);
 
   // Standard emoji thing renders raw emoji text
-  expect(scene).toContain('<span class="house-object-art" aria-hidden="true">🐙</span>');
+  expect(scene).toMatch(/<span class="house-object-art[^"]*" aria-hidden="true">🐙<\/span>/);
 });
 
 test("Folder renders <img> for items and links with image icons", () => {
@@ -132,9 +132,9 @@ test("Folder renders <img> for items and links with image icons", () => {
     <FolderContent folder={folderSpec} />
   );
 
-  expect(html).toContain('<img src="/images/sparkle.gif" alt="" class="folder-entry-image"');
-  expect(html).toContain('<img src="https://example.com/globe.avif" alt="" class="folder-entry-image"');
-  expect(html).toContain('<span class="folder-entry-art" aria-hidden="true">📝</span>');
+  expect(html).toMatch(/<img src="\/images\/sparkle\.gif" alt="" class="folder-entry-image[^"]*"/);
+  expect(html).toMatch(/<img src="https:\/\/example\.com\/globe\.avif" alt="" class="folder-entry-image[^"]*"/);
+  expect(html).toMatch(/<span class="folder-entry-art[^"]*" aria-hidden="true">📝<\/span>/);
 });
 
 test("getBackgroundStyle converts background properties into expected CSS rules", () => {
@@ -263,15 +263,15 @@ test("HouseClump renders trash emoji icon at bottom right of landing page physic
   );
 
   // Trash container at bottom right of physics area
-  expect(scene).toContain('class="house-trash"');
+  expect(scene).toMatch(/class="house-trash[^"]*"/);
   expect(scene).toContain('role="region"');
   expect(scene).toContain('aria-label="Trash"');
   expect(scene).toContain('title="Drag gifts here to remove them"');
   expect(scene).toContain("🗑️");
 
   // Physics area wrapper contains both the viewport and trash element
-  expect(scene).toContain('class="house-clump-area"');
-  expect(scene).toContain('class="house-viewport"');
+  expect(scene).toMatch(/class="house-clump-area[^"]*"/);
+  expect(scene).toMatch(/class="house-viewport[^"]*"/);
 
   // Accessible instructions mention senders and admins can drag gifts to trash
   expect(scene).toContain("Senders and admins can drag gifts to the trash icon at the bottom right to remove them.");
@@ -279,8 +279,8 @@ test("HouseClump renders trash emoji icon at bottom right of landing page physic
 
 test("House renders HouseClump containing the trash zone", () => {
   const html = renderToStaticMarkup(<House />);
-  expect(html).toContain('class="house"');
-  expect(html).toContain('class="house-trash"');
+  expect(html).toMatch(/class="house[^"]*"/);
+  expect(html).toMatch(/class="house-trash[^"]*"/);
   expect(html).toContain("🗑️");
 });
 
@@ -289,16 +289,16 @@ test("HouseClump trashcan is hidden by default and only shows when a deletable i
   const resting = renderToStaticMarkup(
     <HouseClump gifts={[gift]} inspectedIds={[]} onOpen={() => {}} />
   );
-  expect(resting).toContain('class="house-trash"');
+  expect(resting).toMatch(/class="house-trash\s[^"]*"/);
   expect(resting).not.toContain('data-visible="true"');
-  expect(resting).toMatch(/class="house-trash"[^>]*aria-hidden="true"/);
+  expect(resting).toMatch(/class="house-trash\s[^"]*"[^>]*aria-hidden="true"/);
 
   // 2. Dragging a desktop object (non-gift) -> trashcan remains hidden
   const draggingDesktop = renderToStaticMarkup(
     <HouseClump gifts={[gift]} inspectedIds={[]} testDragId="computer" onOpen={() => {}} />
   );
   expect(draggingDesktop).not.toContain('data-visible="true"');
-  expect(draggingDesktop).toMatch(/class="house-trash"[^>]*aria-hidden="true"/);
+  expect(draggingDesktop).toMatch(/class="house-trash\s[^"]*"[^>]*aria-hidden="true"/);
 
   // 3. Dragging another visitor's gift when not admin -> trashcan remains hidden
   const otherGift: Gift = { id: "other-gift-99", emojiId: "cake", authorName: "Someone else", createdAt: "2026-09-27", visibility: "public", message: "Hello" };
@@ -313,7 +313,7 @@ test("HouseClump trashcan is hidden by default and only shows when a deletable i
     />
   );
   expect(draggingOtherGift).not.toContain('data-visible="true"');
-  expect(draggingOtherGift).toMatch(/class="house-trash"[^>]*aria-hidden="true"/);
+  expect(draggingOtherGift).toMatch(/class="house-trash\s[^"]*"[^>]*aria-hidden="true"/);
 
   // 4. Dragging own gift (in sentGiftIds) as non-admin -> trashcan IS visible
   const draggingOwnGift = renderToStaticMarkup(
@@ -327,7 +327,7 @@ test("HouseClump trashcan is hidden by default and only shows when a deletable i
     />
   );
   expect(draggingOwnGift).toContain('data-visible="true"');
-  expect(draggingOwnGift).not.toMatch(/class="house-trash"[^>]*aria-hidden="true"/);
+  expect(draggingOwnGift).not.toMatch(/class="house-trash\s[^"]*"[^>]*aria-hidden="true"/);
 
   // 5. Dragging any gift as admin -> trashcan IS visible
   const draggingAdmin = renderToStaticMarkup(
@@ -341,7 +341,7 @@ test("HouseClump trashcan is hidden by default and only shows when a deletable i
     />
   );
   expect(draggingAdmin).toContain('data-visible="true"');
-  expect(draggingAdmin).not.toMatch(/class="house-trash"[^>]*aria-hidden="true"/);
+  expect(draggingAdmin).not.toMatch(/class="house-trash\s[^"]*"[^>]*aria-hidden="true"/);
 });
 
 test("House accepts thingsConfig with default_open and merges with things specs", () => {
@@ -350,7 +350,7 @@ test("House accepts thingsConfig with default_open and merges with things specs"
     shoes: { default_open: false, tint_when_visited: true },
   };
   const html = renderToStaticMarkup(<House thingsConfig={thingsConfig} />);
-  expect(html).toContain('class="house"');
+  expect(html).toMatch(/class="house[^"]*"/);
   expect(html).toContain('data-object="computer"');
   // tint_when_visited override applied
   expect(html).toMatch(/data-object="computer"[^>]*data-visited="false"/);

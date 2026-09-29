@@ -27,7 +27,6 @@ import { PostReader } from "./PostReader";
 import { PageReader } from "./PageReader";
 import { GitHubViewer } from "./GitHubViewer";
 import { Stage } from "../../../components/Stage";
-import "./house.css";
 
 const EMPTY_GIFTS: readonly Gift[] = [];
 type OpenedThing = { object: HouseThing | FolderSpec<HouseThing>; gift?: Gift; detail?: GiftDetail; origin: DOMRect; source: HTMLButtonElement; previewBounds?: DOMRect; restoreAnimation?: boolean; onReady?: () => void };
@@ -443,7 +442,7 @@ export function House({
   }, [isCollapsed, restoreDesktop]);
 
   return (
-    <div className="house" data-ready={ready} data-collapsed={isCollapsed}>
+    <div className="house flex flex-col size-full min-w-0 min-h-0 @container text-paper" data-ready={ready} data-collapsed={isCollapsed}>
       <HouseClump
         gifts={snapshot?.gifts ?? EMPTY_GIFTS}
         inspectedIds={opened.map((item) => item.object.id)}
@@ -455,20 +454,20 @@ export function House({
         onOpen={open}
         onTrash={trashGift}
       />
-      {loadError && <p className="house-connection" role="status">{loadError}</p>}
-      {sessionError && <p className="house-connection" role="status">{sessionError}</p>}
+      {loadError && <p className="house-connection shrink-0 max-h-[30%] overflow-auto mt-2 px-4 text-center text-xs" role="status">{loadError}</p>}
+      {sessionError && <p className="house-connection shrink-0 max-h-[30%] overflow-auto mt-2 px-4 text-center text-xs" role="status">{sessionError}</p>}
 
       {isCollapsed && typeof document !== "undefined" && createPortal(
         <button
           ref={faceAvatarRef}
           autoFocus
           type="button"
-          className="pinned-face-avatar"
+          className="pinned-face-avatar fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999999] block cursor-pointer bg-transparent border-0 p-0 outline-none select-none leading-none"
           onClick={restoreDesktop}
           aria-label="Restore desktop"
           title="Click to restore desktop"
         >
-          <img src="/face.webp" alt="Kaio Barbosa" className="pinned-face-image" />
+          <img src="/face.webp" alt="Kaio Barbosa" className="pinned-face-image block w-[72px] h-[98px] max-w-[90px] object-contain pointer-events-none" />
         </button>,
         document.body
       )}

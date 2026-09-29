@@ -13,8 +13,8 @@ import {
 } from "./folders";
 
 describe("House Folders and Things model", () => {
-  test("DEFAULT_THINGS contains all 15 portfolio things with expected attributes", () => {
-    expect(DEFAULT_THINGS.length).toBe(15);
+  test("DEFAULT_THINGS contains all 13 portfolio things with expected attributes", () => {
+    expect(DEFAULT_THINGS.length).toBe(13);
 
     const ids = DEFAULT_THINGS.map((t) => t.id);
     expect(ids).toContain("octopus");
@@ -30,25 +30,15 @@ describe("House Folders and Things model", () => {
     expect(ids).toContain("leave-gift");
     expect(ids).toContain("portfolio-folder");
     expect(ids).toContain("writing-folder");
-    expect(ids).toContain("lab-folder");
-    expect(ids).toContain("clump-lab");
 
     const desktopThings = DEFAULT_THINGS.filter((t) => t.desktop);
     expect(desktopThings.length).toBe(13);
-    expect(desktopThings.map((t) => t.id)).not.toContain("lab-folder");
-    expect(desktopThings.map((t) => t.id)).not.toContain("clump-lab");
 
     const folders = DEFAULT_THINGS.filter((t) => t.kind === "folder");
-    expect(folders.length).toBe(3);
+    expect(folders.length).toBe(2);
     for (const folder of folders) {
       expect(folder.tint_when_visited).toBe(false);
     }
-
-    const labLink = DEFAULT_THINGS.find((t) => t.id === "clump-lab");
-    expect(labLink?.kind).toBe("link");
-    expect(labLink?.parent_id).toBe("lab-folder");
-    expect(labLink?.href).toBe("/lab/clump");
-    expect(labLink?.tint_when_visited).toBe(true);
 
     const actionThing = DEFAULT_THINGS.find((t) => t.id === "leave-gift");
     expect(actionThing?.kind).toBe("action");
@@ -56,13 +46,13 @@ describe("House Folders and Things model", () => {
     expect(actionThing?.desktop).toBe(true);
   });
 
-  test("PORTFOLIO_FOLDER contains Projects, Experience, and nested Lab folder", () => {
+  test("PORTFOLIO_FOLDER contains Projects and Experience", () => {
     expect(PORTFOLIO_FOLDER.id).toBe("portfolio-folder");
     expect(PORTFOLIO_FOLDER.name).toBe("Portfolio");
     expect(PORTFOLIO_FOLDER.kind).toBe("folder");
-    expect(PORTFOLIO_FOLDER.items.length).toBe(3);
+    expect(PORTFOLIO_FOLDER.items.length).toBe(2);
 
-    const [projects, experience, lab] = PORTFOLIO_FOLDER.items;
+    const [projects, experience] = PORTFOLIO_FOLDER.items;
     expect(projects.kind).toBe("item");
     expect(projects.name).toBe("Projects");
     expect(projects.id).toBe("computer");
@@ -70,18 +60,6 @@ describe("House Folders and Things model", () => {
     expect(experience.kind).toBe("item");
     expect(experience.name).toBe("Experience");
     expect(experience.id).toBe("case");
-
-    expect(lab.kind).toBe("folder");
-    expect(lab.name).toBe("Lab");
-    expect(lab.id).toBe("lab-folder");
-    if (lab.kind === "folder") {
-      expect(lab.items.length).toBe(1);
-      expect(lab.items[0].kind).toBe("link");
-      expect(lab.items[0].name).toBe("A place for my things");
-      if (lab.items[0].kind === "link") {
-        expect(lab.items[0].href).toBe("/lab/clump");
-      }
-    }
   });
 
   test("writingFolder dynamically populates posts", () => {

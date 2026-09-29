@@ -413,10 +413,10 @@ export function HouseClump({
     start.current();
   };
 
-  return <div className="house-clump-area">
-    <div ref={viewport} className="house-viewport" role="group" aria-label="Kaio’s things and visitor gifts" aria-describedby="house-movement-help">
-      <div className="house-world-space" style={{ width: size.width * scale, height: size.height * scale }}>
-        <div ref={world} className="house-world" style={{ width: size.width, height: size.height, transform: `scale(${scale})` }}>
+  return <div className="house-clump-area relative flex-1 w-full min-w-0 min-h-0 flex flex-col">
+    <div ref={viewport} className="house-viewport relative flex-1 w-full min-w-0 min-h-0 overflow-auto overscroll-contain [scrollbar-width:thin] [scrollbar-color:color-mix(in_srgb,var(--color-paper)_35%,transparent)_transparent]" role="group" aria-label="Kaio’s things and visitor gifts" aria-describedby="house-movement-help">
+      <div className="house-world-space relative mx-auto overflow-clip" style={{ width: size.width * scale, height: size.height * scale }}>
+        <div ref={world} className="house-world relative origin-top-left" style={{ width: size.width, height: size.height, transform: `scale(${scale})` }}>
           {objects.map((object) => {
             const gift = displayed.find((item) => item.id === object.id);
             const removing = retiring.has(object.id);
@@ -429,7 +429,7 @@ export function HouseClump({
             const iconImage = ("image" in object && (object as { image?: string | null }).image)
               || (isImageUrl(object.emoji) ? object.emoji : null);
             const bgStyle = getBackgroundStyle(object);
-            return <button type="button" key={object.id} className="house-object" data-object={object.id} data-shape={object.shape === "circle" ? "circle" : undefined} data-has-bg={bgStyle ? true : undefined} data-gift={Boolean(gift)} data-visited={visited} data-grabbed={grabId === object.id} data-removing={removing} data-trashing={isPendingTrash ? "true" : undefined} data-window-open={opened}
+            return <button type="button" key={object.id} className="house-object group absolute top-0 left-0 grid place-items-center m-0 p-0 border-0 rounded-xl bg-transparent cursor-grab touch-none select-none [-webkit-tap-highlight-color:transparent] leading-none overflow-visible invisible data-[shape=circle]:rounded-full data-[has-bg=true]:overflow-hidden data-[grabbed=true]:z-[3] data-[grabbed=true]:cursor-grabbing data-[window-open=true]:opacity-0 data-[window-open=true]:pointer-events-none data-[trashing=true]:pointer-events-none outline-none hover:outline-none focus-visible:outline-none after:content-[''] after:absolute after:bottom-0 after:left-1 after:right-1 after:h-0.5 after:pointer-events-none hover:not-[[data-visited=true]]:after:bg-paper focus-visible:not-[[data-visited=true]]:after:bg-paper hover:data-[visited=true]:after:bg-visited-purple focus-visible:data-[visited=true]:after:bg-visited-purple data-[gift=true]:[animation:house-arrive_220ms_ease-out] motion-reduce:data-[gift=true]:[animation-duration:1ms] data-[removing=true]:pointer-events-none data-[removing=true]:[animation:house-depart_260ms_ease-in_forwards]" data-object={object.id} data-shape={object.shape === "circle" ? "circle" : undefined} data-has-bg={bgStyle ? true : undefined} data-gift={Boolean(gift)} data-visited={visited} data-grabbed={grabId === object.id} data-removing={removing} data-trashing={isPendingTrash ? "true" : undefined} data-window-open={opened}
               ref={(element) => { if (element) nodes.current.set(object.id, element); else nodes.current.delete(object.id); }}
               style={{ width: Math.max(44, object.width), height: Math.max(44, object.height), fontSize: Math.max(object.width, object.height) * .87, ...bgStyle }}
               aria-disabled={disabled || undefined} tabIndex={disabled || opened ? -1 : 0} aria-expanded={opened} aria-haspopup="dialog"
@@ -469,15 +469,15 @@ export function HouseClump({
                 const suppressed = clickSuppressed.current;
                 if (!opened && !disabled && (!gift || liveIds.has(gift.id)) && !(suppressed?.id === object.id && performance.now() < suppressed.until)) onOpen(object, event.currentTarget, gift);
               }}
-            ><span className="house-object-art" aria-hidden="true">{iconImage ? <img src={iconImage} alt="" className="house-object-image" width={Math.round(object.width)} height={Math.round(object.height)} loading="lazy" decoding="async" /> : object.emoji}</span></button>;
+            ><span className="house-object-art flex items-center justify-center size-full pointer-events-none overflow-visible [transform:translateZ(0)] opacity-[0.99] [filter:contrast(100.01%)] font-['Apple_Color_Emoji','Segoe_UI_Emoji','Noto_Color_Emoji',sans-serif] has-[.house-object-image]:filter-none has-[.house-object-image]:opacity-100 group-data-[grabbed=true]:opacity-100 group-data-[gift=true]:opacity-100 group-data-[gift=true]:[filter:drop-shadow(0_0_5px_color-mix(in_srgb,var(--house-gift,var(--color-paper))_40%,transparent))]" aria-hidden="true">{iconImage ? <img src={iconImage} alt="" className="house-object-image block size-full max-w-full max-h-full object-contain pointer-events-none select-none" width={Math.round(object.width)} height={Math.round(object.height)} loading="lazy" decoding="async" /> : object.emoji}</span></button>;
           })}
         </div>
       </div>
-      <p id="house-movement-help" className="house-sr-only">Drag to move things in your own arrangement. With a keyboard, arrows move, Q and E turn, Enter places, and Escape cancels. Press Enter on a thing to open its window. When the collection grows, scroll this area to explore more gifts. Senders and admins can drag gifts to the trash icon at the bottom right to remove them.</p>
+      <p id="house-movement-help" className="house-sr-only sr-only">Drag to move things in your own arrangement. With a keyboard, arrows move, Q and E turn, Enter places, and Escape cancels. Press Enter on a thing to open its window. When the collection grows, scroll this area to explore more gifts. Senders and admins can drag gifts to the trash icon at the bottom right to remove them.</p>
     </div>
     <div
       ref={trashRef}
-      className="house-trash"
+      className="house-trash group absolute bottom-5 right-5 max-[480px]:bottom-3 max-[480px]:right-3 w-[52px] h-[52px] max-[480px]:w-[46px] max-[480px]:h-[46px] grid place-items-center rounded-full bg-[color-mix(in_srgb,var(--color-paper)_8%,transparent)] border-[1.5px] border-[color-mix(in_srgb,var(--color-paper)_18%,transparent)] text-[1.6rem] max-[480px]:text-[1.35rem] leading-none select-none z-[4] pointer-events-none opacity-0 scale-70 transition-[transform,background-color,border-color,box-shadow,opacity] duration-180 [transition-timing-function:cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none motion-reduce:[animation:none!important] data-[visible=true]:opacity-85 data-[visible=true]:pointer-events-auto data-[visible=true]:scale-100 data-[visible=true]:hover:opacity-100 data-[visible=true]:hover:bg-[color-mix(in_srgb,var(--color-paper)_14%,transparent)] data-[visible=true]:hover:border-[color-mix(in_srgb,var(--color-paper)_32%,transparent)] data-[over=true]:opacity-100 data-[over=true]:scale-125 data-[over=true]:bg-[rgb(255_80_80/0.28)] data-[over=true]:border-[rgb(255_100_100/0.7)] data-[over=true]:shadow-[0_0_20px_rgb(255_80_80/0.4)] data-[status=trashed]:[animation:house-trash-gobble_350ms_cubic-bezier(0.2,0,0,1)] data-[status=rejected]:[animation:house-trash-shake_350ms_ease-in-out] forced-colors:border-[CanvasText]"
       data-visible={canShowTrash ? "true" : undefined}
       data-over={isOverTrash ? "true" : undefined}
       data-status={trashStatus}
@@ -486,7 +486,7 @@ export function HouseClump({
       aria-hidden={!canShowTrash ? "true" : undefined}
       title="Drag gifts here to remove them"
     >
-      <span className="house-trash-icon" aria-hidden="true">🗑️</span>
+      <span className="house-trash-icon flex items-center justify-center pointer-events-none font-['Apple_Color_Emoji','Segoe_UI_Emoji','Noto_Color_Emoji',sans-serif] transition-transform duration-180 [transition-timing-function:cubic-bezier(0.2,0,0,1)] group-data-[over=true]:scale-115 group-data-[over=true]:-rotate-10 motion-reduce:transition-none motion-reduce:[animation:none!important]" aria-hidden="true">🗑️</span>
     </div>
   </div>;
 }

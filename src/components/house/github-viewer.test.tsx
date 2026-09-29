@@ -32,7 +32,7 @@ describe("GitHub custom Thing", () => {
     expect(html).toContain("@liftaris");
 
     // Renders commit day rectangles
-    expect(html).toContain('class="github-day"');
+    expect(html).toContain("github-day");
     expect(html).toContain('data-level="0"');
 
     // Renders View on GitHub button with target link
@@ -51,15 +51,16 @@ describe("GitHub custom Thing", () => {
     expect(body.days.length).toBeGreaterThan(0);
   });
 
-  test("github-viewer.css styles window to fit commit graph with responsive scrolling", async () => {
-    const css = await Bun.file(new URL("./github-viewer.css", import.meta.url).pathname).text();
+  test("global.css and GitHubViewer style window to fit commit graph with responsive scrolling", async () => {
+    const css = await Bun.file(new URL("../../styles/global.css", import.meta.url).pathname).text();
     expect(css).toContain(".winbox.github-window .wb-body");
     expect(css).toContain("overflow: auto;");
-    expect(css).toContain("overflow-x: auto;");
+    const viewerCode = await Bun.file(new URL("./GitHubViewer.tsx", import.meta.url).pathname).text();
+    expect(viewerCode).toContain("overflow-x-auto");
   });
 
-  test("window.css styles window titlebar icon to fit within header", async () => {
-    const css = await Bun.file(new URL("../window/window.css", import.meta.url).pathname).text();
+  test("global.css styles window titlebar icon to fit within header", async () => {
+    const css = await Bun.file(new URL("../../styles/global.css", import.meta.url).pathname).text();
     expect(css).toContain(".object-window-icon");
     expect(css).toContain("width: 18px;");
     expect(css).toContain("height: 18px;");
@@ -68,8 +69,8 @@ describe("GitHub custom Thing", () => {
     expect(css).toContain("height: 16px;");
   });
 
-  test("window.css styles maximize button with square glyph", async () => {
-    const css = await Bun.file(new URL("../window/window.css", import.meta.url).pathname).text();
+  test("global.css styles maximize button with square glyph", async () => {
+    const css = await Bun.file(new URL("../../styles/global.css", import.meta.url).pathname).text();
     expect(css).toContain(".wb-max .wb-max-square");
     expect(css).toContain("border: 1.5px solid currentColor;");
     expect(css).toContain(".object-window .wb-max .wb-restore-square {\n  display: none;\n}");
@@ -98,7 +99,7 @@ describe("GitHub custom Thing", () => {
     expect(pageText).toContain("Portfolio");
   });
 
-  test("global.css and house.css define site-window and pinned-face-avatar", async () => {
+  test("global.css defines site-window and pinned-face-avatar", async () => {
     const globalCss = await Bun.file(new URL("../../styles/global.css", import.meta.url).pathname).text();
     expect(globalCss).toContain(".site-window");
     expect(globalCss).toContain(".site-window-header");
@@ -106,10 +107,8 @@ describe("GitHub custom Thing", () => {
     expect(globalCss).toContain(".site-window-close");
     expect(globalCss).toContain(".site-window-icon");
     expect(globalCss).toContain(".site-window-title");
-
-    const houseCss = await Bun.file(new URL("./house.css", import.meta.url).pathname).text();
-    expect(houseCss).toContain(".pinned-face-avatar");
-    expect(houseCss).toContain("position: fixed;");
+    expect(globalCss).toContain(".pinned-face-avatar");
+    expect(globalCss).toContain("position: fixed;");
   });
 
   test("Portfolio.astro renders title and icon for subroutes and empty header for home", async () => {
@@ -129,7 +128,7 @@ describe("GitHub custom Thing", () => {
     expect(code).toContain('frame.style.border = "none"');
     expect(code).toContain("wb-restore-square");
 
-    const windowCss = await Bun.file(new URL("../window/window.css", import.meta.url).pathname).text();
+    const windowCss = await Bun.file(new URL("../../styles/global.css", import.meta.url).pathname).text();
     expect(windowCss).toContain(".winbox.object-window.max");
     expect(windowCss).toContain("top: 18px !important");
     expect(windowCss).toContain("left: 0px !important");

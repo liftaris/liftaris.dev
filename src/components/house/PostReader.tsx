@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import type { PostThing } from "./folders";
-import "./post-reader.css";
 
 /** Reuse the server-rendered article without duplicating PortableText in React. */
 export function PostReader({ post }: { post: PostThing }) {
@@ -30,5 +29,5 @@ export function PostReader({ post }: { post: PostThing }) {
     connect();
     return () => { frame.removeEventListener("load", connect); listeners?.abort(); };
   }, []);
-  return <iframe ref={iframe} className="post-reader" src={`${post.href}?window=1`} title={post.name} />;
+  return <iframe ref={iframe} className="post-reader block size-full border-0 bg-paper" src={`${post.href}?window=1`} title={post.name} />;
 }

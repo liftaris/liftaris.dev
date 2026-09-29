@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import type { ThingSpec } from "./folders";
-import "./post-reader.css";
 
 /** Reuse the server-rendered page without duplicating PortableText in React. */
 export function PageReader({ page }: { page: ThingSpec }) {
@@ -33,5 +32,5 @@ export function PageReader({ page }: { page: ThingSpec }) {
 
   const href = page.href || `/p/${encodeURIComponent(page.id)}`;
   const src = `${href}${href.includes("?") ? "&" : "?"}window=1`;
-  return <iframe ref={iframe} className="post-reader" src={src} title={page.name} />;
+  return <iframe ref={iframe} className="post-reader block size-full border-0 bg-paper" src={src} title={page.name} />;
 }

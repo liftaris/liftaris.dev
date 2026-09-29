@@ -428,6 +428,220 @@ body.embedded-post {
   padding: 0;
 }
 
+.object-window:has(.post-reader) .object-window-content,
+.object-window-content:has(> .post-reader) {
+  max-width: 100%;
+  height: 100%;
+  padding: 0;
+}
+
+/* WinBox object window integration */
+.winbox.object-window {
+  z-index: 50;
+  color: var(--color-window-bar);
+  background: var(--color-window-bar);
+  border: 1px solid var(--color-window-bar);
+  border-radius: 0;
+  box-shadow: 4px 4px 0 rgb(0 0 0 / .22);
+  font-family: var(--font-mono), monospace;
+  transform-origin: top left;
+}
+.object-window .wb-header {
+  overflow: hidden;
+  background: var(--color-window-bar);
+  border-bottom: 1px solid var(--color-window-bar);
+  color: var(--color-paper);
+}
+.object-window .wb-drag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 8px;
+  height: 100%;
+  cursor: grab;
+  touch-action: none;
+}
+.object-window .wb-drag:active { cursor: grabbing; }
+.object-window-handle {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  min-width: 0;
+  flex: 1;
+}
+.object-window .wb-title {
+  font: inherit;
+  font-size: 12px;
+  line-height: inherit;
+  padding-right: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.object-window-icon {
+  position: static;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+}
+.object-window-icon,
+.object-window-icon:hover,
+.object-window-icon:focus-visible {
+  text-decoration: none;
+  outline: none;
+}
+.object-window-image {
+  display: block;
+  width: 16px;
+  height: 16px;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+.object-window > .wb-header .object-window-icon { cursor: grab; touch-action: none; }
+.object-window > .wb-header .object-window-icon:active { cursor: grabbing; }
+.object-window .wb-control { display: flex; }
+.object-window .wb-control button {
+  width: 28px;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid color-mix(in srgb, var(--color-paper) 50%, transparent);
+  border-radius: 0;
+  color: inherit;
+  background: none;
+  font: inherit;
+  font-size: 16px;
+  line-height: 1;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.object-window .wb-max .wb-restore-square {
+  display: none;
+}
+.object-window .wb-max .wb-max-square {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid currentColor;
+  box-sizing: border-box;
+  vertical-align: middle;
+}
+.winbox.object-window.maximizing,
+.winbox.object-window.restoring,
+.winbox.object-window.max {
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  border: none !important;
+}
+.winbox.object-window.max {
+  top: 18px !important;
+  left: 0px !important;
+  width: 100vw !important;
+  height: calc(100vh - 18px) !important;
+}
+body.on-home .winbox.folder-window.max,
+body.on-home .winbox.object-window.max:has(.folder) {
+  top: calc(var(--window-top, 10px) + 18px) !important;
+  left: var(--window-left, 10px) !important;
+  width: var(--window-width, calc(100vw - 20px)) !important;
+  width: var(--window-width, calc(100dvw - 20px)) !important;
+  height: calc(var(--window-height, calc(100vh - 20px)) - 18px) !important;
+  height: calc(var(--window-height, calc(100dvh - 20px)) - 18px) !important;
+  border-radius: 0 0 3px 3px !important;
+}
+.winbox.object-window.maximizing:not(.folder-window):not(:has(.folder)) .wb-header {
+  opacity: 0;
+  transition: opacity 160ms ease;
+  pointer-events: none;
+}
+.object-window.max .wb-max .wb-max-square,
+.object-window.maximizing .wb-max .wb-max-square,
+.object-window.max .wb-collapse,
+.object-window.maximizing .wb-collapse {
+  display: none;
+}
+.object-window.max .wb-max .wb-restore-square,
+.object-window.maximizing .wb-max .wb-restore-square {
+  display: inline-block;
+}
+.object-window.restoring .wb-max .wb-max-square {
+  display: inline-block;
+}
+.object-window.restoring .wb-max .wb-restore-square {
+  display: none;
+}
+body.desktop-collapsed .winbox.object-window {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transition: opacity 180ms ease, transform 180ms ease;
+  transform: scale(0.95);
+}
+.object-window .wb-body {
+  background: var(--color-paper);
+  color: var(--color-blue);
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-blue) var(--color-paper);
+}
+.object-window:has(.folder) .object-window-content,
+.winbox.folder-window .object-window-content {
+  max-width: 100%;
+  margin-inline: 0;
+  padding: 16px 20px;
+}
+.winbox.github-window .wb-body,
+.winbox.object-window:has(.github-viewer) .wb-body {
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-blue) transparent;
+}
+.object-window :focus-visible { outline: 2px solid currentColor; outline-offset: -4px; }
+.object-window .wb-body :focus-visible { outline-offset: 3px; }
+.object-window button:disabled { opacity: .65; cursor: wait; }
+@media (hover: hover) {
+  .object-window .wb-control button:hover { background: color-mix(in srgb, var(--color-paper) 16%, transparent); }
+}
+@media (max-width: 480px) {
+  .object-window-content { padding: 24px 16px; }
+}
+@media (forced-colors: active) {
+  .winbox.object-window { border-color: CanvasText; }
+  .object-window :focus-visible { outline-color: Highlight; }
+}
+
+@keyframes house-arrive { from { opacity: 0; } to { opacity: 1; } }
+@keyframes house-depart { from { opacity: 1; } to { opacity: 0; } }
+@keyframes house-trash-gobble {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.35) rotate(6deg); background: rgb(255 80 80 / .4); }
+  70% { transform: scale(.92) rotate(-3deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+@keyframes house-trash-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px) rotate(-4deg); }
+  40%, 80% { transform: translateX(6px) rotate(4deg); }
+}
+
 .site-window:not([data-home="true"]) .card,
 .site-window:not([data-home="true"]) .row,
 .object-window .card,
