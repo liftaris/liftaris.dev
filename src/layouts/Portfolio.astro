@@ -7,7 +7,6 @@ import "@fontsource-variable/geist-mono";
 import "@fontsource/young-serif";
 import "../styles/global.css";
 import { isImageUrl } from "../components/clump/model";
-import LandingBackground from "../components/canvas/LandingBackground.astro";
 
 interface Props {
   title?: string;
@@ -72,7 +71,7 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
   canonical: new URL(pathname, Astro.site).href, siteName: "Kaio Barbosa" });
 ---
 <!doctype html>
-<html lang="en">
+<html lang="en" class:list={{ "on-home": isHome }}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -85,7 +84,6 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
   </head>
   <body class={embedded ? (isHome ? "embedded-post on-home" : "embedded-post") : (isHome ? "on-home" : undefined)}>
     <EmDashBodyStart page={page} />
-    {isHome && !embedded && <LandingBackground />}
     {!embedded ? (
       <div class="site-window" class:list={{ "object-window": !isHome }} data-home={isHome}>
         <header class="site-window-header">
