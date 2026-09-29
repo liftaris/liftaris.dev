@@ -91,7 +91,7 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
           data-app="AppWindow"
           class="site-window"
           class:list={[
-            "w-full h-[calc(100dvh-20px)] md:h-[calc(100dvh-32px)] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1200px] 2xl:max-w-[1360px]",
+            "@container w-full h-[calc(100dvh-20px)] md:h-[calc(100dvh-32px)] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1200px] 2xl:max-w-[1360px]",
             { "object-window": !isHome },
           ]}
           data-home={isHome}

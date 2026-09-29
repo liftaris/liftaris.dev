@@ -70,7 +70,7 @@
 .folder-entry:not([aria-disabled="true"])[data-visited="true"]:hover > span:last-child,
 .folder-entry:not([aria-disabled="true"])[data-visited="true"]:focus-visible > span:last-child {
   text-decoration: underline;
-  text-decoration-color: #cf5fff;
+  text-decoration-color: var(--color-visited-purple);
   text-decoration-thickness: 2px;
   text-underline-offset: 4px;
 }
@@ -78,5 +78,5 @@
 .folder-entry:focus-visible { border-color: transparent; }
 .folder-empty { margin: 0; font-size: 12px; }
 @media (hover: hover) {
-  .folder-entry:not([aria-disabled="true"]):hover { background: rgb(19 19 186 / .07); }
+  .folder-entry:not([aria-disabled="true"]):hover { background: color-mix(in srgb, var(--color-blue) 7%, transparent); }
 }

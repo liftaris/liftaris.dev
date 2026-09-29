@@ -4,7 +4,7 @@
   overflow: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
-  scrollbar-color: var(--blue, #1313ba) transparent;
+  scrollbar-color: var(--color-blue) transparent;
 }
 
 .winbox.github-window .object-window-content,
@@ -19,7 +19,7 @@
   flex-direction: column;
   gap: 12px;
   font-family: var(--font-mono), monospace;
-  color: var(--blue, #1313ba);
+  color: var(--color-blue);
   user-select: none;
   width: fit-content;
 }
@@ -60,7 +60,7 @@
   overflow-x: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
-  scrollbar-color: var(--blue, #1313ba) transparent;
+  scrollbar-color: var(--color-blue) transparent;
   padding-bottom: 2px;
 }
 
@@ -86,7 +86,7 @@
   top: 0;
   font-size: 10px;
   line-height: 12px;
-  color: var(--blue, #1313ba);
+  color: var(--color-blue);
   white-space: nowrap;
 }
 
@@ -102,7 +102,7 @@
   gap: 3px;
   font-size: 9px;
   line-height: 10px;
-  color: var(--blue, #1313ba);
+  color: var(--color-blue);
   opacity: 0.75;
   width: 22px;
   text-align: right;
@@ -125,7 +125,7 @@
   height: 10px;
   box-sizing: border-box;
   border-radius: 1px;
-  border: 1px solid #000;
+  border: 1px solid var(--color-blue);
   background-color: transparent;
   cursor: pointer;
   transition: transform 80ms ease;
@@ -135,7 +135,7 @@
 .github-day:focus-visible {
   transform: scale(1.4);
   z-index: 5;
-  outline: 1.5px solid var(--blue, #1313ba);
+  outline: 1.5px solid var(--color-blue);
   outline-offset: 1px;
 }
 
@@ -144,19 +144,19 @@
 }
 
 .github-day[data-level="1"] {
-  background-color: color-mix(in srgb, var(--blue, #1313ba) 30%, transparent);
+  background-color: color-mix(in srgb, var(--color-blue) 30%, transparent);
 }
 
 .github-day[data-level="2"] {
-  background-color: color-mix(in srgb, var(--blue, #1313ba) 55%, transparent);
+  background-color: color-mix(in srgb, var(--color-blue) 55%, transparent);
 }
 
 .github-day[data-level="3"] {
-  background-color: color-mix(in srgb, var(--blue, #1313ba) 80%, transparent);
+  background-color: color-mix(in srgb, var(--color-blue) 80%, transparent);
 }
 
 .github-day[data-level="4"] {
-  background-color: var(--blue, #1313ba);
+  background-color: var(--color-blue);
 }
 
 .github-day-placeholder {
@@ -178,7 +178,7 @@
   gap: 4px;
   font-size: 10px;
   line-height: 10px;
-  color: var(--blue, #1313ba);
+  color: var(--color-blue);
 }
 
 .github-legend span {
@@ -206,8 +206,8 @@
   gap: 6px;
   padding: 6px 14px;
   background: transparent;
-  color: var(--blue, #1313ba);
-  border: 1.5px solid var(--blue, #1313ba);
+  color: var(--color-blue);
+  border: 1.5px solid var(--color-blue);
   border-radius: 4px;
   font-family: var(--font-mono), monospace;
   font-size: 12px;
@@ -219,8 +219,8 @@
 }
 
 .github-view-button:hover {
-  background: var(--blue, #1313ba);
-  color: var(--paper, #fffbed);
+  background: var(--color-blue);
+  color: var(--color-paper);
   text-decoration: none;
   transform: translateY(-1px);
 }
@@ -230,7 +230,7 @@
 }
 
 .github-view-button:focus-visible {
-  outline: 2px solid var(--blue, #1313ba);
+  outline: 2px solid var(--color-blue);
   outline-offset: 3px;
 }
 

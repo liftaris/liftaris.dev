@@ -1,4 +1,5 @@
 .winbox.object-window {
+  z-index: 50;
   color: var(--window-bar, #245EDE);
   background: var(--window-bar, #245EDE);
   border: 1px solid var(--window-bar, #245EDE);

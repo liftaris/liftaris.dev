@@ -140,7 +140,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
       let closing = false;
       const options: WinBox.Params & { template: HTMLElement } = {
         template, index: 20, header: 18,
-        class: ["object-window", "no-full", "no-resize", "no-animation", windowClass].filter(Boolean).join(" "),
+        class: ["object-window", "@container", "no-full", "no-resize", "no-animation", windowClass].filter(Boolean).join(" "),
         width, height, minwidth: 1, minheight: 44,
         top: 19, left: 12, right: 12, bottom: 12,
         x: initialBounds?.left ?? origin.left + 24, y: initialBounds?.top ?? origin.top + 16,
@@ -249,6 +249,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
             frame.style.borderRadius = "";
             frame.classList.remove("restoring");
             win.restore();
+            win.focus();
             isAnimating.current = false;
           }, 220);
           return;
@@ -441,6 +442,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
             frame.style.border = "";
             frame.style.borderRadius = "";
             isAnimating.current = false;
+            win.focus();
           }, 240);
         });
       }

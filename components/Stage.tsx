@@ -70,21 +70,40 @@ function ProjectsPane() {
       {PROJECTS.map((item) => {
         const primaryHref = item.links.find((link) => link.primary)?.href ?? item.links[0].href;
         return (
-          <article className="card" key={item.slug}>
+          <article className="card @container grid grid-cols-1 @md:grid-cols-[54px_1fr] gap-4 @md:gap-6 border-b border-paper/20 pb-4 pt-4" key={item.slug}>
             <div>
               <p>{item.year} / {item.tag}</p>
-              <div className="projectTitleRow">
-                <h3><a href={primaryHref} target="_blank" rel="noreferrer">{item.name}</a></h3>
+              <div className="projectTitleRow @container flex flex-col @md:flex-row justify-between items-baseline gap-2 flex-wrap">
+                <h3 className="font-serif text-3xl @lg:text-4xl @xl:text-5xl tracking-tight text-blue">
+                  <a href={primaryHref} target="_blank" rel="noreferrer">{item.name}</a>
+                </h3>
                 <div className="links">
                   {item.links.map((link) => (
-                    <a href={link.href} key={link.kind} target="_blank" rel="noreferrer">{linkLabel(item.slug, link.kind, link.label, hermStats)}</a>
+                    <a
+                      className="text-blue underline underline-offset-4 hover:bg-blue/10 px-1 rounded"
+                      href={link.href}
+                      key={link.kind}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {linkLabel(item.slug, link.kind, link.label, hermStats)}
+                    </a>
                   ))}
                 </div>
               </div>
               <p>{item.body}</p>
               {item.stat && <strong>{item.stat.value} {item.stat.label}</strong>}
               <ul>{item.proof.map((line) => <li key={line}>{line}</li>)}</ul>
-              <div className="chips">{item.stack.slice(0, 6).map((tag) => <span key={tag}>{tag}</span>)}</div>
+              <div className="chips flex flex-wrap gap-1.5">
+                {item.stack.slice(0, 6).map((tag) => (
+                  <span
+                    className="px-2 py-0.5 text-xs rounded border border-blue/35 text-blue hover:bg-blue/10 transition-colors"
+                    key={tag}
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
             </div>
           </article>
         );
@@ -102,9 +121,19 @@ export function Stage({ view }: StageProps) {
   return (
     <div className="pane experiencePane">
       {jobs.map((job) => (
-        <article className="row" key={job.company}>
-          <div><p>{job.period}</p><h3>{job.company}</h3></div>
-          <div><p>{job.body}</p></div>
+        <article
+          className="row @container grid grid-cols-1 @md:grid-cols-[54px_1fr] gap-4 @md:gap-6 border-b border-paper/20 pb-4 pt-4"
+          key={job.company}
+        >
+          <div>
+            <p>{job.period}</p>
+            <h3 className="font-serif text-3xl @lg:text-4xl @xl:text-5xl tracking-tight text-blue">
+              {job.company}
+            </h3>
+          </div>
+          <div>
+            <p>{job.body}</p>
+          </div>
         </article>
       ))}
     </div>
