@@ -72,6 +72,8 @@ describe("GitHub custom Thing", () => {
     const css = await Bun.file(new URL("../window/window.css", import.meta.url).pathname).text();
     expect(css).toContain(".wb-max .wb-max-square");
     expect(css).toContain("border: 1.5px solid currentColor;");
+    expect(css).toContain(".object-window .wb-max .wb-restore-square {\n  display: none;\n}");
+    expect(css).toContain(".wb-restore-square::after");
     expect(css).toContain("body.desktop-collapsed .winbox.object-window");
   });
 
@@ -133,6 +135,8 @@ describe("GitHub custom Thing", () => {
 
     const houseCode = await Bun.file(new URL("./House.tsx", import.meta.url).pathname).text();
     expect(houseCode).toContain('src="/face.webp"');
+    expect(houseCode).toContain('createPortal(');
+    expect(houseCode).toContain('document.body');
     expect(houseCode).toContain('urlParams?.get("restore")');
   });
 

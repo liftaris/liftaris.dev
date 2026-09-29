@@ -91,42 +91,35 @@
   justify-content: center;
   cursor: pointer;
 }
+.object-window .wb-max .wb-restore-square {
+  display: none;
+}
 .object-window .wb-max .wb-max-square {
   display: inline-block;
-  width: 9px;
-  height: 9px;
+  width: 10px;
+  height: 10px;
   border: 1.5px solid currentColor;
   box-sizing: border-box;
+  vertical-align: middle;
 }
 .wb-restore-square {
   position: relative;
   display: inline-block;
-  width: 9px;
-  height: 9px;
-  box-sizing: border-box;
-}
-.wb-restore-square::before {
-  content: "";
-  position: absolute;
-  top: -2px;
-  right: -2px;
-  width: 7px;
-  height: 7px;
+  width: 10px;
+  height: 10px;
   border: 1.5px solid currentColor;
-  border-left: none;
-  border-bottom: none;
   box-sizing: border-box;
+  vertical-align: middle;
 }
 .wb-restore-square::after {
   content: "";
   position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 7px;
-  height: 7px;
-  border: 1.5px solid currentColor;
+  bottom: 1px;
+  left: 1px;
+  width: 4px;
+  height: 4px;
+  border: 1px solid currentColor;
   box-sizing: border-box;
-  background: var(--blue, #1313ba);
 }
 .winbox.object-window.maximizing,
 .winbox.object-window.max {
