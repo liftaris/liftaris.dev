@@ -102,6 +102,9 @@ export async function initializeThingsCollection(db: Kysely<Database>): Promise<
           default_open = COALESCE(default_open, ${item.default_open ? 1 : 0}),
           sort_order = COALESCE(sort_order, ${item.sort_order})
           WHERE id = ${item.id}`.execute(db);
+        if (item.id === "leave-gift") {
+          await sql`UPDATE ec_things SET name = 'Paint', emoji = '🎨' WHERE id = 'leave-gift'`.execute(db);
+        }
       }
     }
   } catch {

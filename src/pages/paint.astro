@@ -1,0 +1,9 @@
+---
+import Portfolio from "../layouts/Portfolio.astro";
+import { GiftPaintComposer } from "../components/house/GiftPaintComposer";
+---
+<Portfolio title="Paint | Kaio Barbosa" windowTitle="Paint" windowIcon="🎨" restoreSlug="leave-gift" fullWidth={true}>
+  <div class="size-full flex flex-col items-center justify-center p-0 min-h-0 bg-[#808080] overflow-hidden">
+    <GiftPaintComposer client:load standalone={true} />
+  </div>
+</Portfolio>

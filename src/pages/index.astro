@@ -77,10 +77,11 @@ try {
       }
       bgImageUrl = optimizeMediaUrl(bgImageUrl, Math.max(Math.round(Math.max(width, height) * 2), 120));
 
+      const isLeaveGift = entry.id === "leave-gift";
       return {
         id: entry.id,
-        name: String(data.name ?? ""),
-        emoji: emojiVal,
+        name: isLeaveGift ? "Paint" : String(data.name ?? ""),
+        emoji: isLeaveGift ? "🎨" : emojiVal,
         image: imageUrl,
         background_image: bgImageUrl,
         background_size: data.background_size ? String(data.background_size) : undefined,

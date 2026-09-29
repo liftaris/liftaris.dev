@@ -43,6 +43,8 @@ describe("House Folders and Things model", () => {
     const actionThing = DEFAULT_THINGS.find((t) => t.id === "leave-gift");
     expect(actionThing?.kind).toBe("action");
     expect(actionThing?.action).toBe("leave-gift");
+    expect(actionThing?.name).toBe("Paint");
+    expect(actionThing?.emoji).toBe("🎨");
     expect(actionThing?.desktop).toBe(true);
   });
 

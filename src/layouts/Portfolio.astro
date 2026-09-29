@@ -15,6 +15,7 @@ interface Props {
   restoreSlug?: string;
   embedded?: boolean;
   content?: { collection: string; id: string; slug?: string | null };
+  fullWidth?: boolean;
 }
 const {
   title = "Kaio Barbosa",
@@ -23,6 +24,7 @@ const {
   restoreSlug,
   content,
   embedded = false,
+  fullWidth = false,
 } = Astro.props;
 const pathname = Astro.url.pathname.replace(/\/$/, "") || "/";
 const onBlog = pathname.startsWith("/blog/");
@@ -33,7 +35,9 @@ let displayIcon = windowIcon;
 let actualRestoreSlug = restoreSlug;
 
 if (!displayTitle && !isHome) {
-  if (pathname === "/projects") {
+  if (pathname === "/paint") {
+    displayTitle = "Paint";
+  } else if (pathname === "/projects") {
     displayTitle = "Projects";
   } else if (pathname === "/experience") {
     displayTitle = "Experience";
@@ -45,7 +49,9 @@ if (!displayTitle && !isHome) {
 }
 
 if (!displayIcon && !isHome) {
-  if (pathname === "/projects") {
+  if (pathname === "/paint") {
+    displayIcon = "🎨";
+  } else if (pathname === "/projects") {
     displayIcon = "🖥️";
   } else if (pathname === "/experience") {
     displayIcon = "💼";
@@ -57,7 +63,8 @@ if (!displayIcon && !isHome) {
 }
 
 if (!actualRestoreSlug && !isHome) {
-  if (pathname === "/projects") actualRestoreSlug = "projects";
+  if (pathname === "/paint") actualRestoreSlug = "leave-gift";
+  else if (pathname === "/projects") actualRestoreSlug = "projects";
   else if (pathname === "/experience") actualRestoreSlug = "experience";
   else if (pathname === "/github") actualRestoreSlug = "github";
   else if (onBlog) actualRestoreSlug = pathname.replace(/^\/blog\//, "").split("?")[0];
@@ -91,7 +98,10 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
           data-app="AppWindow"
           class="site-window"
           class:list={[
-            "@container w-full h-[calc(100dvh-20px)] md:h-[calc(100dvh-32px)] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1200px] 2xl:max-w-[1360px]",
+            "@container w-full h-[calc(100dvh-20px)] md:h-[calc(100dvh-32px)]",
+            fullWidth || pathname === "/paint"
+              ? "max-w-none"
+              : "md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1200px] 2xl:max-w-[1360px]",
             { "object-window": !isHome },
           ]}
           data-home={isHome}

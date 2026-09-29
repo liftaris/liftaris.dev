@@ -95,10 +95,14 @@ export function House({
       list.push(GITHUB_THING);
     }
     return list.map((t) => {
-      const override = thingsConfig?.[t.id];
-      if (!override) return t;
+      let current = t;
+      if (current.id === "leave-gift") {
+        current = { ...current, name: "Paint", emoji: "🎨", action: "leave-gift" };
+      }
+      const override = thingsConfig?.[current.id];
+      if (!override) return current;
       return {
-        ...t,
+        ...current,
         ...(override.tint_when_visited !== undefined ? { tint_when_visited: override.tint_when_visited } : {}),
         ...(override.default_open !== undefined ? { default_open: override.default_open } : {}),
       };
@@ -496,6 +500,8 @@ export function House({
         const bgStyle = getBackgroundStyle("background_image" in item.object ? item.object : undefined);
         const maximizeUrl = isGitHub
           ? "/github"
+          : composing
+          ? "/paint"
           : view === "projects"
           ? "/projects"
           : view === "experience"
@@ -510,7 +516,7 @@ export function House({
           autoFit={isGitHub}
           maximizeUrl={maximizeUrl}
           restoreAnimation={item.restoreAnimation}
-          width={item.gift ? 500 : composing ? 620 : isGitHub ? 770 : post || page ? 780 : undefined} height={item.gift ? 500 : composing ? 660 : isGitHub ? 272 : post || page ? 720 : undefined} canClose={!composing || !savingGift}
+          width={item.gift ? 500 : composing ? 520 : isGitHub ? 770 : post || page ? 780 : undefined} height={item.gift ? 500 : composing ? 560 : isGitHub ? 272 : post || page ? 720 : undefined} canClose={!composing || !savingGift}
           initialBounds={item.previewBounds} backgroundStyle={bgStyle} onReady={item.onReady}
           monochrome={!item.gift} closeLabel={item.gift ? "Close gift" : undefined} onClose={() => close(item.object.id)}>
           {item.gift ? <GiftDialog gift={item.gift} initialDetail={item.detail} onClose={() => close(item.object.id)} onDetail={refreshDetail} mutate={mutate} /> : composing ? <GiftPaintComposer onGift={(gift, bounds, form) => receiveGift(item, gift, bounds, form)} mutate={mutate} onSavingChange={setSavingGift} onClose={() => close(item.object.id)} /> : post ? <PostReader post={post} /> : page ? <PageReader page={page} /> : isGitHub ? <GitHubViewer /> : view ? <Stage view={view} /> : null}
