@@ -580,7 +580,7 @@ body.embedded-post {
 .winbox.object-window.restoring,
 .winbox.object-window.max {
   box-shadow: none !important;
-  border: none !important;
+  border: 1px solid var(--color-window-border) !important;
 }
 .winbox.object-window.max {
   top: 18px !important;
@@ -696,6 +696,28 @@ body.desktop-collapsed .winbox.object-window {
   line-height: 1.05;
 }
 
+.site-window:not([data-home="true"]) .card p,
+.site-window:not([data-home="true"]) .row p,
+.object-window .card p,
+.object-window .row p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  font-family: var(--font-mono), monospace;
+}
+
+.site-window:not([data-home="true"]) .row > div:first-child > p:first-child,
+.object-window .row > div:first-child > p:first-child,
+.site-window:not([data-home="true"]) .card p:first-child,
+.object-window .card p:first-child {
+  display: block;
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .site-window:not([data-home="true"]) .links a,
 .site-window:not([data-home="true"]) .chips span,
 .object-window .links a,
@@ -792,9 +814,11 @@ li { margin: 8px 0; }
   color: var(--color-blue);
 }
 
-.experiencePane .row {
+.experiencePane .row,
+.site-window:not([data-home="true"]) .experiencePane .row,
+.object-window .experiencePane .row {
   grid-template-columns: 1fr;
-  gap: 0;
+  gap: 12px;
 }
 
 .projectTitleRow {
@@ -1106,6 +1130,10 @@ li { margin: 8px 0; }
 }
 
 @view-transition { navigation: auto; }
+html[data-returning-home] ::view-transition-old(*),
+html[data-returning-home] ::view-transition-new(*) {
+  animation: none !important;
+}
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*) { animation: none; }
   .pane { animation: none; }

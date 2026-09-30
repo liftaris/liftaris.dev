@@ -335,7 +335,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
           frame.style.height = "100vh";
         }
         frame.style.boxShadow = "none";
-        frame.style.border = "none";
+        frame.style.border = "1px solid var(--color-window-border)";
 
         const outerDrag = document.querySelector<HTMLElement>(".site-window-drag");
         if (outerDrag && !outerDrag.textContent?.trim()) {
@@ -438,6 +438,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
 
         frame.style.pointerEvents = "none";
         frame.style.zIndex = "1000001";
+        frame.classList.add("restoring");
         if (siteRect) {
           frame.style.top = `${routeTop}px`;
           frame.style.left = `${routeLeft}px`;
@@ -451,7 +452,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
           frame.style.height = "100vh";
         }
         frame.style.boxShadow = "none";
-        frame.style.border = "none";
+        frame.style.border = "1px solid var(--color-window-border)";
 
         requestAnimationFrame(() => {
           if (disposed) return;
@@ -470,13 +471,17 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
             frame.style.boxShadow = "";
             frame.style.border = "";
             frame.style.borderRadius = "";
+            frame.classList.remove("restoring");
             isAnimating.current = false;
             win.focus();
+            handle.focus({ preventScroll: true });
           }, 240);
         });
       }
-      win.blur().focus();
-      handle.focus({ preventScroll: true });
+      if (!restoreAnimation || matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        win.blur().focus();
+        handle.focus({ preventScroll: true });
+      }
       setBody(win.body);
       detach = () => {
         window.removeEventListener("resize", fit);
