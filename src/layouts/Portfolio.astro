@@ -27,6 +27,9 @@ const {
 const pathname = Astro.url.pathname.replace(/\/$/, "") || "/";
 const onBlog = pathname.startsWith("/blog/");
 const isHome = pathname === "/";
+const isBlogPost = onBlog || content?.collection === "posts";
+const isWritingPage = pathname.startsWith("/p/") || (content?.collection === "things" && Boolean(content?.id));
+const isUnconstrained = isBlogPost || isWritingPage;
 
 let displayTitle = windowTitle;
 let displayIcon = windowIcon;
@@ -86,16 +89,26 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
   <body class={embedded ? (isHome ? "embedded-post on-home" : "embedded-post") : (isHome ? "on-home" : undefined)}>
     <EmDashBodyStart page={page} />
     {!embedded ? (
-      <div data-app="WindowList" class="desktop-viewport flex size-full min-h-dvh justify-center items-center p-2.5 md:p-4">
+      <div
+        data-app="WindowList"
+        class="desktop-viewport flex size-full min-h-dvh justify-center p-2.5 md:p-4"
+        class:list={[
+          isHome ? "items-center" : "items-start",
+        ]}
+      >
         <div
           data-app="AppWindow"
           class="site-window"
           class:list={[
-            "@container w-full h-[calc(100dvh-20px)] md:h-[calc(100dvh-32px)] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1200px] 2xl:max-w-[1360px]",
+            "@container w-full md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1200px] 2xl:max-w-[1360px]",
+            isUnconstrained
+              ? "min-h-[calc(100dvh-20px)] md:min-h-[calc(100dvh-32px)] h-auto"
+              : "h-[calc(100dvh-20px)] md:h-[calc(100dvh-32px)]",
             isHome ? "max-h-[1200px]" : undefined,
             { "object-window": !isHome },
           ]}
           data-home={isHome ? "true" : undefined}
+          data-unconstrained={isUnconstrained ? "true" : undefined}
         >
         <header class="site-window-header">
           <div class="site-window-drag">
