@@ -144,6 +144,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
       </div><div class="wb-body"></div>`;
       let closing = false;
       const options: WinBox.Params & { template: HTMLElement } = {
+        root: document.body,
         template, index: 20, header: 18,
         class: ["object-window", "@container", "no-full", "no-resize", "no-animation", windowClass].filter(Boolean).join(" "),
         width, height, minwidth: 1, minheight: 44,

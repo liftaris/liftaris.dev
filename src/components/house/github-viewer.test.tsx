@@ -140,6 +140,7 @@ describe("GitHub custom Thing", () => {
 
   test("ObjectWindow and Portfolio support minimizing animation and view transition from route", async () => {
     const code = await Bun.file(new URL("../window/ObjectWindow.tsx", import.meta.url).pathname).text();
+    expect(code).toContain("root: document.body");
     expect(code).toContain("restoreAnimation");
     expect(code).toContain('frame.classList.add("restoring")');
     expect(code).toContain("win.restore()");
