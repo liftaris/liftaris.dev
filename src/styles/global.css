@@ -553,7 +553,6 @@ body.embedded-post {
 .winbox.object-window.restoring,
 .winbox.object-window.max {
   box-shadow: none !important;
-  border-radius: 0 !important;
   border: none !important;
 }
 .winbox.object-window.max {

@@ -304,12 +304,23 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
         frame.style.pointerEvents = "none";
         frame.style.zIndex = "999999";
         frame.style.transition = "top 220ms cubic-bezier(0.16, 1, 0.3, 1), left 220ms cubic-bezier(0.16, 1, 0.3, 1), width 220ms cubic-bezier(0.16, 1, 0.3, 1), height 220ms cubic-bezier(0.16, 1, 0.3, 1)";
+        const isMd = typeof window !== "undefined" && window.innerWidth >= 768;
+        const pad = isMd ? 16 : 10;
+        const routeTop = pad;
+        const routeHeight = typeof window !== "undefined" ? window.innerHeight - 2 * pad : 0;
+        const routeWidth = siteRect ? siteRect.width : (typeof window !== "undefined" ? window.innerWidth - 2 * pad : 0);
+        const routeLeft = siteRect ? siteRect.left : pad;
+
         if (siteRect) {
-          frame.style.top = `${siteRect.top}px`;
-          frame.style.left = `${siteRect.left}px`;
-          frame.style.width = `${siteRect.width}px`;
-          frame.style.height = `${siteRect.height}px`;
+          frame.style.top = `${routeTop}px`;
+          frame.style.left = `${routeLeft}px`;
+          frame.style.width = `${routeWidth}px`;
+          frame.style.height = `${routeHeight}px`;
           frame.style.borderRadius = "3px";
+          if (siteWindow) {
+            siteWindow.style.transition = "max-height 220ms cubic-bezier(0.16, 1, 0.3, 1)";
+            siteWindow.style.maxHeight = "none";
+          }
         } else {
           frame.style.top = "0px";
           frame.style.left = "0px";
@@ -406,13 +417,20 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
         const siteWindow = document.querySelector<HTMLElement>(".site-window");
         const siteRect = siteWindow?.getBoundingClientRect();
 
+        const isMd = typeof window !== "undefined" && window.innerWidth >= 768;
+        const pad = isMd ? 16 : 10;
+        const routeTop = pad;
+        const routeHeight = typeof window !== "undefined" ? window.innerHeight - 2 * pad : 0;
+        const routeWidth = siteRect ? siteRect.width : (typeof window !== "undefined" ? window.innerWidth - 2 * pad : 0);
+        const routeLeft = siteRect ? siteRect.left : pad;
+
         frame.style.pointerEvents = "none";
         frame.style.zIndex = "1000001";
         if (siteRect) {
-          frame.style.top = `${siteRect.top}px`;
-          frame.style.left = `${siteRect.left}px`;
-          frame.style.width = `${siteRect.width}px`;
-          frame.style.height = `${siteRect.height}px`;
+          frame.style.top = `${routeTop}px`;
+          frame.style.left = `${routeLeft}px`;
+          frame.style.width = `${routeWidth}px`;
+          frame.style.height = `${routeHeight}px`;
           frame.style.borderRadius = "3px";
         } else {
           frame.style.top = "0px";
