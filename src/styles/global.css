@@ -35,7 +35,7 @@
     url("/noise.webp?v=4") 0 0 / 100px 100px fixed var(--color-blue);
   --site-gutter: clamp(16px, 3vw, 56px);
   --identity-size: clamp(28px, 9vw, 168px);
-  --desktop-bg: url("/landing-bg.webp") center / cover no-repeat fixed var(--color-paper);
+  --desktop-bg: url("/stars.webp") 0 0 repeat fixed #000;
 
   /* Responsive Window Geometry */
   --window-pad: 10px;
