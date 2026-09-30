@@ -309,7 +309,6 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
         frame.classList.add("maximizing");
         maxButton.setAttribute("aria-label", `Restore ${title} window`);
         frame.style.pointerEvents = "none";
-        frame.style.zIndex = "999999";
         frame.style.transition = "top 220ms cubic-bezier(0.16, 1, 0.3, 1), left 220ms cubic-bezier(0.16, 1, 0.3, 1), width 220ms cubic-bezier(0.16, 1, 0.3, 1), height 220ms cubic-bezier(0.16, 1, 0.3, 1)";
         const isMd = typeof window !== "undefined" && window.innerWidth >= 768;
         const pad = isMd ? 16 : 10;
@@ -437,7 +436,6 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
         const routeLeft = siteRect ? siteRect.left : pad;
 
         frame.style.pointerEvents = "none";
-        frame.style.zIndex = "1000001";
         frame.classList.add("restoring");
         if (siteRect) {
           frame.style.top = `${routeTop}px`;
@@ -466,7 +464,6 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
           setTimeout(() => {
             if (disposed) return;
             frame.style.pointerEvents = "";
-            frame.style.zIndex = "";
             frame.style.transition = "";
             frame.style.boxShadow = "";
             frame.style.border = "";
@@ -479,7 +476,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
         });
       }
       if (!restoreAnimation || matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        win.blur().focus();
+        win.focus();
         handle.focus({ preventScroll: true });
       }
       setBody(win.body);

@@ -155,7 +155,6 @@ body.desktop-collapsed .site-window {
   flex-shrink: 0;
   position: sticky;
   top: 0;
-  z-index: 1000000;
   font-family: var(--font-mono);
   color: var(--color-paper);
   box-sizing: border-box;
@@ -374,8 +373,12 @@ body.desktop-collapsed .site-window {
 html:has(> body.embedded-post),
 body.embedded-post {
   background: var(--color-paper);
+  color: var(--color-blue);
   padding: 0;
   min-height: 0;
+  container-type: inline-size;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-blue) var(--color-paper);
 }
 
 .embedded-post .article-content,
@@ -470,7 +473,6 @@ body.embedded-post {
 
 /* WinBox object window integration */
 .winbox.object-window {
-  z-index: 50;
   color: var(--color-window-bar);
   background: var(--color-window-bar);
   border: 1px solid var(--color-window-bar);
@@ -692,7 +694,7 @@ body.desktop-collapsed .winbox.object-window {
 .site-window:not([data-home="true"]) .row h3,
 .object-window .card h3,
 .object-window .row h3 {
-  font-size: clamp(26px, 4vw, 38px);
+  font-size: clamp(26px, 4cqi, 38px);
   line-height: 1.05;
 }
 
@@ -862,7 +864,7 @@ li { margin: 8px 0; }
   font-family: var(--font-mono);
   font-size: 15px;
   line-height: 1.65;
-  padding: clamp(28px, 5vw, 56px) clamp(20px, 4vw, 48px) 48px;
+  padding: clamp(28px, 5cqi, 56px) clamp(20px, 4cqi, 48px) 48px;
   width: 100%;
   max-width: 1040px;
   margin-inline: auto;
@@ -881,19 +883,19 @@ li { margin: 8px 0; }
 }
 
 .page-content h1 {
-  font-size: clamp(30px, 5vw, 54px);
+  font-size: clamp(30px, 5cqi, 54px);
   line-height: 1.05;
   margin: 0 0 24px;
 }
 
 .page-content h2 {
-  font-size: clamp(24px, 4vw, 34px);
+  font-size: clamp(24px, 4cqi, 34px);
   line-height: 1.1;
   margin: 28px 0 12px;
 }
 
 .page-content h3 {
-  font-size: clamp(18px, 3vw, 24px);
+  font-size: clamp(18px, 3cqi, 24px);
   line-height: 1.15;
   margin: 22px 0 10px;
 }
@@ -973,7 +975,7 @@ li { margin: 8px 0; }
   width: 100%;
   max-width: 1040px;
   margin-inline: auto;
-  padding: clamp(28px, 5vw, 56px) clamp(20px, 4vw, 48px) 48px;
+  padding: clamp(28px, 5cqi, 56px) clamp(20px, 4cqi, 48px) 48px;
   background: var(--color-paper);
   color: var(--color-blue);
   box-sizing: border-box;
@@ -1004,7 +1006,7 @@ li { margin: 8px 0; }
   margin: 0 0 24px;
   padding: 0;
   background: none;
-  font-size: clamp(30px, 5vw, 54px);
+  font-size: clamp(30px, 5cqi, 54px);
   line-height: 1.05;
   overflow-wrap: anywhere;
 }
@@ -1012,14 +1014,14 @@ li { margin: 8px 0; }
 .article-content h2 {
   margin-top: 40px;
   margin-bottom: 14px;
-  font-size: clamp(24px, 4vw, 38px);
+  font-size: clamp(24px, 4cqi, 38px);
   line-height: 1.1;
 }
 
 .article-content h3 {
   margin-top: 28px;
   margin-bottom: 10px;
-  font-size: clamp(18px, 3vw, 24px);
+  font-size: clamp(18px, 3cqi, 24px);
   line-height: 1.15;
 }
 
@@ -1130,6 +1132,19 @@ li { margin: 8px 0; }
 }
 
 @view-transition { navigation: auto; }
+::view-transition-group(site-window) {
+  overflow: clip;
+}
+::view-transition-old(site-window),
+::view-transition-new(site-window) {
+  height: 100%;
+  object-fit: none;
+  object-position: top left;
+}
+html:not(.on-home) {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-blue) var(--color-paper);
+}
 html[data-returning-home] ::view-transition-old(*),
 html[data-returning-home] ::view-transition-new(*) {
   animation: none !important;
