@@ -92,9 +92,10 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
           class="site-window"
           class:list={[
             "@container w-full h-[calc(100dvh-20px)] md:h-[calc(100dvh-32px)] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1200px] 2xl:max-w-[1360px]",
+            isHome ? "max-h-[1200px]" : undefined,
             { "object-window": !isHome },
           ]}
-          data-home={isHome}
+          data-home={isHome ? "true" : undefined}
         >
         <header class="site-window-header">
           <div class="site-window-drag">
