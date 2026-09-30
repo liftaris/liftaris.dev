@@ -1,4 +1,5 @@
 ---
+import { ClientRouter } from "astro:transitions";
 import { EmDashHead, EmDashBodyStart, EmDashBodyEnd } from "emdash/ui";
 import { createPublicPageContext } from "emdash/page";
 import geistMonoLatinUrl from "@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2?url";
@@ -85,6 +86,7 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
     {embedded && <base target="_top" />}
     <EmDashHead page={page} />
     <link rel="icon" href="/favicon.ico" />
+    {!embedded && <ClientRouter fallback="swap" />}
   </head>
   <body class={embedded ? (isHome ? "embedded-post on-home" : "embedded-post") : (isHome ? "on-home" : undefined)}>
     <EmDashBodyStart page={page} />
@@ -109,6 +111,7 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
           ]}
           data-home={isHome ? "true" : undefined}
           data-unconstrained={isUnconstrained ? "true" : undefined}
+          transition:name={!isHome ? "site-window" : undefined}
         >
         <header class="site-window-header">
           <div class="site-window-drag">
@@ -186,18 +189,26 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
       </div>
     )}
     <script>
-      document.querySelectorAll<HTMLAnchorElement>(".site-window-max, .site-window-close").forEach((btn) => {
-        btn.addEventListener("click", (e) => {
-          const href = btn.getAttribute("href");
-          if (!href) return;
-          if (typeof document !== "undefined" && "startViewTransition" in document && typeof (document as unknown as { startViewTransition?: (cb: () => void) => unknown }).startViewTransition === "function") {
+      import { navigate } from "astro:transitions/client";
+
+      const bindControls = () => {
+        document.querySelectorAll<HTMLAnchorElement>(".site-window-max, .site-window-close").forEach((btn) => {
+          btn.addEventListener("click", (e) => {
+            const href = btn.getAttribute("href");
+            if (!href) return;
             e.preventDefault();
-            (document as unknown as { startViewTransition: (cb: () => void) => unknown }).startViewTransition(() => {
+            // Astro ClientRouter handles startViewTransition under the hood
+            if (typeof document !== "undefined" && "startViewTransition" in document) {
+              navigate(href);
+            } else {
               window.location.href = href;
-            });
-          }
+            }
+          });
         });
-      });
+      };
+
+      bindControls();
+      document.addEventListener("astro:page-load", bindControls);
     </script>
     <EmDashBodyEnd page={page} />
   </body>

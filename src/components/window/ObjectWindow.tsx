@@ -76,6 +76,12 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
   }, [body, onReady]);
 
   useLayoutEffect(() => {
+    if (maximizeUrl) {
+      void import("astro:prefetch").then(({ prefetch }) => prefetch(maximizeUrl)).catch(() => {});
+    }
+  }, [maximizeUrl]);
+
+  useLayoutEffect(() => {
     const win = windowInstance.current;
     if (!body || !win || !autoFit) return;
     const content = body.firstElementChild as HTMLElement | null;
@@ -354,10 +360,15 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
         }
 
         const redirect = () => {
+          frame.style.setProperty("view-transition-name", "site-window");
           if (typeof document !== "undefined" && "startViewTransition" in document && typeof (document as unknown as { startViewTransition?: (cb: () => void) => unknown }).startViewTransition === "function") {
-            (document as unknown as { startViewTransition: (cb: () => void) => unknown }).startViewTransition(() => {
-              window.location.href = url;
-            });
+            void import("astro:transitions/client")
+              .then(({ navigate }) => navigate(url))
+              .catch(() => {
+                (document as unknown as { startViewTransition: (cb: () => void) => unknown }).startViewTransition(() => {
+                  window.location.href = url;
+                });
+              });
           } else {
             window.location.href = url;
           }

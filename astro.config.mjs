@@ -14,6 +14,10 @@ export default defineConfig({
     inlineStylesheets: "always",
   },
   compressHTML: true,
+  prefetch: {
+    prefetchAll: false,
+    defaultStrategy: "hover",
+  },
   session: {
     // Astro forces HttpOnly and defaults Secure to true in production. Keep the
     // native owner cookie browser-scoped; only visitor bootstrap adds Max-Age
