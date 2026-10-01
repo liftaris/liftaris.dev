@@ -420,5 +420,33 @@ describe("gift gravity and physics behavior", () => {
       engine.dispose();
     }
   });
+
+  test("gifts bounce when hitting the ground and have high terminal velocity", () => {
+    const size = { width: 500, height: 600 };
+    const engine = createSceneEngine({
+      scene: "clump",
+      collision: "outline",
+      size,
+      objects: [...OBJECTS, giftA],
+    });
+    try {
+      let maxDownwardVelocity = 0;
+      let bouncedUpward = false;
+      for (let frame = 0; frame < 150; frame++) {
+        const poseBefore = pose(engine, giftA.id);
+        engine.step(STEP);
+        const poseAfter = pose(engine, giftA.id);
+        const vy = poseAfter.y - poseBefore.y;
+        if (vy > maxDownwardVelocity) maxDownwardVelocity = vy;
+        if (poseBefore.y > size.height - 60 && vy < -1.5) {
+          bouncedUpward = true;
+        }
+      }
+      expect(maxDownwardVelocity).toBeGreaterThan(10);
+      expect(bouncedUpward).toBe(true);
+    } finally {
+      engine.dispose();
+    }
+  });
 });
 

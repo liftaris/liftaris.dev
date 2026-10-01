@@ -95,8 +95,14 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
       : seed;
     const pose = contain(poseOverride ?? supplied ?? initial, object, size);
     const body = createCollider(object, pose, options.collision, isFixed(object, options.scene));
-    body.frictionAir = options.reducedMotion ? 0.2 : 0.085;
-    body.sleepThreshold = options.reducedMotion ? 24 : 42;
+    if (isGift(object)) {
+      body.frictionAir = 0.012;
+      body.restitution = 0.45;
+      body.sleepThreshold = 42;
+    } else {
+      body.frictionAir = options.reducedMotion ? 0.2 : 0.085;
+      body.sleepThreshold = options.reducedMotion ? 24 : 42;
+    }
     return { object, body, quietFrames: 0 };
   }
   let items: Item[] = (options.objects ?? OBJECTS).map((object, index) => makeItem(object, index));
@@ -166,10 +172,40 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
     if (next.x === before.x && next.y === before.y) return;
     const velocity = { ...body.velocity };
     Body.setPosition(body, next);
-    Body.setVelocity(body, {
-      x: next.x === before.x ? velocity.x : 0,
-      y: next.y === before.y ? velocity.y : 0,
-    });
+
+    if (isGift(object)) {
+      let newVx = velocity.x;
+      let newVy = velocity.y;
+
+      // Vertical bounce against floor
+      if (before.y > next.y && velocity.y > 0) {
+        if (velocity.y > 1.2) {
+          const bounceRestitution = body.restitution || 0.45;
+          newVy = -velocity.y * bounceRestitution;
+          newVx = velocity.x * 0.9;
+        } else {
+          newVy = 0;
+          newVx = velocity.x * 0.82;
+          Body.setAngularVelocity(body, body.angularVelocity * 0.8);
+        }
+      } else if (before.y < next.y && velocity.y < 0) {
+        newVy = 0;
+      }
+
+      // Horizontal bounce against side walls
+      if (before.x > next.x && velocity.x > 0) {
+        newVx = velocity.x > 1.2 ? -velocity.x * 0.35 : 0;
+      } else if (before.x < next.x && velocity.x < 0) {
+        newVx = velocity.x < -1.2 ? -velocity.x * 0.35 : 0;
+      }
+
+      Body.setVelocity(body, { x: newVx, y: newVy });
+    } else {
+      Body.setVelocity(body, {
+        x: next.x === before.x ? velocity.x : 0,
+        y: next.y === before.y ? velocity.y : 0,
+      });
+    }
   }
 
   function endDrag(cancel = false): void {
@@ -234,7 +270,7 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
         const { body } = item;
         if (body.isStatic || body.isSleeping || item === drag?.item) continue;
         if (isGift(item.object)) {
-          const gravityStrength = options.reducedMotion ? 0.0008 : 0.0012;
+          const gravityStrength = 0.0024;
           Body.applyForce(body, body.position, {
             x: 0,
             y: body.mass * gravityStrength,
