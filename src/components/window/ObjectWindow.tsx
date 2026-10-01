@@ -15,6 +15,9 @@ type ObjectWindowProps = {
   closeLabel?: string;
   width?: number;
   height?: number;
+  minWidth?: number;
+  minHeight?: number;
+  resizable?: boolean;
   className?: string;
   autoFit?: boolean;
   canClose?: boolean;
@@ -28,10 +31,10 @@ type ObjectWindowProps = {
   children?: ReactNode;
 };
 
-export function ObjectWindow({ title, icon, source, fallbackSource, origin, monochrome = false, closeLabel = "Close window", width = 480, height = 380, className, autoFit = false, canClose = true, initialBounds, backgroundStyle, maximizeUrl, restoreAnimation = false, onMaximize, onReady, onClose, children }: ObjectWindowProps) {
+export function ObjectWindow({ title, icon, source, fallbackSource, origin, monochrome = false, closeLabel = "Close window", width = 480, height = 380, minWidth = 180, minHeight = 100, resizable = true, className, autoFit = false, canClose = true, initialBounds, backgroundStyle, maximizeUrl, restoreAnimation = false, onMaximize, onReady, onClose, children }: ObjectWindowProps) {
   const [body, setBody] = useState<HTMLElement | null>(null);
   const [error, setError] = useState(false);
-  const initial = useRef({ source, origin, width, height, initialBounds, className });
+  const initial = useRef({ source, origin, width, height, minWidth, minHeight, resizable, initialBounds, className });
   const windowInstance = useRef<WinBox | null>(null);
   const readyFired = useRef(false);
   const isAnimating = useRef(false);
@@ -121,7 +124,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
   // Capture focus before React removes portal children on parent-driven close.
   useLayoutEffect(() => {
     // Geometry and source belong to this mounted window, not its changing content.
-    const { source, origin, width, height, initialBounds, className: windowClass } = initial.current;
+    const { source, origin, width, height, minWidth = 180, minHeight = 100, resizable = true, initialBounds, className: windowClass } = initial.current;
     let disposed = false;
     let instance: WinBox | undefined;
     let restoreFocus = false;
@@ -146,8 +149,10 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
       const options: WinBox.Params & { template: HTMLElement } = {
         root: document.body,
         template, index: 20, header: 18,
-        class: ["object-window", "@container", "no-full", "no-resize", "no-animation", windowClass].filter(Boolean).join(" "),
-        width, height, minwidth: 1, minheight: 44,
+        class: ["object-window", "@container", "no-full", !resizable && "no-resize", "no-animation", windowClass].filter(Boolean).join(" "),
+        width, height,
+        minwidth: Math.min(minWidth, width),
+        minheight: Math.min(minHeight, height),
         top: 19, left: 12, right: 12, bottom: 12,
         x: initialBounds?.left ?? origin.left + 24, y: initialBounds?.top ?? origin.top + 16,
         onclose(force) {
@@ -398,7 +403,12 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
       );
       // WinBox bounds dragging but does not resize open windows on viewport changes.
       const fit = () => {
-        win.resize(Math.min(initialBounds?.width ?? width, innerWidth - Number(win.left) - Number(win.right)), Math.min(initialBounds?.height ?? height, innerHeight - Number(win.top) - Number(win.bottom)));
+        const currentW = Number(win.width) || (initialBounds?.width ?? width);
+        const currentH = Number(win.height) || (initialBounds?.height ?? height);
+        win.resize(
+          Math.min(currentW, innerWidth - Number(win.left) - Number(win.right)),
+          Math.min(currentH, innerHeight - Number(win.top) - Number(win.bottom))
+        );
         move(Number(win.x), Number(win.y));
       };
       const keyboard = (event: KeyboardEvent) => {

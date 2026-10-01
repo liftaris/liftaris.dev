@@ -208,17 +208,10 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
       };
 
       bindControls();
-      document.addEventListener("astro:page-load", () => {
-        document.documentElement.removeAttribute("data-returning-home");
-        bindControls();
-      });
-      document.addEventListener("astro:before-preparation", (ev) => {
+      document.addEventListener("astro:page-load", bindControls);
+      document.addEventListener("astro:before-swap", (ev) => {
         if (ev.to.pathname === "/" && ev.from.pathname !== "/") {
-          document.documentElement.setAttribute("data-returning-home", "true");
-          const siteWin = document.querySelector<HTMLElement>(".site-window");
-          if (siteWin) siteWin.style.viewTransitionName = "none";
-        } else {
-          document.documentElement.removeAttribute("data-returning-home");
+          ev.viewTransition?.skipTransition();
         }
       });
     </script>

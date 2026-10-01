@@ -1145,10 +1145,6 @@ html:not(.on-home) {
   scrollbar-width: thin;
   scrollbar-color: var(--color-blue) var(--color-paper);
 }
-html[data-returning-home] ::view-transition-old(*),
-html[data-returning-home] ::view-transition-new(*) {
-  animation: none !important;
-}
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*) { animation: none; }
   .pane { animation: none; }
