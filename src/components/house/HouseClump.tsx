@@ -8,6 +8,7 @@ import { getGift } from "../../lib/house/client";
 import type { Gift } from "../../lib/house/types";
 import { reconcileGifts, retiringGiftIds } from "./gift-presence";
 import { GITHUB_THING, PORTFOLIO_FOLDER_OBJECT, WRITING_FOLDER_OBJECT } from "./folders";
+import { prefetchThing } from "../../lib/house/prefetch";
 
 type Grab = { id: string; point: Point; origin: Point; moved: boolean; pointerId?: number };
 const INITIAL_SIZE = { width: 500, height: 600 };
@@ -465,6 +466,8 @@ export function HouseClump({
               onLostPointerCapture={(event) => { if (grabbed.current?.pointerId === event.pointerId) finish(true); }}
               onKeyDown={(event) => keyboard(event, object.id)}
               onBlur={() => { if (grabbed.current?.id === object.id && grabbed.current.pointerId === undefined) finish(); }}
+              onPointerEnter={() => prefetchThing(object)}
+              onFocus={() => prefetchThing(object)}
               onClick={(event) => {
                 const suppressed = clickSuppressed.current;
                 if (!opened && !disabled && (!gift || liveIds.has(gift.id)) && !(suppressed?.id === object.id && performance.now() < suppressed.until)) onOpen(object, event.currentTarget, gift);

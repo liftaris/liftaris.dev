@@ -1,6 +1,7 @@
 import type { ComponentProps } from "react";
 import { getBackgroundStyle, isImageUrl, type BackgroundProps } from "../clump/model";
 import { ObjectWindow } from "../window/ObjectWindow";
+import { prefetchThing } from "../../lib/house/prefetch";
 
 type FolderIcon = BackgroundProps & {
   id: string;
@@ -95,6 +96,8 @@ export function FolderContent<T>({
                   className="folder-entry group flex flex-col items-center gap-2 w-full min-h-24 px-1.5 py-2.5 border border-transparent bg-transparent text-inherit font-inherit text-xs leading-[1.4] text-center no-underline [overflow-wrap:anywhere] cursor-pointer touch-manipulation outline-none hover:no-underline hover:bg-blue/7 focus-visible:no-underline focus-visible:outline-none focus-visible:border-transparent aria-disabled:cursor-default aria-disabled:opacity-65"
                   data-visited={visited}
                   href={entry.href}
+                  onPointerEnter={() => prefetchThing(entry)}
+                  onFocus={() => prefetchThing(entry)}
                   onClick={() => onVisit?.(entry.id)}
                 >
                   {artwork}
@@ -109,6 +112,8 @@ export function FolderContent<T>({
                   aria-expanded={openedIds.includes(entry.id)}
                   aria-disabled={openedIds.includes(entry.id) || undefined}
                   tabIndex={openedIds.includes(entry.id) ? -1 : 0}
+                  onPointerEnter={() => prefetchThing(entry.kind === "item" ? (entry.value as { id?: string; action?: string; href?: string | null; kind?: string }) : entry)}
+                  onFocus={() => prefetchThing(entry.kind === "item" ? (entry.value as { id?: string; action?: string; href?: string | null; kind?: string }) : entry)}
                   onClick={(event) => {
                     if (openedIds.includes(entry.id)) return;
                     if (entry.kind === "folder") onOpenFolder?.(entry, event.currentTarget);
