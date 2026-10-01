@@ -109,7 +109,7 @@ body.on-home {
 .physics-area {
   position: relative;
   box-sizing: border-box;
-  border: 5px dashed var(--color-paper);
+  border: 2px dashed var(--color-paper);
   border-radius: 12px;
   overflow: hidden;
 }

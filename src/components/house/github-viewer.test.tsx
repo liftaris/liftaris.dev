@@ -106,7 +106,7 @@ describe("GitHub custom Thing", () => {
     expect(globalCss).toContain(".site-window-icon");
     expect(globalCss).toContain(".site-window-title");
     expect(globalCss).toContain(".physics-area");
-    expect(globalCss).toContain("border: 5px dashed var(--color-paper);");
+    expect(globalCss).toContain("border: 2px dashed var(--color-paper);");
   });
 
   test("Portfolio.astro renders title and icon for subroutes and physics area for home", async () => {

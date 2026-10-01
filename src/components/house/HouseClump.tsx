@@ -507,7 +507,7 @@ export function HouseClump({
                 }}
               >
                 <span
-                  className="house-object-art flex items-center justify-center size-full rounded-xl pointer-events-none group-data-[shape=circle]:rounded-full group-data-[has-bg=true]:overflow-hidden [transform:translateZ(0)] opacity-[0.99] [filter:contrast(100.01%)] font-['Apple_Color_Emoji','Segoe_UI_Emoji','Noto_Color_Emoji',sans-serif] has-[.house-object-image]:filter-none has-[.house-object-image]:opacity-100 group-data-[grabbed=true]:opacity-100 group-data-[gift=true]:opacity-100 group-data-[gift=true]:[filter:drop-shadow(0_0_5px_color-mix(in_srgb,var(--house-gift,var(--color-paper))_40%,transparent))]"
+                  className="house-object-art flex items-center justify-center size-full rounded-xl pointer-events-none group-data-[shape=circle]:rounded-full group-data-[has-bg=true]:overflow-hidden [transform:translateZ(0)] opacity-[0.99] [filter:contrast(100.01%)] font-['Apple_Color_Emoji','Segoe_UI_Emoji','Noto_Color_Emoji',sans-serif] has-[.house-object-image]:filter-none has-[.house-object-image]:opacity-100 group-data-[grabbed=true]:opacity-100 group-data-[gift=true]:opacity-100"
                   aria-hidden="true"
                   style={bgStyle}
                 >
