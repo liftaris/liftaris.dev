@@ -1,3 +1,34 @@
+const windowHtmlCache = new Map<string, string>();
+const inFlightWindowHtml = new Map<string, Promise<string>>();
+
+export function getCachedWindowHtml(url?: string | null): string | null {
+  if (!url) return null;
+  return windowHtmlCache.get(url) ?? null;
+}
+
+export function preloadWindowHtml(url?: string | null): Promise<string> {
+  if (!url || typeof window === "undefined") return Promise.resolve("");
+  const cached = windowHtmlCache.get(url);
+  if (cached) return Promise.resolve(cached);
+  const pending = inFlightWindowHtml.get(url);
+  if (pending) return pending;
+
+  const promise = fetch(url, { priority: "high" })
+    .then((res) => (res.ok ? res.text() : ""))
+    .then((html) => {
+      if (html) windowHtmlCache.set(url, html);
+      inFlightWindowHtml.delete(url);
+      return html;
+    })
+    .catch(() => {
+      inFlightWindowHtml.delete(url);
+      return "";
+    });
+
+  inFlightWindowHtml.set(url, promise);
+  return promise;
+}
+
 let prefetchFn: ((url: string) => void) | undefined;
 
 export function prefetchUrl(url?: string | null): void {
@@ -45,9 +76,22 @@ export function getThingPrefetchUrls(thing?: { id?: string; action?: string; hre
   return urls;
 }
 
-export function prefetchThing(thing?: { id?: string; action?: string; href?: string | null; kind?: string } | null): void {
+export function prefetchThing(thing?: { id?: string; action?: string; href?: string | null; kind?: string; items?: readonly unknown[] } | null): void {
+  if (!thing) return;
+  if ("items" in thing && Array.isArray(thing.items)) {
+    for (const item of thing.items) {
+      if (item && typeof item === "object") {
+        const target = "kind" in item && item.kind === "item" && "value" in item ? item.value : item;
+        prefetchThing(target as { id?: string; action?: string; href?: string | null; kind?: string });
+      }
+    }
+  }
   const urls = getThingPrefetchUrls(thing);
   for (const url of urls) {
-    prefetchUrl(url);
+    if (url.includes("window=1")) {
+      void preloadWindowHtml(url);
+    } else {
+      prefetchUrl(url);
+    }
   }
 }

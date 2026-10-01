@@ -32,6 +32,9 @@ if (!thing) {
 
 if (!thing) return Astro.rewrite("/404");
 if (cacheHint) Astro.cache.set(cacheHint);
+if (Astro.url.searchParams.get("window") === "1") {
+  Astro.response.headers.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
+}
 
 const name = String(thing.data.name ?? "Page");
 const title = `${name} | Kaio Barbosa`;

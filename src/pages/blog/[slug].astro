@@ -9,6 +9,9 @@ const { entry: post, error, cacheHint } = await getEmDashEntry("posts", Astro.pa
 if (error && error.name !== "LiveEntryNotFoundError") throw error;
 if (!post) return Astro.rewrite("/404");
 Astro.cache.set(cacheHint);
+if (Astro.url.searchParams.get("window") === "1") {
+  Astro.response.headers.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
+}
 ---
 <Portfolio embedded={Astro.url.searchParams.get("window") === "1"} title={`${post.data.title} | Kaio Barbosa`} windowTitle={post.data.title} windowIcon={post.data.icon || "📝"} restoreSlug={Astro.params.slug} content={{ collection: "posts", id: post.data.id, slug: post.id }}>
   <article class="article-content">
