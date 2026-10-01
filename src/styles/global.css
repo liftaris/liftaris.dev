@@ -33,7 +33,7 @@
     url("/noise.webp?v=4") 0 0 / 100px 100px fixed var(--color-blue);
   --site-gutter: clamp(16px, 3vw, 56px);
   --identity-size: clamp(28px, 9vw, 168px);
-  --desktop-bg: url("/stars.webp") 0 0 repeat fixed #000;
+  --desktop-bg: var(--blue-background);
 
   /* Responsive Window Geometry */
   --window-pad: 10px;
@@ -101,9 +101,17 @@ html:has(> body.on-home) {
   background: var(--desktop-bg);
 }
 
-body.on-home,
-body:has(> .site-window[data-home="true"]) {
+body.on-home {
   background: transparent;
+}
+
+/* Physics Area */
+.physics-area {
+  position: relative;
+  box-sizing: border-box;
+  border: 5px dashed var(--color-paper);
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 a { color: inherit; text-decoration: none; }
@@ -119,25 +127,26 @@ button { color: inherit; font: inherit; background: none; border: 0; padding: 0;
   z-index: 1;
   overflow: hidden;
   border-radius: 3px;
+  background: var(--color-paper);
+  border: 1px solid var(--color-window-border);
   transition: transform 240ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease;
   transform-origin: center center;
 }
 
-.site-window[data-home="true"] {
-  background: var(--blue-background);
-  border: 1px solid var(--color-window-border-home);
-  max-height: 1200px;
+.site-window .site-window-body {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-blue) var(--color-paper);
+  background: var(--color-paper);
+  color: var(--color-blue);
 }
 
 body.on-home {
   --window-height: min(calc(100dvh - 2 * var(--window-pad)), 1200px);
   --window-top: calc((100dvh - var(--window-height)) / 2);
-}
-
-body.desktop-collapsed .site-window {
-  opacity: 0 !important;
-  pointer-events: none !important;
-  transform: scale(0.04);
 }
 
 .site-window-header {
@@ -388,25 +397,6 @@ body.embedded-post {
   animation: none;
 }
 
-/* Subroute window matches WinBox window */
-.site-window:not([data-home="true"]) {
-  overflow: hidden;
-  background: var(--color-paper);
-  border: 1px solid var(--color-window-border);
-  border-radius: 3px;
-}
-
-.site-window:not([data-home="true"]) .site-window-body {
-  flex: 1 1 0;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-blue) var(--color-paper);
-  background: var(--color-paper);
-  color: var(--color-blue);
-}
-
 /* Unconstrained window for blog posts and writing pages */
 .site-window[data-unconstrained="true"],
 .site-window:has(.article-content),
@@ -472,17 +462,22 @@ body.embedded-post {
 /* WinBox object window integration */
 .winbox.object-window {
   color: var(--color-window-bar);
-  background: var(--color-window-bar);
-  border: 1px solid var(--color-window-bar);
-  border-radius: 0;
-  box-shadow: 4px 4px 0 rgb(0 0 0 / .22);
+  background: color-mix(in srgb, var(--color-window-bar) 80%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-window-bar) 80%, transparent);
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28), 0 4px 12px rgba(0, 0, 0, 0.16);
   font-family: var(--font-mono), monospace;
   transform-origin: top left;
 }
 .object-window .wb-header {
+  height: 28px;
+  line-height: 28px;
   overflow: hidden;
-  background: var(--color-window-bar);
-  border-bottom: 1px solid var(--color-window-bar);
+  background: color-mix(in srgb, var(--color-window-bar) 80%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-paper) 20%, transparent);
+  border-radius: 11px 11px 0 0;
   color: var(--color-paper);
 }
 .object-window .wb-drag {
@@ -504,8 +499,8 @@ body.embedded-post {
 }
 .object-window .wb-title {
   font: inherit;
-  font-size: 12px;
-  line-height: inherit;
+  font-size: 13px;
+  line-height: 28px;
   padding-right: 8px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -516,13 +511,13 @@ body.embedded-post {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   padding: 0;
   border: 0;
   background: none;
   color: inherit;
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1;
   cursor: pointer;
   user-select: none;
@@ -548,22 +543,25 @@ body.embedded-post {
 .object-window > .wb-header .object-window-icon:active { cursor: grabbing; }
 .object-window .wb-control { display: flex; }
 .object-window .wb-control button {
-  width: 28px;
-  height: 100%;
+  width: 32px;
+  height: 28px;
   padding: 0;
   border: 0;
-  border-left: 1px solid color-mix(in srgb, var(--color-paper) 50%, transparent);
+  border-left: 1px solid color-mix(in srgb, var(--color-paper) 30%, transparent);
   border-radius: 0;
   color: inherit;
   background: none;
   font: inherit;
-  font-size: 16px;
+  font-size: 17px;
   line-height: 1;
   text-align: center;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+}
+.object-window .wb-control button.wb-close {
+  border-radius: 0 11px 0 0;
 }
 .object-window .wb-max .wb-restore-square {
   display: none;
@@ -583,20 +581,27 @@ body.embedded-post {
   border: 1px solid var(--color-window-border) !important;
 }
 .winbox.object-window.max {
-  top: 18px !important;
+  top: 28px !important;
   left: 0px !important;
   width: 100vw !important;
-  height: calc(100vh - 18px) !important;
+  height: calc(100vh - 28px) !important;
+  border-radius: 0 !important;
+}
+.winbox.object-window.max .wb-header {
+  border-radius: 0 !important;
+}
+.winbox.object-window.max .wb-body {
+  border-radius: 0 !important;
 }
 body.on-home .winbox.folder-window.max,
 body.on-home .winbox.object-window.max:has(.folder) {
-  top: calc(var(--window-top, 10px) + 18px) !important;
+  top: calc(var(--window-top, 10px) + 28px) !important;
   left: var(--window-left, 10px) !important;
   width: var(--window-width, calc(100vw - 20px)) !important;
   width: var(--window-width, calc(100dvw - 20px)) !important;
-  height: calc(var(--window-height, calc(100vh - 20px)) - 18px) !important;
-  height: calc(var(--window-height, calc(100dvh - 20px)) - 18px) !important;
-  border-radius: 0 0 3px 3px !important;
+  height: calc(var(--window-height, calc(100vh - 20px)) - 28px) !important;
+  height: calc(var(--window-height, calc(100dvh - 20px)) - 28px) !important;
+  border-radius: 0 0 12px 12px !important;
 }
 .winbox.object-window.maximizing:not(.folder-window):not(:has(.folder)) .wb-header {
   opacity: 0;
@@ -619,16 +624,10 @@ body.on-home .winbox.object-window.max:has(.folder) {
 .object-window.restoring .wb-max .wb-restore-square {
   display: none;
 }
-body.desktop-collapsed .winbox.object-window {
-  opacity: 0 !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-  transition: opacity 180ms ease, transform 180ms ease;
-  transform: scale(0.95);
-}
 .object-window .wb-body {
   background: var(--color-paper);
   color: var(--color-blue);
+  border-radius: 0 0 11px 11px;
   overscroll-behavior: contain;
   scrollbar-width: thin;
   scrollbar-color: var(--color-blue) var(--color-paper);
@@ -674,8 +673,8 @@ body.desktop-collapsed .winbox.object-window {
   40%, 80% { transform: translateX(6px) rotate(4deg); }
 }
 
-.site-window:not([data-home="true"]) .card,
-.site-window:not([data-home="true"]) .row,
+.site-window .card,
+.site-window .row,
 .object-window .card,
 .object-window .row {
   grid-template-columns: 1fr;
@@ -683,21 +682,21 @@ body.desktop-collapsed .winbox.object-window {
   border-color: color-mix(in srgb, var(--color-blue) 20%, transparent);
 }
 
-.site-window:not([data-home="true"]) .projectTitleRow,
+.site-window .projectTitleRow,
 .object-window .projectTitleRow {
   flex-wrap: wrap;
 }
 
-.site-window:not([data-home="true"]) .card h3,
-.site-window:not([data-home="true"]) .row h3,
+.site-window .card h3,
+.site-window .row h3,
 .object-window .card h3,
 .object-window .row h3 {
   font-size: clamp(26px, 4cqi, 38px);
   line-height: 1.05;
 }
 
-.site-window:not([data-home="true"]) .card p,
-.site-window:not([data-home="true"]) .row p,
+.site-window .card p,
+.site-window .row p,
 .object-window .card p,
 .object-window .row p {
   margin: 0;
@@ -706,9 +705,9 @@ body.desktop-collapsed .winbox.object-window {
   font-family: var(--font-mono), monospace;
 }
 
-.site-window:not([data-home="true"]) .row > div:first-child > p:first-child,
+.site-window .row > div:first-child > p:first-child,
 .object-window .row > div:first-child > p:first-child,
-.site-window:not([data-home="true"]) .card p:first-child,
+.site-window .card p:first-child,
 .object-window .card p:first-child {
   display: block;
   margin: 0 0 10px;
@@ -718,8 +717,8 @@ body.desktop-collapsed .winbox.object-window {
   text-transform: uppercase;
 }
 
-.site-window:not([data-home="true"]) .links a,
-.site-window:not([data-home="true"]) .chips span,
+.site-window .links a,
+.site-window .chips span,
 .object-window .links a,
 .object-window .chips span {
   border-color: color-mix(in srgb, var(--color-blue) 35%, transparent);
@@ -727,7 +726,7 @@ body.desktop-collapsed .winbox.object-window {
   background: none;
 }
 
-.site-window:not([data-home="true"]) .links a:hover,
+.site-window .links a:hover,
 .object-window .links a:hover {
   background: color-mix(in srgb, var(--color-blue) 10%, transparent);
 }
@@ -815,7 +814,7 @@ li { margin: 8px 0; }
 }
 
 .experiencePane .row,
-.site-window:not([data-home="true"]) .experiencePane .row,
+.site-window .experiencePane .row,
 .object-window .experiencePane .row {
   grid-template-columns: 1fr;
   gap: 12px;
@@ -1147,34 +1146,6 @@ html:not(.on-home) {
   ::view-transition-group(*) { animation: none; }
   .pane { animation: none; }
 }
-
-/* Pinned Face Avatar (No Physics) */
-.pinned-face-avatar {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 9999999;
-  display: block;
-  cursor: pointer;
-  background: none;
-  border: none;
-  padding: 0;
-  outline: none;
-  user-select: none;
-  line-height: 0;
-}
-
-.pinned-face-image {
-  display: block;
-  width: 72px;
-  height: 98px;
-  max-width: 90px;
-  object-fit: contain;
-  pointer-events: none;
-}
-
-/* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 /* Things Icon Selection Outline (4px white contour following PNG/SVG/Emoji)  */
 /* -------------------------------------------------------------------------- */

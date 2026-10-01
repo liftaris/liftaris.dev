@@ -34,21 +34,22 @@ describe("clump collision models", () => {
     }
   });
 
-  test("a rotated footprint starts at its supplied pose without initial motion", () => {
+  test("things have infinite inertia and zero angle, while gifts retain rotation", () => {
     const unrotated = createCollider(computer, origin, "outline", false);
+    expect(unrotated.angle).toBe(0);
+    expect(unrotated.inverseInertia).toBe(0);
+
     const pose = { ...origin, x: 70, y: 120, angle: Math.PI / 2 };
-    const rotated = createCollider(computer, pose, "outline", false);
-    expect(rotated.position).toEqual({ x: pose.x, y: pose.y });
-    expect(rotated.angle).toBe(pose.angle);
-    expect(rotated.bounds.max.x - rotated.bounds.min.x).toBeCloseTo(
-      unrotated.bounds.max.y - unrotated.bounds.min.y,
-    );
-    expect(rotated.bounds.max.y - rotated.bounds.min.y).toBeCloseTo(
-      unrotated.bounds.max.x - unrotated.bounds.min.x,
-    );
-    expect(rotated.velocity).toEqual({ x: 0, y: 0 });
-    expect(rotated.angularVelocity).toBe(0);
-    expect(pose).toEqual({ id: computer.id, x: 70, y: 120, angle: Math.PI / 2 });
+    const thingCollider = createCollider(computer, pose, "outline", false);
+    expect(thingCollider.position).toEqual({ x: pose.x, y: pose.y });
+    expect(thingCollider.angle).toBe(0);
+    expect(thingCollider.inverseInertia).toBe(0);
+
+    const giftSpec = { ...computer, isGift: true };
+    const giftCollider = createCollider(giftSpec, pose, "outline", false);
+    expect(giftCollider.angle).toBe(pose.angle);
+    expect(giftCollider.velocity).toEqual({ x: 0, y: 0 });
+    expect(giftCollider.angularVelocity).toBe(0);
   });
 
   test("fixed structure objects retain position and rotation under force", () => {
@@ -61,28 +62,36 @@ describe("clump collision models", () => {
       for (let step = 0; step < 10; step++) Matter.Engine.update(engine, 1000 / 60);
       expect(body.isStatic).toBe(true);
       expect(body.position).toEqual({ x: pose.x, y: pose.y });
-      expect(body.angle).toBe(pose.angle);
+      expect(body.angle).toBe(0);
       expect(body.inverseMass).toBe(0);
       expect(body.inverseInertia).toBe(0);
       Matter.Engine.clear(engine);
     }
   });
 
-  test("grabbing a poster off-center can turn it without the bare peg's rapid spin", () => {
-    const poster = createCollider(computer, origin, "peg", false);
-    const barePeg = Matter.Bodies.circle(origin.x, origin.y, getPegRadius(computer), {
-      density: poster.density,
-      frictionAir: poster.frictionAir,
-    });
+  test("things do not turn from off-center force while gifts can turn", () => {
+    const thingPoster = createCollider(computer, origin, "peg", false);
     const grab = { x: origin.x + computer.width / 2, y: origin.y };
-    for (const body of [poster, barePeg]) {
-      const engine = Matter.Engine.create({ gravity: { x: 0, y: 0, scale: 0 } });
-      Matter.Composite.add(engine.world, body);
-      Matter.Body.applyForce(body, grab, { x: 0, y: 0.001 });
-      Matter.Engine.update(engine, 1000 / 60);
-      Matter.Engine.clear(engine);
-    }
-    expect(poster.angularVelocity).toBeGreaterThan(0);
-    expect(poster.angularVelocity).toBeLessThan(barePeg.angularVelocity / 2);
+    const engine1 = Matter.Engine.create({ gravity: { x: 0, y: 0, scale: 0 } });
+    Matter.Composite.add(engine1.world, thingPoster);
+    Matter.Body.applyForce(thingPoster, grab, { x: 0, y: 0.001 });
+    Matter.Engine.update(engine1, 1000 / 60);
+    expect(thingPoster.angularVelocity).toBe(0);
+    expect(thingPoster.angle).toBe(0);
+    Matter.Engine.clear(engine1);
+
+    const giftPoster = createCollider({ ...computer, isGift: true }, origin, "peg", false);
+    const barePeg = Matter.Bodies.circle(origin.x, origin.y, getPegRadius(computer), {
+      density: giftPoster.density,
+      frictionAir: giftPoster.frictionAir,
+    });
+    const engine2 = Matter.Engine.create({ gravity: { x: 0, y: 0, scale: 0 } });
+    Matter.Composite.add(engine2.world, [giftPoster, barePeg]);
+    Matter.Body.applyForce(giftPoster, grab, { x: 0, y: 0.001 });
+    Matter.Body.applyForce(barePeg, grab, { x: 0, y: 0.001 });
+    Matter.Engine.update(engine2, 1000 / 60);
+    expect(giftPoster.angularVelocity).toBeGreaterThan(0);
+    expect(giftPoster.angularVelocity).toBeLessThan(barePeg.angularVelocity / 2);
+    Matter.Engine.clear(engine2);
   });
 });

@@ -74,16 +74,15 @@ describe("GitHub custom Thing", () => {
     expect(css).toContain("border: 1.5px solid currentColor;");
     expect(css).toContain(".object-window .wb-max .wb-restore-square {\n  display: none;\n}");
     expect(css).toContain(".wb-restore-square::after");
-    expect(css).toContain("body.desktop-collapsed .winbox.object-window");
   });
 
   test("Portfolio.astro defines outermost site-window with close button to homepage", async () => {
     const astroLayout = await Bun.file(new URL("../../layouts/Portfolio.astro", import.meta.url).pathname).text();
-    expect(astroLayout).toContain('class="site-window"');
+    expect(astroLayout).toContain('class="site-window');
     expect(astroLayout).toContain('class="site-window-header"');
     expect(astroLayout).toContain('class="site-window-close"');
     expect(astroLayout).toContain('href="/"');
-    expect(astroLayout).toContain("liftaris:collapse-desktop");
+    expect(astroLayout).toContain('class="physics-area');
   });
 
   test("public/face.svg exists as an SVG avatar icon", async () => {
@@ -98,7 +97,7 @@ describe("GitHub custom Thing", () => {
     expect(pageText).toContain("Portfolio");
   });
 
-  test("global.css defines site-window and pinned-face-avatar", async () => {
+  test("global.css defines site-window and physics-area", async () => {
     const globalCss = await Bun.file(new URL("../../styles/global.css", import.meta.url).pathname).text();
     expect(globalCss).toContain(".site-window");
     expect(globalCss).toContain(".site-window-header");
@@ -106,22 +105,22 @@ describe("GitHub custom Thing", () => {
     expect(globalCss).toContain(".site-window-close");
     expect(globalCss).toContain(".site-window-icon");
     expect(globalCss).toContain(".site-window-title");
-    expect(globalCss).toContain(".pinned-face-avatar");
-    expect(globalCss).toContain("position: fixed;");
+    expect(globalCss).toContain(".physics-area");
+    expect(globalCss).toContain("border: 5px dashed var(--color-paper);");
   });
 
-  test("Portfolio.astro renders title and icon for subroutes and empty header for home", async () => {
+  test("Portfolio.astro renders title and icon for subroutes and physics area for home", async () => {
     const astroLayout = await Bun.file(new URL("../../layouts/Portfolio.astro", import.meta.url).pathname).text();
     expect(astroLayout).toContain("windowTitle");
     expect(astroLayout).toContain("windowIcon");
     expect(astroLayout).toContain("site-window-icon");
     expect(astroLayout).toContain("site-window-title");
-    expect(astroLayout).toContain("!isHome");
+    expect(astroLayout).toContain("physics-area");
   });
 
-  test("ObjectWindow bounds maximize and dragging below 18px outermost titlebar with no border spacing", async () => {
+  test("ObjectWindow bounds maximize and dragging below 28px outermost titlebar with no border spacing", async () => {
     const code = await Bun.file(new URL("../window/ObjectWindow.tsx", import.meta.url).pathname).text();
-    expect(code).toContain("top: 19");
+    expect(code).toContain("top: 28");
     expect(code).toContain('frame.style.top = "0px"');
     expect(code).toContain('frame.style.height = "100vh"');
     expect(code).toContain('frame.style.border = "none"');
@@ -129,10 +128,10 @@ describe("GitHub custom Thing", () => {
 
     const windowCss = await Bun.file(new URL("../../styles/global.css", import.meta.url).pathname).text();
     expect(windowCss).toContain(".winbox.object-window.max");
-    expect(windowCss).toContain("top: 18px !important");
+    expect(windowCss).toContain("top: 28px !important");
     expect(windowCss).toContain("left: 0px !important");
     expect(windowCss).toContain("width: 100vw !important");
-    expect(windowCss).toContain("height: calc(100vh - 18px) !important");
+    expect(windowCss).toContain("height: calc(100vh - 28px) !important");
     expect(windowCss).toContain(".object-window:has(.folder) .object-window-content");
     expect(windowCss).toContain(".winbox.object-window.restoring");
   });
@@ -152,20 +151,18 @@ describe("GitHub custom Thing", () => {
     expect(houseCode).toContain("restoreAnimation");
   });
 
-  test("public/face.webp exists and House renders face.webp", async () => {
+  test("public/face.webp exists", async () => {
     const webpExists = await Bun.file(new URL("../../../public/face.webp", import.meta.url).pathname).exists();
     expect(webpExists).toBe(true);
 
     const houseCode = await Bun.file(new URL("./House.tsx", import.meta.url).pathname).text();
-    expect(houseCode).toContain('src="/face.webp"');
-    expect(houseCode).toContain('createPortal(');
-    expect(houseCode).toContain('document.body');
     expect(houseCode).toContain('urlParams?.get("restore")');
   });
 
   test("subroutes have white paper background and no pane blur animation", async () => {
     const globalCss = await Bun.file(new URL("../../styles/global.css", import.meta.url).pathname).text();
-    expect(globalCss).toContain(".site-window:not([data-home=\"true\"])");
+    expect(globalCss).toContain(".site-window {");
+    expect(globalCss).toContain("background: var(--color-paper);");
     expect(globalCss).toContain(".pane {\n  animation: none;\n}");
     expect(globalCss).toContain(".wb-restore-square");
   });

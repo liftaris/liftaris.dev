@@ -23,7 +23,7 @@ if (!thing) {
   const result = await getEmDashCollection("things", { status: "published", limit: 100 });
   if (!result.error && result.entries) {
     thing = result.entries.find((e) => {
-      const data = e.data as Record<string, unknown>;
+      const data = e.data as unknown as Record<string, unknown>;
       if (data.kind !== "page") return false;
       const href = typeof data.href === "string" ? data.href.replace(/^\//, "").split("?")[0] : null;
       return e.id === slug || data.slug === slug || href === slug;

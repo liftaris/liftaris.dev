@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createPortal, flushSync } from "react-dom";
+import { flushSync } from "react-dom";
 import { ensureViewer, getHouse, houseMutations, reclaimGift } from "../../lib/house/client";
 import type { Gift, GiftDetail, HouseSnapshot } from "../../lib/house/types";
 import { giftObjects } from "../../lib/house/emoji";
@@ -345,60 +345,8 @@ export function House({
     });
   }, [effectiveThings, foldersById, posts]);
 
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const faceAvatarRef = useRef<HTMLButtonElement>(null);
-
-  const restoreDesktop = useCallback(() => {
-    setIsCollapsed(false);
-    document.body.classList.remove("desktop-collapsed");
-    window.dispatchEvent(new CustomEvent("liftaris:restore-desktop"));
-    document.getElementById("site-window-close-btn")?.focus();
-  }, []);
-
-  useEffect(() => {
-    const handleCollapse = () => {
-      setIsCollapsed(true);
-      document.body.classList.add("desktop-collapsed");
-    };
-    const handleRestore = () => {
-      setIsCollapsed(false);
-      document.body.classList.remove("desktop-collapsed");
-    };
-    window.addEventListener("liftaris:collapse-desktop", handleCollapse);
-    window.addEventListener("liftaris:restore-desktop", handleRestore);
-    return () => {
-      window.removeEventListener("liftaris:collapse-desktop", handleCollapse);
-      window.removeEventListener("liftaris:restore-desktop", handleRestore);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (isCollapsed) {
-      document.body.classList.add("desktop-collapsed");
-      requestAnimationFrame(() => {
-        faceAvatarRef.current?.focus();
-      });
-    } else {
-      document.body.classList.remove("desktop-collapsed");
-    }
-    return () => {
-      document.body.classList.remove("desktop-collapsed");
-    };
-  }, [isCollapsed]);
-
-  useEffect(() => {
-    if (!isCollapsed) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        restoreDesktop();
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isCollapsed, restoreDesktop]);
-
   return (
-    <div className="house flex flex-col size-full min-w-0 min-h-0 @container text-paper" data-ready={ready} data-collapsed={isCollapsed}>
+    <div className="house flex flex-col size-full min-w-0 min-h-0 @container text-paper" data-ready={ready}>
       <HouseClump
         gifts={snapshot?.gifts ?? EMPTY_GIFTS}
         inspectedIds={opened.map((item) => item.object.id)}
@@ -411,21 +359,6 @@ export function House({
       />
       {loadError && <p className="house-connection shrink-0 max-h-[30%] overflow-auto mt-2 px-4 text-center text-xs" role="status">{loadError}</p>}
       {sessionError && <p className="house-connection shrink-0 max-h-[30%] overflow-auto mt-2 px-4 text-center text-xs" role="status">{sessionError}</p>}
-
-      {isCollapsed && typeof document !== "undefined" && createPortal(
-        <button
-          ref={faceAvatarRef}
-          autoFocus
-          type="button"
-          className="pinned-face-avatar fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999999] block cursor-pointer bg-transparent border-0 p-0 outline-none select-none leading-none"
-          onClick={restoreDesktop}
-          aria-label="Restore desktop"
-          title="Click to restore desktop"
-        >
-          <img src="/face.webp" alt="Kaio Barbosa" className="pinned-face-image block w-[72px] h-[98px] max-w-[90px] object-contain pointer-events-none" />
-        </button>,
-        document.body
-      )}
 
       {opened.map((item) => {
         const folder = "kind" in item.object && item.object.kind === "folder" && "items" in item.object ? (item.object as FolderSpec<HouseThing>) : undefined;

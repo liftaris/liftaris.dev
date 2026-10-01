@@ -82,7 +82,7 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
     <title>{title}</title>
     <link rel="preload" href={youngSerifLatinUrl} as="font" type="font/woff2" crossorigin="anonymous" />
     <link rel="preload" href={geistMonoLatinUrl} as="font" type="font/woff2" crossorigin="anonymous" />
-    {!embedded && <link rel="preload" href="/stars.webp" as="image" type="image/webp" />}
+    {!embedded && <link rel="preload" href="/noise.webp?v=4" as="image" type="image/webp" />}
     {embedded && <base href={Astro.url.href} target="_top" />}
     <EmDashHead page={page} />
     <link rel="icon" href="/favicon.ico" />
@@ -104,32 +104,40 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
       </defs>
     </svg>
     {!embedded ? (
-      <div
-        data-app="WindowList"
-        class="desktop-viewport flex size-full min-h-dvh justify-center p-2.5 md:p-4"
-        class:list={[
-          isHome ? "items-center" : "items-start",
-        ]}
-      >
+      isHome ? (
         <div
-          data-app="AppWindow"
-          class="site-window"
-          class:list={[
-            "@container w-full md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1200px] 2xl:max-w-[1360px]",
-            isUnconstrained
-              ? "min-h-[calc(100dvh-20px)] md:min-h-[calc(100dvh-32px)] h-auto"
-              : "h-[calc(100dvh-20px)] md:h-[calc(100dvh-32px)]",
-            isHome ? "max-h-[1200px]" : undefined,
-            { "object-window": !isHome },
-          ]}
-          data-home={isHome ? "true" : undefined}
-          data-unconstrained={isUnconstrained ? "true" : undefined}
-          transition:name={!isHome ? "site-window" : undefined}
+          data-app="Desktop"
+          class="desktop-viewport flex size-full min-h-dvh justify-center items-center p-2.5 md:p-4"
         >
-        <header class="site-window-header">
-          <div class="site-window-drag">
-            {!isHome && (
-              <>
+          <div
+            class="physics-area @container w-full md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1200px] 2xl:max-w-[1360px] h-[calc(100dvh-20px)] md:h-[calc(100dvh-32px)] max-h-[1200px] relative flex flex-col box-border"
+          >
+            <div class="shell onHome">
+              <div class="identity">
+                <span class="name"><h1><span>Kaio</span><span>Barbosa</span></h1></span>
+              </div>
+              <section class="stageContent"><slot /></section>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div
+          data-app="WindowList"
+          class="desktop-viewport flex size-full min-h-dvh justify-center items-start p-2.5 md:p-4"
+        >
+          <div
+            data-app="AppWindow"
+            class="site-window object-window @container w-full md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1200px] 2xl:max-w-[1360px]"
+            class:list={[
+              isUnconstrained
+                ? "min-h-[calc(100dvh-20px)] md:min-h-[calc(100dvh-32px)] h-auto"
+                : "h-[calc(100dvh-20px)] md:h-[calc(100dvh-32px)]",
+            ]}
+            data-unconstrained={isUnconstrained ? "true" : undefined}
+            transition:name="site-window"
+          >
+            <header class="site-window-header">
+              <div class="site-window-drag">
                 {displayIcon && (
                   <span class="site-window-icon">
                     {isIconImage ? (
@@ -144,22 +152,8 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
                     <span class="site-window-title">{displayTitle}</span>
                   </div>
                 )}
-              </>
-            )}
-          </div>
-          <div class="site-window-controls">
-            {isHome ? (
-              <button
-                type="button"
-                class="site-window-close"
-                id="site-window-close-btn"
-                aria-label="Close window"
-                onclick="window.dispatchEvent(new CustomEvent('liftaris:collapse-desktop'))"
-              >
-                ×
-              </button>
-            ) : (
-              <>
+              </div>
+              <div class="site-window-controls">
                 <a
                   href={`/?restore=${encodeURIComponent(actualRestoreSlug || "")}`}
                   class="site-window-max"
@@ -176,27 +170,17 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
                 >
                   ×
                 </a>
-              </>
-            )}
-          </div>
-        </header>
-        <div class="site-window-body">
-          {isHome ? (
-            <div class="shell onHome">
-              <div class="identity">
-                <span class="name"><h1><span>Kaio</span><span>Barbosa</span></h1></span>
               </div>
-              <section class="stageContent"><slot /></section>
+            </header>
+            <div class="site-window-body">
+              <div class="object-window-content">
+                <slot />
+              </div>
             </div>
-          ) : (
-            <div class="object-window-content">
-              <slot />
-            </div>
-          )}
+          </div>
         </div>
-      </div>
-    </div>
-  ) : (
+      )
+    ) : (
       <div class="object-window-content">
         <slot />
       </div>

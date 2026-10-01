@@ -36,7 +36,7 @@ describe("Matter scene interaction", () => {
       }
     });
 
-    test(`${collision}: a released stray returns on its new side of the clump`, () => {
+    test(`${collision}: a released stray stays where dropped without clump pulling force`, () => {
       const size = { width: 600, height: 400 };
       const engine = createSceneEngine({ scene: "clump", collision, size });
       try {
@@ -50,15 +50,14 @@ describe("Matter scene interaction", () => {
         engine.endDrag();
         settle(engine);
         const resting = pose(engine, "octopus");
-        expect(resting.x).toBeLessThan(released.x - 70);
-        expect(resting.x).toBeGreaterThan(size.width / 2);
-        expect(Math.hypot(resting.x - original.x, resting.y - original.y)).toBeGreaterThan(50);
+        // No clump force pulls it back: it stays near where it was dropped!
+        expect(resting.x).toBeGreaterThan(520);
       } finally {
         engine.dispose();
       }
     });
 
-    test(`${collision}: an off-center handle rotates the body`, () => {
+    test(`${collision}: an off-center handle does not rotate the body and angle remains 0`, () => {
       const engine = createSceneEngine({ scene: "clump", collision, size: SIZE });
       try {
         settle(engine);
@@ -66,27 +65,49 @@ describe("Matter scene interaction", () => {
         engine.beginDrag(original.id, { x: original.x + 22, y: original.y });
         engine.moveDrag({ x: original.x + 20, y: original.y + 110 });
         advance(engine, 50);
-        expect(Math.abs(pose(engine, original.id).angle - original.angle)).toBeGreaterThan(0.2);
+        expect(pose(engine, original.id).angle).toBe(0);
       } finally {
         engine.dispose();
       }
     });
 
-    test(`${collision}: keyboard rotation during a center grab survives release`, () => {
+    test(`${collision}: keyboard nudges move the body without rotating`, () => {
       const engine = createSceneEngine({ scene: "clump", collision, size: SIZE });
       try {
         settle(engine);
         const original = pose(engine, "cloud");
         engine.beginDrag(original.id, original);
         for (let press = 0; press < 3; press++) {
-          engine.nudge(original.id, 0, 0, Math.PI / 12);
+          engine.nudge(original.id, 10, 0, Math.PI / 12);
           advance(engine, 10);
         }
-        const heldAngle = pose(engine, original.id).angle;
-        expect(heldAngle - original.angle).toBeGreaterThan(0.6);
+        expect(pose(engine, original.id).angle).toBe(0);
+        expect(pose(engine, original.id).x).toBeGreaterThan(original.x);
         engine.endDrag();
         settle(engine);
-        expect(pose(engine, original.id).angle).toBeCloseTo(heldAngle, 2);
+        expect(pose(engine, original.id).angle).toBe(0);
+      } finally {
+        engine.dispose();
+      }
+    });
+
+    test(`${collision}: dragging an item pushes neighboring items via physics collision`, () => {
+      const size = { width: 600, height: 400 };
+      const engine = createSceneEngine({ scene: "clump", collision, size });
+      try {
+        settle(engine);
+        const poses = engine.getPoses();
+        const a = poses[0];
+        const b = poses[1];
+        const beforeB = { ...b };
+        engine.beginDrag(a.id, a);
+        engine.moveDrag({ x: b.x, y: b.y });
+        advance(engine, 60);
+        engine.endDrag();
+        settle(engine);
+        const afterB = pose(engine, b.id);
+        expect(Math.hypot(afterB.x - beforeB.x, afterB.y - beforeB.y)).toBeGreaterThan(5);
+        expect(afterB.angle).toBe(0);
       } finally {
         engine.dispose();
       }

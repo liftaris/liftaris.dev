@@ -22,10 +22,10 @@ try {
 if (!thing) {
   const result = await getEmDashCollection("things", { status: "published", limit: 100 });
   if (!result.error && result.entries) {
-    thing = result.entries.find((e) =>
-      (e.id === slug || (e.data as Record<string, unknown>).slug === slug) &&
-      (e.data as Record<string, unknown>).kind === "page"
-    );
+    thing = result.entries.find((e) => {
+      const data = e.data as unknown as Record<string, unknown>;
+      return (e.id === slug || data.slug === slug) && data.kind === "page";
+    });
     if (thing) cacheHint = result.cacheHint;
   }
 }

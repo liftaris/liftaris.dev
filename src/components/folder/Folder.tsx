@@ -2,6 +2,7 @@ import { useEffect, type ComponentProps } from "react";
 import { getBackgroundStyle, isImageUrl, type BackgroundProps } from "../clump/model";
 import { ObjectWindow } from "../window/ObjectWindow";
 import { prefetchThing } from "../../lib/house/prefetch";
+import { ThingLabel } from "../house/ThingLabel";
 
 type FolderIcon = BackgroundProps & {
   id: string;
@@ -79,9 +80,7 @@ export function FolderContent<T>({
                   entry.emoji
                 )}
               </span>
-              <span className="folder-entry-label">
-                {entry.name}
-              </span>
+              <ThingLabel name={entry.name} className="folder-entry-label w-full" />
             </>
           );
           return (
