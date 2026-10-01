@@ -18,9 +18,7 @@ export interface ObjectSpec extends Size, BackgroundProps {
   name: string;
   emoji: string;
   image?: string | null;
-  shape: "circle" | "rectangle";
   anchor?: boolean;
-  tint_when_visited?: boolean;
   isGift?: boolean;
 }
 
@@ -78,16 +76,16 @@ export function isImageUrl(value?: string | null): boolean {
 }
 
 export const OBJECTS: readonly ObjectSpec[] = [
-  { id: "octopus", name: "Octopus", emoji: "🐙", width: 68, height: 70, shape: "circle" },
-  { id: "computer", name: "Computer", emoji: "🖥️", width: 64, height: 58, shape: "rectangle", anchor: true },
-  { id: "shoes", name: "Walking shoes", emoji: "👟", width: 54, height: 40, shape: "rectangle" },
-  { id: "globe", name: "Globe", emoji: "🌍", width: 50, height: 50, shape: "circle" },
-  { id: "plant", name: "Plant", emoji: "🪴", width: 56, height: 66, shape: "rectangle", anchor: true },
-  { id: "cloud", name: "Cloud", emoji: "☁️", width: 60, height: 42, shape: "rectangle" },
-  { id: "bike", name: "Bicycle", emoji: "🚲", width: 74, height: 54, shape: "rectangle" },
-  { id: "boots", name: "Climbing shoes", emoji: "🥾", width: 47, height: 54, shape: "rectangle" },
-  { id: "light", name: "Light", emoji: "💡", width: 38, height: 52, shape: "rectangle", anchor: true },
-  { id: "case", name: "Briefcase", emoji: "💼", width: 52, height: 44, shape: "rectangle" },
+  { id: "octopus", name: "Octopus", emoji: "🐙", width: 68, height: 70 },
+  { id: "computer", name: "Computer", emoji: "🖥️", width: 64, height: 58, anchor: true },
+  { id: "shoes", name: "Walking shoes", emoji: "👟", width: 54, height: 40 },
+  { id: "globe", name: "Globe", emoji: "🌍", width: 50, height: 50 },
+  { id: "plant", name: "Plant", emoji: "🪴", width: 56, height: 66, anchor: true },
+  { id: "cloud", name: "Cloud", emoji: "☁️", width: 60, height: 42 },
+  { id: "bike", name: "Bicycle", emoji: "🚲", width: 74, height: 54 },
+  { id: "boots", name: "Climbing shoes", emoji: "🥾", width: 47, height: 54 },
+  { id: "light", name: "Light", emoji: "💡", width: 38, height: 52, anchor: true },
+  { id: "case", name: "Briefcase", emoji: "💼", width: 52, height: 44 },
 ];
 
 // Normalized centers, with intentionally different starting compositions.

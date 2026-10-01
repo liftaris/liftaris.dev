@@ -23,39 +23,6 @@ test("redacted detail replaces old public text and attribution while the private
   expect(authorized).toContain("Stored author");
 });
 
-test("visited icons receive data-visited while folders are strictly excluded", () => {
-  const visited = new Set(["computer", "gift-1", "portfolio-folder", "writing-folder", "lab-folder"]);
-  const scene = renderToStaticMarkup(<HouseClump gifts={[gift]} inspectedIds={[]} visitedIds={visited} onOpen={() => {}} />);
-  
-  // Visited object and visited gift have data-visited="true"
-  expect(scene).toMatch(/data-object="computer"[^>]*data-visited="true"/);
-  expect(scene).toMatch(/data-object="gift-1"[^>]*data-visited="true"/);
-  
-  // Unvisited object has data-visited="false"
-  expect(scene).toMatch(/data-object="shoes"[^>]*data-visited="false"/);
-  
-  // Folders are strictly excluded from visited state even if requested
-  expect(scene).toMatch(/data-object="portfolio-folder"[^>]*data-visited="false"/);
-  expect(scene).toMatch(/data-object="writing-folder"[^>]*data-visited="false"/);
-});
-
-test("thingsConfig tint_when_visited can disable visited tint per thing in clump and folder", () => {
-  const visited = new Set(["computer", "shoes", "case"]);
-  const thingsConfig = {
-    computer: { tint_when_visited: false },
-    shoes: { tint_when_visited: true },
-  };
-  const clumpScene = renderToStaticMarkup(
-    <HouseClump gifts={[]} inspectedIds={[]} visitedIds={visited} thingsConfig={thingsConfig} onOpen={() => {}} />
-  );
-  // Computer was visited but has tint_when_visited: false -> data-visited="false"
-  expect(clumpScene).toMatch(/data-object="computer"[^>]*data-visited="false"/);
-  // Shoes was visited and has tint_when_visited: true -> data-visited="true"
-  expect(clumpScene).toMatch(/data-object="shoes"[^>]*data-visited="true"/);
-  // Case was visited with default config -> data-visited="true"
-  expect(clumpScene).toMatch(/data-object="case"[^>]*data-visited="true"/);
-});
-
 test("isImageUrl correctly identifies image and gif URLs versus emojis", () => {
   const { isImageUrl } = require("../../components/clump/model");
   expect(isImageUrl("🐙")).toBe(false);
@@ -74,18 +41,16 @@ test("isImageUrl correctly identifies image and gif URLs versus emojis", () => {
 
 test("HouseClump renders <img> for things with image or image URL emoji", () => {
   const customThings = [
-    { id: "gif-thing", name: "Dancing Cat", emoji: "🐱", image: "https://example.com/cat.gif", width: 60, height: 60, shape: "rectangle" as const },
-    { id: "webp-thing", name: "WebP Icon", emoji: "https://example.com/icon.webp", width: 60, height: 60, shape: "circle" as const },
-    { id: "emoji-thing", name: "Standard Emoji", emoji: "🐙", width: 60, height: 60, shape: "circle" as const },
+    { id: "gif-thing", name: "Dancing Cat", emoji: "🐱", image: "https://example.com/cat.gif", width: 60, height: 60 },
+    { id: "webp-thing", name: "WebP Icon", emoji: "https://example.com/icon.webp", width: 60, height: 60 },
+    { id: "emoji-thing", name: "Standard Emoji", emoji: "🐙", width: 60, height: 60 },
   ];
-  const visited = new Set(["gif-thing"]);
   const scene = renderToStaticMarkup(
-    <HouseClump gifts={[]} inspectedIds={[]} visitedIds={visited} desktopObjects={customThings} onOpen={() => {}} />
+    <HouseClump gifts={[]} inspectedIds={[]} desktopObjects={customThings} onOpen={() => {}} />
   );
 
-  // Gif thing renders img with GIF url and visited tint
+  // Gif thing renders img with GIF url
   expect(scene).toMatch(/<img src="https:\/\/example\.com\/cat\.gif" alt="" class="house-object-image[^"]*"/);
-  expect(scene).toMatch(/data-object="gif-thing"[^>]*data-visited="true"/);
 
   // Webp thing renders img from emoji url
   expect(scene).toMatch(/<img src="https:\/\/example\.com\/icon\.webp" alt="" class="house-object-image[^"]*"/);
@@ -207,7 +172,6 @@ test("HouseClump applies background style and data-has-bg to desktop objects", (
       background_position: "center",
       width: 60,
       height: 60,
-      shape: "circle" as const,
     },
   ];
   const scene = renderToStaticMarkup(
@@ -216,7 +180,6 @@ test("HouseClump applies background style and data-has-bg to desktop objects", (
 
   expect(scene).toContain('data-object="bg-thing"');
   expect(scene).toContain('data-has-bg="true"');
-  expect(scene).toContain('data-shape="circle"');
   expect(scene).toContain("background-image:url(&quot;https://example.com/tile.png&quot;)");
   expect(scene).toContain("background-repeat:repeat");
 });
@@ -346,14 +309,12 @@ test("HouseClump trashcan is hidden by default and only shows when a deletable i
 
 test("House accepts thingsConfig with default_open and merges with things specs", () => {
   const thingsConfig = {
-    computer: { default_open: true, tint_when_visited: false },
-    shoes: { default_open: false, tint_when_visited: true },
+    computer: { default_open: true },
+    shoes: { default_open: false },
   };
   const html = renderToStaticMarkup(<House thingsConfig={thingsConfig} />);
   expect(html).toMatch(/class="house[^"]*"/);
   expect(html).toContain('data-object="computer"');
-  // tint_when_visited override applied
-  expect(html).toMatch(/data-object="computer"[^>]*data-visited="false"/);
 });
 
 

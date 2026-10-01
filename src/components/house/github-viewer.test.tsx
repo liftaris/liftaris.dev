@@ -13,7 +13,6 @@ describe("GitHub custom Thing", () => {
     expect(GITHUB_THING.name).toBe("GitHub");
     expect(GITHUB_THING.desktop).toBe(true);
     expect(GITHUB_THING.image).toBe("/github.svg");
-    expect(GITHUB_THING.shape).toBe("circle");
 
     // Must not be in CMS-seeded DEFAULT_THINGS
     expect(DEFAULT_THINGS.some((t) => t.id === "github")).toBe(false);

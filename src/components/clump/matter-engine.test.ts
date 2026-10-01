@@ -253,7 +253,7 @@ test("local stage growth and membership changes preserve poses and an ongoing gr
     const held = pose(engine, "octopus");
     engine.beginDrag(held.id, held);
     engine.resize({ width: 700, height: 800 }, true);
-    const gift = { id: "gift-one", name: "Gift", emoji: "🎁", width: 48, height: 48, shape: "circle" as const };
+    const gift = { id: "gift-one", name: "Gift", emoji: "🎁", width: 48, height: 48 };
     engine.syncObjects([...OBJECTS, gift], [{ id: gift.id, x: 600, y: 700, angle: 0 }]);
     expect(new Set(engine.getPoses().map((item) => item.id))).toEqual(new Set([...OBJECTS.map((item) => item.id), gift.id]));
     expect(engine.getPoses().filter((item) => item.id !== gift.id)).toEqual(before);
@@ -323,8 +323,8 @@ test("freeze keeps an item static at its target position without being pulled ba
 });
 
 describe("gift gravity and physics behavior", () => {
-  const giftA: ObjectSpec = { id: "gift-apple", name: "Apple", emoji: "🍎", width: 48, height: 48, shape: "circle", isGift: true };
-  const giftB: ObjectSpec = { id: "gift-banana", name: "Banana", emoji: "🍌", width: 48, height: 48, shape: "circle", isGift: true };
+  const giftA: ObjectSpec = { id: "gift-apple", name: "Apple", emoji: "🍎", width: 48, height: 48, isGift: true };
+  const giftB: ObjectSpec = { id: "gift-banana", name: "Banana", emoji: "🍌", width: 48, height: 48, isGift: true };
 
   test("gifts are affected by gravity and fall to the bottom of the window, settling and sleeping", () => {
     const size = { width: 500, height: 600 };
@@ -336,7 +336,9 @@ describe("gift gravity and physics behavior", () => {
     });
     try {
       const initial = pose(engine, giftA.id);
-      expect(initial.y).toBeLessThan(size.height * 0.6);
+      // Spawns just a few pixels above the floor
+      expect(initial.y).toBeGreaterThan(size.height - 45);
+      expect(initial.y).toBeLessThan(size.height - 29);
 
       settle(engine, 1000);
 
@@ -345,7 +347,7 @@ describe("gift gravity and physics behavior", () => {
       // where halfHeight for 48px artwork is between 29 and 39 depending on rotation
       expect(resting.y).toBeGreaterThanOrEqual(size.height - 39);
       expect(resting.y).toBeLessThanOrEqual(size.height - 29 + 0.01);
-      expect(resting.y).toBeGreaterThan(initial.y + 150);
+      expect(resting.y).toBeGreaterThanOrEqual(initial.y);
       expect(engine.step(STEP)).toBe(false);
     } finally {
       engine.dispose();
@@ -428,6 +430,7 @@ describe("gift gravity and physics behavior", () => {
       collision: "outline",
       size,
       objects: [...OBJECTS, giftA],
+      poses: [{ id: giftA.id, x: 250, y: 80, angle: 0 }],
     });
     try {
       let maxDownwardVelocity = 0;

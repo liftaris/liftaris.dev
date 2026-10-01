@@ -10,7 +10,6 @@
   --color-window-bar: #245EDE;
   --color-window-border-home: #7f9cda;
   --color-window-border: #245EDE;
-  --color-visited-purple: #cf5fff;
 
   --breakpoint-sm: 640px;
   --breakpoint-md: 768px;
@@ -27,7 +26,6 @@
   --window-bar: var(--color-window-bar);
   --window-border: var(--color-window-border);
   --window-border-home: var(--color-window-border-home);
-  --visited-purple: var(--color-visited-purple);
 
   /* Background and layout */
   --blue-background:
@@ -1174,4 +1172,72 @@ html:not(.on-home) {
   max-width: 90px;
   object-fit: contain;
   pointer-events: none;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Things Icon Selection Outline (4px white contour following PNG/SVG/Emoji)  */
+/* -------------------------------------------------------------------------- */
+:root {
+  --thing-outline-color: #ffffff;
+  --thing-outline-4px:
+    drop-shadow(0 4px 0 var(--thing-outline-color))
+    drop-shadow(0 -4px 0 var(--thing-outline-color))
+    drop-shadow(4px 0 0 var(--thing-outline-color))
+    drop-shadow(-4px 0 0 var(--thing-outline-color))
+    drop-shadow(2.83px 2.83px 0 var(--thing-outline-color))
+    drop-shadow(-2.83px 2.83px 0 var(--thing-outline-color))
+    drop-shadow(2.83px -2.83px 0 var(--thing-outline-color))
+    drop-shadow(-2.83px -2.83px 0 var(--thing-outline-color))
+    drop-shadow(3.7px 1.53px 0 var(--thing-outline-color))
+    drop-shadow(-3.7px 1.53px 0 var(--thing-outline-color))
+    drop-shadow(3.7px -1.53px 0 var(--thing-outline-color))
+    drop-shadow(-3.7px -1.53px 0 var(--thing-outline-color))
+    drop-shadow(1.53px 3.7px 0 var(--thing-outline-color))
+    drop-shadow(-1.53px 3.7px 0 var(--thing-outline-color))
+    drop-shadow(1.53px -3.7px 0 var(--thing-outline-color))
+    drop-shadow(-1.53px -3.7px 0 var(--thing-outline-color))
+    drop-shadow(2px 0 0 var(--thing-outline-color))
+    drop-shadow(-2px 0 0 var(--thing-outline-color))
+    drop-shadow(0 2px 0 var(--thing-outline-color))
+    drop-shadow(0 -2px 0 var(--thing-outline-color))
+    drop-shadow(1.41px 1.41px 0 var(--thing-outline-color))
+    drop-shadow(-1.41px 1.41px 0 var(--thing-outline-color))
+    drop-shadow(1.41px -1.41px 0 var(--thing-outline-color))
+    drop-shadow(-1.41px -1.41px 0 var(--thing-outline-color));
+}
+
+.house-object-art,
+.folder-entry-art {
+  transition: filter 100ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .house-object-art,
+  .folder-entry-art {
+    transition: none !important;
+  }
+}
+
+.house-object,
+.house-object:hover,
+.house-object:focus,
+.house-object:focus-visible {
+  text-decoration: none !important;
+}
+
+.house-object:not([data-has-bg="true"]):hover:not([aria-disabled="true"]) .house-object-art,
+.house-object:not([data-has-bg="true"]):focus:not([aria-disabled="true"]) .house-object-art,
+.house-object:not([data-has-bg="true"]):focus-visible:not([aria-disabled="true"]) .house-object-art,
+.house-object:not([data-has-bg="true"])[data-grabbed="true"] .house-object-art,
+.folder-entry:hover:not([aria-disabled="true"]) .folder-entry-art,
+.folder-entry:focus:not([aria-disabled="true"]) .folder-entry-art,
+.folder-entry:focus-visible:not([aria-disabled="true"]) .folder-entry-art {
+  filter: var(--thing-outline-4px) !important;
+}
+
+.house-object[data-has-bg="true"]:hover:not([aria-disabled="true"]),
+.house-object[data-has-bg="true"]:focus:not([aria-disabled="true"]),
+.house-object[data-has-bg="true"]:focus-visible:not([aria-disabled="true"]),
+.house-object[data-has-bg="true"][data-grabbed="true"] {
+  filter: var(--thing-outline-4px) !important;
 }

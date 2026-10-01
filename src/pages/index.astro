@@ -32,7 +32,6 @@ try {
       const data = entry.data as Record<string, unknown>;
       const kind = (data.kind === "folder" || data.kind === "link" || data.kind === "action" || data.kind === "object" || data.kind === "page") ? data.kind : "object";
       const action = (data.action === "projects" || data.action === "experience" || data.action === "leave-gift") ? data.action : "none";
-      const shape = data.shape === "circle" ? "circle" : "rectangle";
       const width = Number(data.width) || 60;
       const height = Number(data.height) || 60;
       const targetWidth = Math.max(Math.round(width * 2), 120);
@@ -92,9 +91,7 @@ try {
         action,
         href: data.href ? String(data.href) : (kind === "page" ? `/p/${encodeURIComponent(entry.id)}` : null),
         body: data.body,
-        tint_when_visited: data.tint_when_visited !== false && data.tint_when_visited !== 0,
         default_open: Boolean(data.default_open),
-        shape,
         anchor: Boolean(data.anchor),
         width,
         height,

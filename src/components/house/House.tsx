@@ -32,27 +32,6 @@ const EMPTY_GIFTS: readonly Gift[] = [];
 type OpenedThing = { object: HouseThing | FolderSpec<HouseThing>; gift?: Gift; detail?: GiftDetail; origin: DOMRect; source: HTMLButtonElement; previewBounds?: DOMRect; restoreAnimation?: boolean; onReady?: () => void };
 
 const EMPTY_POSTS: readonly WritingPost[] = [];
-const VISITED_STORAGE_KEY = "liftaris:visited_things";
-
-function loadVisitedIds(): Set<string> {
-  if (typeof window === "undefined") return new Set();
-  try {
-    const raw = localStorage.getItem(VISITED_STORAGE_KEY);
-    if (!raw) return new Set();
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? new Set(parsed) : new Set();
-  } catch {
-    return new Set();
-  }
-}
-
-function saveVisitedIds(ids: ReadonlySet<string>): void {
-  try {
-    localStorage.setItem(VISITED_STORAGE_KEY, JSON.stringify([...ids]));
-  } catch {
-    // Ignore quota/security errors
-  }
-}
 
 const SENT_GIFTS_STORAGE_KEY = "liftaris:sent_gifts";
 
@@ -87,7 +66,7 @@ export function House({
 }: {
   posts?: readonly WritingPost[];
   things?: readonly ThingSpec[];
-  thingsConfig?: Record<string, { tint_when_visited?: boolean; default_open?: boolean }>;
+  thingsConfig?: Record<string, { default_open?: boolean }>;
 }) {
   const effectiveThings = useMemo(() => {
     const list = [...things];
@@ -99,7 +78,6 @@ export function House({
       if (!override) return t;
       return {
         ...t,
-        ...(override.tint_when_visited !== undefined ? { tint_when_visited: override.tint_when_visited } : {}),
         ...(override.default_open !== undefined ? { default_open: override.default_open } : {}),
       };
     });
@@ -128,9 +106,9 @@ export function House({
   }, [effectiveThings]);
 
   const mergedThingsConfig = useMemo(() => {
-    const config: Record<string, { tint_when_visited?: boolean; default_open?: boolean }> = {};
+    const config: Record<string, { default_open?: boolean }> = {};
     for (const thing of effectiveThings) {
-      config[thing.id] = { tint_when_visited: thing.tint_when_visited, default_open: thing.default_open };
+      config[thing.id] = { default_open: thing.default_open };
     }
     if (thingsConfig) {
       for (const [id, cfg] of Object.entries(thingsConfig)) {
@@ -140,7 +118,6 @@ export function House({
     return config;
   }, [effectiveThings, thingsConfig]);
 
-  const [visitedIds, setVisitedIds] = useState<Set<string>>(() => loadVisitedIds());
   const [sentGiftIds, setSentGiftIds] = useState<Set<string>>(() => loadSentGiftIds());
   const [isAdmin, setIsAdmin] = useState(false);
   const [snapshot, setSnapshot] = useState<HouseSnapshot | null>(null);
@@ -152,17 +129,6 @@ export function House({
   const [ready, setReady] = useState(false);
   const [savingGift, setSavingGift] = useState(false);
   const initialRead = useRef<AbortController | null>(null);
-
-  const markVisited = useCallback((id: string) => {
-    if (isFolderObject(id)) return;
-    setVisitedIds((current) => {
-      if (current.has(id)) return current;
-      const next = new Set(current);
-      next.add(id);
-      saveVisitedIds(next);
-      return next;
-    });
-  }, []);
   const accept = useCallback((next: HouseSnapshot) => {
     // A slow initial GET must never replace the result of this tab's mutation.
     initialRead.current?.abort();
@@ -192,9 +158,6 @@ export function House({
   const close = (id: string) => setOpened((current) => current.filter((item) => item.object.id !== id));
   const open = useCallback((object: HouseThing | FolderSpec<HouseThing>, source: HTMLButtonElement, gift?: Gift) => {
     const isFolder = isFolderObject(object.id, "kind" in object ? object.kind : undefined);
-    if (!isFolder) {
-      markVisited(object.id);
-    }
     const resolvedObject = foldersById.get(object.id) ?? object;
     const parentRect = source.getBoundingClientRect();
     const item = { object: resolvedObject, source, gift, origin: parentRect };
@@ -208,9 +171,6 @@ export function House({
         const defaultChildren = getDefaultOpenChildren(object.id, effectiveThings);
         defaultChildren.forEach((child, idx) => {
           if (!next.some((entry) => entry.object.id === child.id)) {
-            if (!isFolderObject(child.id, child.kind)) {
-              markVisited(child.id);
-            }
             const resolvedChild = foldersById.get(child.id) ?? child;
             const childSource = (typeof document !== "undefined" && (
               document.querySelector<HTMLButtonElement>(`[data-folder-entry="${CSS.escape(child.id)}"]`) ??
@@ -228,7 +188,7 @@ export function House({
       }
       return next;
     });
-  }, [foldersById, effectiveThings, markVisited]);
+  }, [foldersById, effectiveThings]);
   const receiveGift = (composer: OpenedThing, gift: GiftDetail, previewBounds: DOMRect, form: HTMLFormElement) => {
     // Membership was committed on POST; don't reapply its snapshot after this GET.
     const source = document.querySelector<HTMLButtonElement>(`[data-object="${gift.id}"]`)
@@ -328,7 +288,6 @@ export function House({
             href: `/blog/${encodeURIComponent(post.slug)}`,
             width: 56,
             height: 64,
-            shape: "rectangle",
           };
           restoredThing = postThing;
         } else {
@@ -366,9 +325,6 @@ export function House({
       const next = [...current];
       toOpen.forEach((thing, idx) => {
         if (next.some((entry) => entry.object.id === thing.id)) return;
-        if (!isFolderObject(thing.id, thing.kind)) {
-          markVisited(thing.id);
-        }
         const resolvedObject = foldersById.get(thing.id) ?? thing;
         const domSource = typeof document !== "undefined" ? (
           document.querySelector<HTMLButtonElement>(`[data-object="${CSS.escape(thing.id)}"]`) ??
@@ -387,7 +343,7 @@ export function House({
       });
       return next;
     });
-  }, [effectiveThings, foldersById, markVisited, posts]);
+  }, [effectiveThings, foldersById, posts]);
 
   const [isCollapsed, setIsCollapsed] = useState(false);
   const faceAvatarRef = useRef<HTMLButtonElement>(null);
@@ -446,7 +402,6 @@ export function House({
       <HouseClump
         gifts={snapshot?.gifts ?? EMPTY_GIFTS}
         inspectedIds={opened.map((item) => item.object.id)}
-        visitedIds={visitedIds}
         thingsConfig={mergedThingsConfig}
         desktopObjects={desktopThings}
         isAdmin={isAdmin}
@@ -484,7 +439,7 @@ export function House({
           ?? document.querySelector<HTMLButtonElement>('[data-object="leave-gift"]');
         if (folder) return <Folder key={item.object.id} folder={folder}
           origin={item.origin} source={item.source} fallbackSource={fallbackSource} monochrome openedIds={opened.map((entry) => entry.object.id)}
-          visitedIds={visitedIds} thingsConfig={mergedThingsConfig} onVisit={markVisited}
+          thingsConfig={mergedThingsConfig}
           restoreAnimation={item.restoreAnimation}
           onOpen={open} onOpenFolder={open} onClose={() => close(item.object.id)} />;
         const action = "action" in item.object ? item.object.action : undefined;

@@ -12,7 +12,7 @@ import { prefetchThing } from "../../lib/house/prefetch";
 
 type Grab = { id: string; point: Point; origin: Point; moved: boolean; pointerId?: number };
 const INITIAL_SIZE = { width: 500, height: 600 };
-const GIFT_ENTRY: ObjectSpec = { id: "leave-gift", name: "Leave a gift", emoji: "🎁", width: 64, height: 64, shape: "rectangle" };
+const GIFT_ENTRY: ObjectSpec = { id: "leave-gift", name: "Leave a gift", emoji: "🎁", width: 64, height: 64 };
 
 function measureViewport(element: HTMLDivElement) {
   // Measure the fixed outer box: scrollbars appearing as the crowd grows must
@@ -25,25 +25,23 @@ function measureViewport(element: HTMLDivElement) {
   return { scale, size: { width: Math.round(width / scale), height: Math.floor(height / scale) } };
 }
 
-const EMPTY_VISITED: ReadonlySet<string> = new Set();
-const EMPTY_THINGS_CONFIG: Record<string, { tint_when_visited?: boolean }> = {};
+const EMPTY_IDS: ReadonlySet<string> = new Set();
+const EMPTY_THINGS_CONFIG: Record<string, { default_open?: boolean }> = {};
 
 export function HouseClump({
   gifts,
   inspectedIds,
-  visitedIds = EMPTY_VISITED,
   thingsConfig = EMPTY_THINGS_CONFIG,
   desktopObjects,
   isAdmin = false,
-  sentGiftIds = EMPTY_VISITED,
+  sentGiftIds = EMPTY_IDS,
   onOpen,
   onTrash,
   testDragId,
 }: {
   gifts: readonly Gift[];
   inspectedIds: readonly string[];
-  visitedIds?: ReadonlySet<string>;
-  thingsConfig?: Record<string, { tint_when_visited?: boolean; default_open?: boolean }>;
+  thingsConfig?: Record<string, { default_open?: boolean }>;
   desktopObjects?: readonly ObjectSpec[];
   isAdmin?: boolean;
   sentGiftIds?: ReadonlySet<string>;
@@ -424,13 +422,10 @@ export function HouseClump({
             const isPendingTrash = pendingTrashIds.has(object.id);
             const disabled = removing || isPendingTrash;
             const opened = inspectedIds.includes(object.id);
-            const isFolder = ("kind" in object && (object as { kind?: string }).kind === "folder") || object.id === PORTFOLIO_FOLDER_OBJECT.id || object.id === WRITING_FOLDER_OBJECT.id || object.id === "lab-folder" || object.id.endsWith("-folder");
-            const shouldTint = thingsConfig[object.id]?.tint_when_visited ?? (isFolder ? false : true);
-            const visited = !isFolder && shouldTint && visitedIds.has(object.id);
             const iconImage = ("image" in object && (object as { image?: string | null }).image)
               || (isImageUrl(object.emoji) ? object.emoji : null);
             const bgStyle = getBackgroundStyle(object);
-            return <button type="button" key={object.id} className="house-object group absolute top-0 left-0 grid place-items-center m-0 p-0 border-0 rounded-xl bg-transparent cursor-grab touch-none select-none [-webkit-tap-highlight-color:transparent] leading-none overflow-visible invisible data-[shape=circle]:rounded-full data-[has-bg=true]:overflow-hidden data-[grabbed=true]:z-[3] data-[grabbed=true]:cursor-grabbing data-[window-open=true]:opacity-0 data-[window-open=true]:pointer-events-none data-[trashing=true]:pointer-events-none outline-none hover:outline-none focus-visible:outline-none after:content-[''] after:absolute after:bottom-0 after:left-1 after:right-1 after:h-0.5 after:pointer-events-none hover:not-[[data-visited=true]]:after:bg-paper focus-visible:not-[[data-visited=true]]:after:bg-paper hover:data-[visited=true]:after:bg-visited-purple focus-visible:data-[visited=true]:after:bg-visited-purple data-[gift=true]:[animation:house-arrive_220ms_ease-out] motion-reduce:data-[gift=true]:[animation-duration:1ms] data-[removing=true]:pointer-events-none data-[removing=true]:[animation:house-depart_260ms_ease-in_forwards]" data-object={object.id} data-shape={object.shape === "circle" ? "circle" : undefined} data-has-bg={bgStyle ? true : undefined} data-gift={Boolean(gift)} data-visited={visited} data-grabbed={grabId === object.id} data-removing={removing} data-trashing={isPendingTrash ? "true" : undefined} data-window-open={opened}
+            return <button type="button" key={object.id} className="house-object group absolute top-0 left-0 grid place-items-center m-0 p-0 border-0 rounded-xl bg-transparent cursor-grab touch-none select-none [-webkit-tap-highlight-color:transparent] leading-none no-underline hover:no-underline focus:no-underline focus-visible:no-underline overflow-visible invisible data-[has-bg=true]:overflow-hidden data-[grabbed=true]:z-[3] data-[grabbed=true]:cursor-grabbing data-[window-open=true]:opacity-0 data-[window-open=true]:pointer-events-none data-[trashing=true]:pointer-events-none outline-none hover:outline-none focus:outline-none focus-visible:outline-none data-[gift=true]:[animation:house-arrive_220ms_ease-out] motion-reduce:data-[gift=true]:[animation-duration:1ms] data-[removing=true]:pointer-events-none data-[removing=true]:[animation:house-depart_260ms_ease-in_forwards]" data-object={object.id} data-has-bg={bgStyle ? true : undefined} data-gift={Boolean(gift)} data-grabbed={grabId === object.id} data-removing={removing} data-trashing={isPendingTrash ? "true" : undefined} data-window-open={opened}
               ref={(element) => { if (element) nodes.current.set(object.id, element); else nodes.current.delete(object.id); }}
               style={{ width: Math.max(44, object.width), height: Math.max(44, object.height), fontSize: Math.max(object.width, object.height) * .87, ...bgStyle }}
               aria-disabled={disabled || undefined} tabIndex={disabled || opened ? -1 : 0} aria-expanded={opened} aria-haspopup="dialog"

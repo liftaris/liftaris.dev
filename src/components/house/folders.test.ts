@@ -36,9 +36,6 @@ describe("House Folders and Things model", () => {
 
     const folders = DEFAULT_THINGS.filter((t) => t.kind === "folder");
     expect(folders.length).toBe(2);
-    for (const folder of folders) {
-      expect(folder.tint_when_visited).toBe(false);
-    }
 
     const actionThing = DEFAULT_THINGS.find((t) => t.id === "leave-gift");
     expect(actionThing?.kind).toBe("action");
@@ -83,10 +80,10 @@ describe("House Folders and Things model", () => {
 
   test("buildFolder dynamically supports arbitrary nested subfolders and custom items", () => {
     const customThings: ThingSpec[] = [
-      { id: "main-folder", name: "Main", emoji: "📁", kind: "folder", desktop: true, tint_when_visited: false, width: 64, height: 56, shape: "rectangle", anchor: false, sort_order: 1 },
-      { id: "sub-folder", name: "Sub", emoji: "📁", kind: "folder", desktop: false, parent_id: "main-folder", tint_when_visited: false, width: 64, height: 56, shape: "rectangle", anchor: false, sort_order: 1 },
-      { id: "custom-link", name: "GitHub", emoji: "🐙", kind: "link", desktop: false, parent_id: "sub-folder", href: "https://github.com", tint_when_visited: true, width: 60, height: 60, shape: "rectangle", anchor: false, sort_order: 1 },
-      { id: "custom-obj", name: "Widget", emoji: "⚙️", kind: "object", desktop: false, parent_id: "main-folder", tint_when_visited: true, width: 60, height: 60, shape: "rectangle", anchor: false, sort_order: 2 },
+      { id: "main-folder", name: "Main", emoji: "📁", kind: "folder", desktop: true, width: 64, height: 56, anchor: false, sort_order: 1 },
+      { id: "sub-folder", name: "Sub", emoji: "📁", kind: "folder", desktop: false, parent_id: "main-folder", width: 64, height: 56, anchor: false, sort_order: 1 },
+      { id: "custom-link", name: "GitHub", emoji: "🐙", kind: "link", desktop: false, parent_id: "sub-folder", href: "https://github.com", width: 60, height: 60, anchor: false, sort_order: 1 },
+      { id: "custom-obj", name: "Widget", emoji: "⚙️", kind: "object", desktop: false, parent_id: "main-folder", width: 60, height: 60, anchor: false, sort_order: 2 },
     ];
 
     const main = buildFolder(customThings[0], customThings);
@@ -110,12 +107,10 @@ describe("House Folders and Things model", () => {
     expect(WRITING_FOLDER_OBJECT.id).toBe("writing-folder");
     expect(WRITING_FOLDER_OBJECT.width).toBe(64);
     expect(WRITING_FOLDER_OBJECT.height).toBe(56);
-    expect(WRITING_FOLDER_OBJECT.shape).toBe("rectangle");
 
     expect(PORTFOLIO_FOLDER_OBJECT.id).toBe("portfolio-folder");
     expect(PORTFOLIO_FOLDER_OBJECT.width).toBe(64);
     expect(PORTFOLIO_FOLDER_OBJECT.height).toBe(56);
-    expect(PORTFOLIO_FOLDER_OBJECT.shape).toBe("rectangle");
   });
 
   test("ThingSpec supports page kind with rich text body in folders", () => {
@@ -126,10 +121,8 @@ describe("House Folders and Things model", () => {
       kind: "page",
       desktop: false,
       parent_id: "portfolio-folder",
-      tint_when_visited: true,
       width: 60,
       height: 60,
-      shape: "rectangle",
       anchor: false,
       sort_order: 3,
       body: [
@@ -156,12 +149,12 @@ describe("House Folders and Things model", () => {
 
   test("getDefaultOpenChildren finds direct and recursive default_open children in folders", () => {
     const customThings: ThingSpec[] = [
-      { id: "parent-folder", name: "Parent", emoji: "📁", kind: "folder", desktop: true, tint_when_visited: false, width: 64, height: 56, shape: "rectangle", anchor: false, sort_order: 1 },
-      { id: "normal-child", name: "Normal", emoji: "📄", kind: "page", desktop: false, parent_id: "parent-folder", default_open: false, tint_when_visited: true, width: 60, height: 60, shape: "rectangle", anchor: false, sort_order: 1 },
-      { id: "open-child", name: "Open Page", emoji: "📄", kind: "page", desktop: false, parent_id: "parent-folder", default_open: true, tint_when_visited: true, width: 60, height: 60, shape: "rectangle", anchor: false, sort_order: 2 },
-      { id: "open-link", name: "Open Link", emoji: "🔗", kind: "link", desktop: false, parent_id: "parent-folder", href: "https://example.com", default_open: true, tint_when_visited: true, width: 60, height: 60, shape: "rectangle", anchor: false, sort_order: 3 },
-      { id: "sub-folder", name: "Sub", emoji: "📁", kind: "folder", desktop: false, parent_id: "parent-folder", default_open: true, tint_when_visited: false, width: 64, height: 56, shape: "rectangle", anchor: false, sort_order: 4 },
-      { id: "nested-child", name: "Nested Child", emoji: "⚙️", kind: "object", desktop: false, parent_id: "sub-folder", default_open: true, tint_when_visited: true, width: 60, height: 60, shape: "rectangle", anchor: false, sort_order: 1 },
+      { id: "parent-folder", name: "Parent", emoji: "📁", kind: "folder", desktop: true, width: 64, height: 56, anchor: false, sort_order: 1 },
+      { id: "normal-child", name: "Normal", emoji: "📄", kind: "page", desktop: false, parent_id: "parent-folder", default_open: false, width: 60, height: 60, anchor: false, sort_order: 1 },
+      { id: "open-child", name: "Open Page", emoji: "📄", kind: "page", desktop: false, parent_id: "parent-folder", default_open: true, width: 60, height: 60, anchor: false, sort_order: 2 },
+      { id: "open-link", name: "Open Link", emoji: "🔗", kind: "link", desktop: false, parent_id: "parent-folder", href: "https://example.com", default_open: true, width: 60, height: 60, anchor: false, sort_order: 3 },
+      { id: "sub-folder", name: "Sub", emoji: "📁", kind: "folder", desktop: false, parent_id: "parent-folder", default_open: true, width: 64, height: 56, anchor: false, sort_order: 4 },
+      { id: "nested-child", name: "Nested Child", emoji: "⚙️", kind: "object", desktop: false, parent_id: "sub-folder", default_open: true, width: 60, height: 60, anchor: false, sort_order: 1 },
     ];
 
     const children = getDefaultOpenChildren("parent-folder", customThings);
@@ -171,16 +164,16 @@ describe("House Folders and Things model", () => {
   test("getInitialDefaultOpenThings selects top-level items and children of default-open folders", () => {
     const customThings: ThingSpec[] = [
       // Top-level page with default_open: true -> should open on page load
-      { id: "top-page", name: "Top Page", emoji: "📄", kind: "page", desktop: true, parent_id: null, default_open: true, tint_when_visited: true, width: 60, height: 60, shape: "rectangle", anchor: false, sort_order: 1 },
+      { id: "top-page", name: "Top Page", emoji: "📄", kind: "page", desktop: true, parent_id: null, default_open: true, width: 60, height: 60, anchor: false, sort_order: 1 },
       // Top-level object with default_open: false -> should not open
-      { id: "closed-obj", name: "Closed Obj", emoji: "📦", kind: "object", desktop: true, parent_id: null, default_open: false, tint_when_visited: true, width: 60, height: 60, shape: "rectangle", anchor: false, sort_order: 2 },
+      { id: "closed-obj", name: "Closed Obj", emoji: "📦", kind: "object", desktop: true, parent_id: null, default_open: false, width: 60, height: 60, anchor: false, sort_order: 2 },
       // Closed folder containing an open child -> neither folder nor child should open initially
-      { id: "closed-folder", name: "Closed Folder", emoji: "📁", kind: "folder", desktop: true, parent_id: null, default_open: false, tint_when_visited: false, width: 64, height: 56, shape: "rectangle", anchor: false, sort_order: 3 },
-      { id: "hidden-child", name: "Hidden Child", emoji: "📄", kind: "page", desktop: false, parent_id: "closed-folder", default_open: true, tint_when_visited: true, width: 60, height: 60, shape: "rectangle", anchor: false, sort_order: 1 },
+      { id: "closed-folder", name: "Closed Folder", emoji: "📁", kind: "folder", desktop: true, parent_id: null, default_open: false, width: 64, height: 56, anchor: false, sort_order: 3 },
+      { id: "hidden-child", name: "Hidden Child", emoji: "📄", kind: "page", desktop: false, parent_id: "closed-folder", default_open: true, width: 60, height: 60, anchor: false, sort_order: 1 },
       // Open folder containing an open child -> both folder and child should open initially
-      { id: "open-folder", name: "Open Folder", emoji: "📁", kind: "folder", desktop: true, parent_id: null, default_open: true, tint_when_visited: false, width: 64, height: 56, shape: "rectangle", anchor: false, sort_order: 4 },
-      { id: "visible-child", name: "Visible Child", emoji: "📄", kind: "page", desktop: false, parent_id: "open-folder", default_open: true, tint_when_visited: true, width: 60, height: 60, shape: "rectangle", anchor: false, sort_order: 1 },
-      { id: "not-open-child", name: "Not Open Child", emoji: "📄", kind: "page", desktop: false, parent_id: "open-folder", default_open: false, tint_when_visited: true, width: 60, height: 60, shape: "rectangle", anchor: false, sort_order: 2 },
+      { id: "open-folder", name: "Open Folder", emoji: "📁", kind: "folder", desktop: true, parent_id: null, default_open: true, width: 64, height: 56, anchor: false, sort_order: 4 },
+      { id: "visible-child", name: "Visible Child", emoji: "📄", kind: "page", desktop: false, parent_id: "open-folder", default_open: true, width: 60, height: 60, anchor: false, sort_order: 1 },
+      { id: "not-open-child", name: "Not Open Child", emoji: "📄", kind: "page", desktop: false, parent_id: "open-folder", default_open: false, width: 60, height: 60, anchor: false, sort_order: 2 },
     ];
 
     const initial = getInitialDefaultOpenThings(customThings);

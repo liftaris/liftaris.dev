@@ -27,11 +27,7 @@ export function createCollider(
   // They deliberately do not pretend to trace each glyph's alpha contour.
   const body = mode === "peg"
     ? Matter.Bodies.circle(pose.x, pose.y, getPegRadius(spec), options)
-    : spec.shape === "circle"
-      ? Matter.Bodies.circle(
-        pose.x, pose.y, Math.max(spec.width, spec.height) * 0.44, options,
-      )
-      : Matter.Bodies.rectangle(
+    : Matter.Bodies.rectangle(
         pose.x, pose.y, spec.width * 0.88, spec.height * 0.88,
         { ...options, chamfer: { radius: Math.min(spec.width, spec.height) * 0.13 } },
       );

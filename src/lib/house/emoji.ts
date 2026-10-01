@@ -134,7 +134,7 @@ export function localSuggestions(text: string, limit = 5): EmojiOption[] {
 export function giftObjects(gifts: readonly Gift[]): ObjectSpec[] {
   return gifts.flatMap((gift) => {
     const emoji = findEmoji(gift.emojiId);
-    return emoji ? [{ id: gift.id, name: emoji.name, emoji: emoji.emoji, width: 48, height: 48, shape: "circle" as const, isGift: true }] : [];
+    return emoji ? [{ id: gift.id, name: emoji.name, emoji: emoji.emoji, width: 48, height: 48, isGift: true }] : [];
   });
 }
 

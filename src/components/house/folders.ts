@@ -11,34 +11,33 @@ export interface ThingSpec extends ObjectSpec {
   parent_id?: string | null;
   action?: "none" | "projects" | "experience" | "leave-gift" | null;
   href?: string | null;
-  tint_when_visited: boolean;
   default_open?: boolean;
   sort_order: number;
   body?: unknown;
 }
 
 export const DEFAULT_THINGS: readonly ThingSpec[] = [
-  { id: "octopus", name: "Octopus", emoji: "🐙", kind: "object", desktop: true, parent_id: null, action: "none", href: null, tint_when_visited: true, shape: "circle", anchor: false, width: 68, height: 70, sort_order: 1 },
-  { id: "computer", name: "Computer", emoji: "🖥️", kind: "object", desktop: true, parent_id: "portfolio-folder", action: "projects", href: null, tint_when_visited: true, shape: "rectangle", anchor: true, width: 64, height: 58, sort_order: 2 },
-  { id: "shoes", name: "Walking shoes", emoji: "👟", kind: "object", desktop: true, parent_id: null, action: "none", href: null, tint_when_visited: true, shape: "rectangle", anchor: false, width: 54, height: 40, sort_order: 3 },
-  { id: "globe", name: "Globe", emoji: "🌍", kind: "object", desktop: true, parent_id: null, action: "none", href: null, tint_when_visited: true, shape: "circle", anchor: false, width: 50, height: 50, sort_order: 4 },
-  { id: "plant", name: "Plant", emoji: "🪴", kind: "object", desktop: true, parent_id: null, action: "none", href: null, tint_when_visited: true, shape: "rectangle", anchor: true, width: 56, height: 66, sort_order: 5 },
-  { id: "cloud", name: "Cloud", emoji: "☁️", kind: "object", desktop: true, parent_id: null, action: "none", href: null, tint_when_visited: true, shape: "rectangle", anchor: false, width: 60, height: 42, sort_order: 6 },
-  { id: "bike", name: "Bicycle", emoji: "🚲", kind: "object", desktop: true, parent_id: null, action: "none", href: null, tint_when_visited: true, shape: "rectangle", anchor: false, width: 74, height: 54, sort_order: 7 },
-  { id: "boots", name: "Climbing shoes", emoji: "🥾", kind: "object", desktop: true, parent_id: null, action: "none", href: null, tint_when_visited: true, shape: "rectangle", anchor: false, width: 47, height: 54, sort_order: 8 },
-  { id: "light", name: "Light", emoji: "💡", kind: "object", desktop: true, parent_id: null, action: "none", href: null, tint_when_visited: true, shape: "rectangle", anchor: true, width: 38, height: 52, sort_order: 9 },
-  { id: "case", name: "Briefcase", emoji: "💼", kind: "object", desktop: true, parent_id: "portfolio-folder", action: "experience", href: null, tint_when_visited: true, shape: "rectangle", anchor: false, width: 52, height: 44, sort_order: 10 },
-  { id: "leave-gift", name: "Leave a gift", emoji: "🎁", kind: "action", desktop: true, parent_id: null, action: "leave-gift", href: null, tint_when_visited: true, shape: "rectangle", anchor: false, width: 64, height: 64, sort_order: 11 },
-  { id: "portfolio-folder", name: "Portfolio", emoji: "📁", kind: "folder", desktop: true, parent_id: null, action: "none", href: null, tint_when_visited: false, shape: "rectangle", anchor: false, width: 64, height: 56, sort_order: 12 },
-  { id: "writing-folder", name: "Writing", emoji: "📂", kind: "folder", desktop: true, parent_id: null, action: "none", href: null, tint_when_visited: false, shape: "rectangle", anchor: false, width: 64, height: 56, sort_order: 13 },
+  { id: "octopus", name: "Octopus", emoji: "🐙", kind: "object", desktop: true, parent_id: null, action: "none", href: null, anchor: false, width: 68, height: 70, sort_order: 1 },
+  { id: "computer", name: "Computer", emoji: "🖥️", kind: "object", desktop: true, parent_id: "portfolio-folder", action: "projects", href: null, anchor: true, width: 64, height: 58, sort_order: 2 },
+  { id: "shoes", name: "Walking shoes", emoji: "👟", kind: "object", desktop: true, parent_id: null, action: "none", href: null, anchor: false, width: 54, height: 40, sort_order: 3 },
+  { id: "globe", name: "Globe", emoji: "🌍", kind: "object", desktop: true, parent_id: null, action: "none", href: null, anchor: false, width: 50, height: 50, sort_order: 4 },
+  { id: "plant", name: "Plant", emoji: "🪴", kind: "object", desktop: true, parent_id: null, action: "none", href: null, anchor: true, width: 56, height: 66, sort_order: 5 },
+  { id: "cloud", name: "Cloud", emoji: "☁️", kind: "object", desktop: true, parent_id: null, action: "none", href: null, anchor: false, width: 60, height: 42, sort_order: 6 },
+  { id: "bike", name: "Bicycle", emoji: "🚲", kind: "object", desktop: true, parent_id: null, action: "none", href: null, anchor: false, width: 74, height: 54, sort_order: 7 },
+  { id: "boots", name: "Climbing shoes", emoji: "🥾", kind: "object", desktop: true, parent_id: null, action: "none", href: null, anchor: false, width: 47, height: 54, sort_order: 8 },
+  { id: "light", name: "Light", emoji: "💡", kind: "object", desktop: true, parent_id: null, action: "none", href: null, anchor: true, width: 38, height: 52, sort_order: 9 },
+  { id: "case", name: "Briefcase", emoji: "💼", kind: "object", desktop: true, parent_id: "portfolio-folder", action: "experience", href: null, anchor: false, width: 52, height: 44, sort_order: 10 },
+  { id: "leave-gift", name: "Leave a gift", emoji: "🎁", kind: "action", desktop: true, parent_id: null, action: "leave-gift", href: null, anchor: false, width: 64, height: 64, sort_order: 11 },
+  { id: "portfolio-folder", name: "Portfolio", emoji: "📁", kind: "folder", desktop: true, parent_id: null, action: "none", href: null, anchor: false, width: 64, height: 56, sort_order: 12 },
+  { id: "writing-folder", name: "Writing", emoji: "📂", kind: "folder", desktop: true, parent_id: null, action: "none", href: null, anchor: false, width: 64, height: 56, sort_order: 13 },
 ];
 
 export const WRITING_FOLDER_OBJECT: ObjectSpec = DEFAULT_THINGS.find((t) => t.id === "writing-folder") ?? {
-  id: "writing-folder", name: "Writing", emoji: "📂", width: 64, height: 56, shape: "rectangle",
+  id: "writing-folder", name: "Writing", emoji: "📂", width: 64, height: 56,
 };
 
 export const PORTFOLIO_FOLDER_OBJECT: ObjectSpec = DEFAULT_THINGS.find((t) => t.id === "portfolio-folder") ?? {
-  id: "portfolio-folder", name: "Portfolio", emoji: "📁", width: 64, height: 56, shape: "rectangle",
+  id: "portfolio-folder", name: "Portfolio", emoji: "📁", width: 64, height: 56,
 };
 
 export const GITHUB_THING: ThingSpec = {
@@ -50,8 +49,6 @@ export const GITHUB_THING: ThingSpec = {
   desktop: true,
   parent_id: null,
   action: "none",
-  tint_when_visited: true,
-  shape: "circle",
   anchor: false,
   width: 58,
   height: 58,
@@ -81,7 +78,6 @@ export function buildFolder(
         href: `/blog/${encodeURIComponent(post.slug)}`,
         width: 56,
         height: 64,
-        shape: "rectangle",
       };
       items.push({ kind: "item", id: value.id, name: value.name, emoji: value.emoji, image: value.image, value });
     }
@@ -102,7 +98,6 @@ export function buildFolder(
         background_size: child.background_size,
         background_position: child.background_position,
         background_repeat: child.background_repeat,
-        shape: child.shape,
         href: child.href ?? "#",
       });
     } else {
@@ -122,7 +117,6 @@ export function buildFolder(
         background_size: child.background_size,
         background_position: child.background_position,
         background_repeat: child.background_repeat,
-        shape: child.shape,
         value: child,
       });
     }

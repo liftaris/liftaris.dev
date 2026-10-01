@@ -77,7 +77,7 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
         ? {
             id: object.id,
             x: size.width / 2 + Math.cos(index * 2.39996) * Math.min(size.width * 0.35, 140),
-            y: size.height * 0.35 + Math.sin(index * 2.39996) * 60,
+            y: size.height - (object.height / 2 + EDGE_PADDING + 8),
             angle: 0,
           }
         : {
