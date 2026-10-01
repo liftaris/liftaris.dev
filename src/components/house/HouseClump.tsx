@@ -420,7 +420,7 @@ export function HouseClump({
     <svg width="0" height="0" className="sr-only absolute w-0 h-0 overflow-hidden pointer-events-none" aria-hidden="true" focusable="false">
       <defs>
         <filter id="thing-outline" x="-40%" y="-40%" width="180%" height="180%">
-          <feMorphology in="SourceAlpha" operator="dilate" radius="4" result="dilated" />
+          <feMorphology in="SourceAlpha" operator="dilate" radius="2" result="dilated" />
           <feFlood floodColor="#ffffff" result="white" />
           <feComposite in="white" in2="dilated" operator="in" result="outline" />
           <feMerge>

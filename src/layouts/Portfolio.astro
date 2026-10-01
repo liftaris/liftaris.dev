@@ -93,7 +93,7 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
     <svg width="0" height="0" class="sr-only" style="position:absolute;width:0;height:0;overflow:hidden;pointer-events:none;" aria-hidden="true" focusable="false">
       <defs>
         <filter id="thing-outline" x="-40%" y="-40%" width="180%" height="180%">
-          <feMorphology in="SourceAlpha" operator="dilate" radius="4" result="dilated" />
+          <feMorphology in="SourceAlpha" operator="dilate" radius="2" result="dilated" />
           <feFlood flood-color="#ffffff" result="white" />
           <feComposite in="white" in2="dilated" operator="in" result="outline" />
           <feMerge>
