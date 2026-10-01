@@ -1175,46 +1175,27 @@ html:not(.on-home) {
 }
 
 /* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
 /* Things Icon Selection Outline (4px white contour following PNG/SVG/Emoji)  */
 /* -------------------------------------------------------------------------- */
 :root {
   --thing-outline-color: #ffffff;
-  --thing-outline-4px:
-    drop-shadow(0 4px 0 var(--thing-outline-color))
-    drop-shadow(0 -4px 0 var(--thing-outline-color))
-    drop-shadow(4px 0 0 var(--thing-outline-color))
-    drop-shadow(-4px 0 0 var(--thing-outline-color))
-    drop-shadow(2.83px 2.83px 0 var(--thing-outline-color))
-    drop-shadow(-2.83px 2.83px 0 var(--thing-outline-color))
-    drop-shadow(2.83px -2.83px 0 var(--thing-outline-color))
-    drop-shadow(-2.83px -2.83px 0 var(--thing-outline-color))
-    drop-shadow(3.7px 1.53px 0 var(--thing-outline-color))
-    drop-shadow(-3.7px 1.53px 0 var(--thing-outline-color))
-    drop-shadow(3.7px -1.53px 0 var(--thing-outline-color))
-    drop-shadow(-3.7px -1.53px 0 var(--thing-outline-color))
-    drop-shadow(1.53px 3.7px 0 var(--thing-outline-color))
-    drop-shadow(-1.53px 3.7px 0 var(--thing-outline-color))
-    drop-shadow(1.53px -3.7px 0 var(--thing-outline-color))
-    drop-shadow(-1.53px -3.7px 0 var(--thing-outline-color))
-    drop-shadow(2px 0 0 var(--thing-outline-color))
-    drop-shadow(-2px 0 0 var(--thing-outline-color))
-    drop-shadow(0 2px 0 var(--thing-outline-color))
-    drop-shadow(0 -2px 0 var(--thing-outline-color))
-    drop-shadow(1.41px 1.41px 0 var(--thing-outline-color))
-    drop-shadow(-1.41px 1.41px 0 var(--thing-outline-color))
-    drop-shadow(1.41px -1.41px 0 var(--thing-outline-color))
-    drop-shadow(-1.41px -1.41px 0 var(--thing-outline-color));
+  /* Fast 8-point radial fallback */
+  --thing-outline-fallback:
+    drop-shadow(3px 0 0 var(--thing-outline-color))
+    drop-shadow(-3px 0 0 var(--thing-outline-color))
+    drop-shadow(0 3px 0 var(--thing-outline-color))
+    drop-shadow(0 -3px 0 var(--thing-outline-color))
+    drop-shadow(2px 2px 0 var(--thing-outline-color))
+    drop-shadow(-2px 2px 0 var(--thing-outline-color))
+    drop-shadow(2px -2px 0 var(--thing-outline-color))
+    drop-shadow(-2px -2px 0 var(--thing-outline-color));
+  --thing-outline-filter: var(--thing-outline-fallback);
 }
 
-.house-object-art,
-.folder-entry-art {
-  transition: filter 100ms ease;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .house-object-art,
-  .folder-entry-art {
-    transition: none !important;
+@supports (filter: url("#thing-outline")) {
+  :root {
+    --thing-outline-filter: url("#thing-outline");
   }
 }
 
@@ -1229,15 +1210,22 @@ html:not(.on-home) {
 .house-object:not([data-has-bg="true"]):focus:not([aria-disabled="true"]) .house-object-art,
 .house-object:not([data-has-bg="true"]):focus-visible:not([aria-disabled="true"]) .house-object-art,
 .house-object:not([data-has-bg="true"])[data-grabbed="true"] .house-object-art,
-.folder-entry:hover:not([aria-disabled="true"]) .folder-entry-art,
-.folder-entry:focus:not([aria-disabled="true"]) .folder-entry-art,
-.folder-entry:focus-visible:not([aria-disabled="true"]) .folder-entry-art {
-  filter: var(--thing-outline-4px) !important;
+.folder-entry:hover:not([aria-disabled="true"]) .folder-entry-art:not([data-has-bg="true"]),
+.folder-entry:focus:not([aria-disabled="true"]) .folder-entry-art:not([data-has-bg="true"]),
+.folder-entry:focus-visible:not([aria-disabled="true"]) .folder-entry-art:not([data-has-bg="true"]) {
+  filter: var(--thing-outline-filter) !important;
 }
 
 .house-object[data-has-bg="true"]:hover:not([aria-disabled="true"]),
 .house-object[data-has-bg="true"]:focus:not([aria-disabled="true"]),
 .house-object[data-has-bg="true"]:focus-visible:not([aria-disabled="true"]),
 .house-object[data-has-bg="true"][data-grabbed="true"] {
-  filter: var(--thing-outline-4px) !important;
+  box-shadow: 0 0 0 4px #ffffff !important;
+}
+
+.folder-entry:hover:not([aria-disabled="true"]) .folder-entry-art[data-has-bg="true"],
+.folder-entry:focus:not([aria-disabled="true"]) .folder-entry-art[data-has-bg="true"],
+.folder-entry:focus-visible:not([aria-disabled="true"]) .folder-entry-art[data-has-bg="true"] {
+  box-shadow: 0 0 0 4px #ffffff !important;
+  filter: none !important;
 }
