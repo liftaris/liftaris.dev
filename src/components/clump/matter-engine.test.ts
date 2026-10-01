@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { createSceneEngine } from "./matter-engine";
-import { initialPoses, OBJECTS, type CollisionMode, type Pose, type SceneEngine } from "./model";
+import { initialPoses, OBJECTS, type CollisionMode, type ObjectSpec, type Pose, type SceneEngine } from "./model";
 
 const STEP = 1000 / 60;
 const SIZE = { width: 360, height: 320 };
@@ -320,5 +320,105 @@ test("freeze keeps an item static at its target position without being pulled ba
   } finally {
     engine.dispose();
   }
+});
+
+describe("gift gravity and physics behavior", () => {
+  const giftA: ObjectSpec = { id: "gift-apple", name: "Apple", emoji: "🍎", width: 48, height: 48, shape: "circle", isGift: true };
+  const giftB: ObjectSpec = { id: "gift-banana", name: "Banana", emoji: "🍌", width: 48, height: 48, shape: "circle", isGift: true };
+
+  test("gifts are affected by gravity and fall to the bottom of the window, settling and sleeping", () => {
+    const size = { width: 500, height: 600 };
+    const engine = createSceneEngine({
+      scene: "clump",
+      collision: "outline",
+      size,
+      objects: [...OBJECTS, giftA],
+    });
+    try {
+      const initial = pose(engine, giftA.id);
+      expect(initial.y).toBeLessThan(size.height * 0.6);
+
+      settle(engine, 1000);
+
+      const resting = pose(engine, giftA.id);
+      // The bottom of the artwork is constrained at size.height - halfHeight
+      // where halfHeight for 48px artwork is between 29 and 39 depending on rotation
+      expect(resting.y).toBeGreaterThanOrEqual(size.height - 39);
+      expect(resting.y).toBeLessThanOrEqual(size.height - 29 + 0.01);
+      expect(resting.y).toBeGreaterThan(initial.y + 150);
+      expect(engine.step(STEP)).toBe(false);
+    } finally {
+      engine.dispose();
+    }
+  });
+
+  test("gifts are not affected by clump physics towards the center", () => {
+    const size = { width: 600, height: 600 };
+    // Start gift at bottom left (away from clump center at 300, 300)
+    const startPose: Pose = { id: giftA.id, x: 80, y: 550, angle: 0 };
+    const engine = createSceneEngine({
+      scene: "clump",
+      collision: "outline",
+      size,
+      objects: [...OBJECTS, giftA],
+      poses: [startPose],
+    });
+    try {
+      settle(engine, 1000);
+      const resting = pose(engine, giftA.id);
+      // It should stay at the bottom left, not pulled to center x=300
+      expect(resting.x).toBeLessThan(120);
+      expect(resting.y).toBeCloseTo(size.height - 29, 0);
+    } finally {
+      engine.dispose();
+    }
+  });
+
+  test("gifts can be dragged, collide with other objects, and fall back to the bottom when released", () => {
+    const size = { width: 600, height: 600 };
+    const engine = createSceneEngine({
+      scene: "clump",
+      collision: "outline",
+      size,
+      objects: [...OBJECTS, giftA, giftB],
+    });
+    try {
+      settle(engine, 1000);
+      const restingA = pose(engine, giftA.id);
+      const restingB = pose(engine, giftB.id);
+      expect(restingA.y).toBeGreaterThanOrEqual(size.height - 39);
+      expect(restingA.y).toBeLessThanOrEqual(size.height - 29 + 0.01);
+      expect(restingB.y).toBeGreaterThanOrEqual(size.height - 39);
+      expect(restingB.y).toBeLessThanOrEqual(size.height - 29 + 0.01);
+
+      // Drag giftA up to y = 150
+      expect(engine.beginDrag(giftA.id, restingA)).toBe(true);
+      engine.moveDrag({ x: 300, y: 150 });
+      advance(engine, 30);
+      const held = pose(engine, giftA.id);
+      expect(held.y).toBeLessThan(250);
+
+      // Release giftA; it should fall back to the bottom under gravity
+      engine.endDrag();
+      settle(engine, 1000);
+      const newRestingA = pose(engine, giftA.id);
+      expect(newRestingA.y).toBeGreaterThanOrEqual(size.height - 39);
+      expect(newRestingA.y).toBeLessThanOrEqual(size.height - 29 + 0.01);
+
+      // Drag giftA directly into giftB along the bottom
+      expect(engine.beginDrag(giftA.id, newRestingA)).toBe(true);
+      const bBefore = pose(engine, giftB.id);
+      // Move giftA to giftB's position
+      engine.moveDrag({ x: bBefore.x, y: bBefore.y });
+      advance(engine, 40);
+      const bAfter = pose(engine, giftB.id);
+      // Collision should push giftB away
+      expect(Math.hypot(bAfter.x - bBefore.x, bAfter.y - bBefore.y)).toBeGreaterThan(15);
+      engine.endDrag();
+      settle(engine, 1000);
+    } finally {
+      engine.dispose();
+    }
+  });
 });
 

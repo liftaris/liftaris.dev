@@ -21,6 +21,7 @@ export interface ObjectSpec extends Size, BackgroundProps {
   shape: "circle" | "rectangle";
   anchor?: boolean;
   tint_when_visited?: boolean;
+  isGift?: boolean;
 }
 
 export function getBackgroundStyle(props?: BackgroundProps | null): CSSProperties | undefined {
@@ -117,6 +118,10 @@ export function initialPoses(scene: Scene, size: Size): Pose[] {
 
 export function isFixed(object: ObjectSpec, scene: Scene): boolean {
   return scene === "structure" && Boolean(object.anchor);
+}
+
+export function isGift(object: ObjectSpec): boolean {
+  return Boolean(object.isGift || object.id.startsWith("gift-"));
 }
 
 export interface SceneEngine {

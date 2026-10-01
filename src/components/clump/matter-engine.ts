@@ -3,6 +3,7 @@ import { createCollider } from "./colliders";
 import {
   initialPoses,
   isFixed,
+  isGift,
   OBJECTS,
   type EngineOptions,
   type ObjectSpec,
@@ -71,12 +72,21 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
   const seeds = initialPoses(options.scene, size);
   function makeItem(object: ObjectSpec, index: number, poseOverride?: Pose): Item {
     const supplied = options.poses?.find((pose) => pose.id === object.id);
-    const seed = seeds.find((pose) => pose.id === object.id) ?? {
-      id: object.id,
-      x: size.width / 2 + Math.cos(index * 2.39996) * 60,
-      y: size.height / 2 + Math.sin(index * 2.39996) * 90,
-      angle: 0,
-    };
+    const seed = seeds.find((pose) => pose.id === object.id) ?? (
+      isGift(object)
+        ? {
+            id: object.id,
+            x: size.width / 2 + Math.cos(index * 2.39996) * Math.min(size.width * 0.35, 140),
+            y: size.height * 0.35 + Math.sin(index * 2.39996) * 60,
+            angle: 0,
+          }
+        : {
+            id: object.id,
+            x: size.width / 2 + Math.cos(index * 2.39996) * 60,
+            y: size.height / 2 + Math.sin(index * 2.39996) * 90,
+            angle: 0,
+          }
+    );
     // Start the poster experiment with tighter artwork overlap. Only fresh
     // seeds are compressed; switching back to a saved arrangement preserves it.
     const initial = options.scene === "clump" && options.collision === "peg"
@@ -110,6 +120,7 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
   // Force-free resting regions make arrangements durable. There is no assigned
   // home for an object, and nothing pushes it back into its original ordering.
   function returnOffset(item: Item): Point {
+    if (isGift(item.object)) return { x: 0, y: 0 };
     const { position } = item.body;
     if (options.scene === "structure") {
       let closest: Point = { x: 0, y: 0 };
@@ -135,7 +146,8 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
 
     const dx = position.x - size.width / 2;
     const dy = position.y - size.height / 2;
-    const growth = Math.max(1, Math.sqrt(items.length / OBJECTS.length));
+    const clumpItemsCount = items.filter((i) => !isGift(i.object)).length;
+    const growth = Math.max(1, Math.sqrt(clumpItemsCount / OBJECTS.length));
     const radiusX = Math.min(size.width * 0.23, 105 * growth);
     const radiusY = Math.min(size.height * 0.35, 180 * growth);
     const distance = Math.hypot(dx / radiusX, dy / radiusY);
@@ -221,13 +233,21 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
       for (const item of items) {
         const { body } = item;
         if (body.isStatic || body.isSleeping || item === drag?.item) continue;
-        const offset = returnOffset(item);
-        if (offset.x !== 0 || offset.y !== 0) {
-          const strength = options.reducedMotion ? 0.000027 : 0.000018;
+        if (isGift(item.object)) {
+          const gravityStrength = options.reducedMotion ? 0.0008 : 0.0012;
           Body.applyForce(body, body.position, {
-            x: offset.x * body.mass * strength,
-            y: offset.y * body.mass * strength,
+            x: 0,
+            y: body.mass * gravityStrength,
           });
+        } else {
+          const offset = returnOffset(item);
+          if (offset.x !== 0 || offset.y !== 0) {
+            const strength = options.reducedMotion ? 0.000027 : 0.000018;
+            Body.applyForce(body, body.position, {
+              x: offset.x * body.mass * strength,
+              y: offset.y * body.mass * strength,
+            });
+          }
         }
       }
 
@@ -342,7 +362,13 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
     resize(nextSize, preservePositions = false) {
       if (disposed || nextSize.width <= 0 || nextSize.height <= 0) return;
       if (preservePositions) {
+        const heightChanged = nextSize.height !== size.height;
         size = { ...nextSize };
+        if (heightChanged) {
+          for (const item of items) {
+            if (isGift(item.object)) wake(item);
+          }
+        }
         return;
       }
       endDrag();
