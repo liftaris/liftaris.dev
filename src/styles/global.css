@@ -91,9 +91,9 @@
 }
 
 @theme {
-  --font-mono: "Geist Mono Variable", "Noto Emoji Variable", "Noto Emoji", monospace;
-  --font-serif: "Young Serif", "Noto Emoji Variable", "Noto Emoji", Georgia, serif;
-  --font-emoji: "Noto Emoji Variable", "Noto Emoji", "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  --font-mono: "Geist Mono Variable", "Noto Emoji", "Noto Emoji Variable", monospace;
+  --font-serif: "Young Serif", "Noto Emoji", "Noto Emoji Variable", Georgia, serif;
+  --font-emoji: "Noto Emoji", "Noto Emoji Variable", "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
 
   --color-blue: #1313ba;
   --color-ink: #06113a;
@@ -185,6 +185,7 @@ body {
   font-family: var(--font-mono);
   letter-spacing: 0.012em;
   text-rendering: geometricPrecision;
+  font-variant-emoji: text;
 }
 
 html.on-home,
@@ -280,6 +281,7 @@ body.on-home {
   background: none;
   color: inherit;
   font-family: var(--font-emoji);
+  font-variant-emoji: text;
   font-size: 14px;
   line-height: 1;
   user-select: none;
@@ -618,8 +620,11 @@ body.embedded-post {
 }
 .folder-entry-art,
 .house-object-art,
-.house-trash-icon {
+.house-trash-icon,
+.site-window-icon,
+.object-window-icon {
   font-family: var(--font-emoji);
+  font-variant-emoji: text;
 }
 .object-window-icon,
 .object-window-icon:hover,
@@ -1275,14 +1280,48 @@ html:not(.on-home) {
   text-decoration: none !important;
 }
 
-.house-object:not([data-has-bg="true"]):hover:not([aria-disabled="true"]) .house-object-art,
-.house-object:not([data-has-bg="true"]):focus:not([aria-disabled="true"]) .house-object-art,
-.house-object:not([data-has-bg="true"]):focus-visible:not([aria-disabled="true"]) .house-object-art,
-.house-object:not([data-has-bg="true"])[data-grabbed="true"] .house-object-art,
-.folder-entry:hover:not([aria-disabled="true"]) .folder-entry-art:not([data-has-bg="true"]),
-.folder-entry:focus:not([aria-disabled="true"]) .folder-entry-art:not([data-has-bg="true"]),
-.folder-entry:focus-visible:not([aria-disabled="true"]) .folder-entry-art:not([data-has-bg="true"]) {
+.house-object-art[data-is-emoji="true"],
+.house-object-art:not(:has(.house-object-image)),
+.folder-entry-art[data-is-emoji="true"],
+.folder-entry-art:not(:has(.folder-entry-image)) {
+  font-weight: 400;
+  font-variation-settings: "wght" 400;
+  transition: font-weight 150ms ease, font-variation-settings 150ms ease;
+}
+
+.house-object:not([data-has-bg="true"]):hover:not([aria-disabled="true"]) .house-object-art:has(.house-object-image),
+.house-object:not([data-has-bg="true"]):focus:not([aria-disabled="true"]) .house-object-art:has(.house-object-image),
+.house-object:not([data-has-bg="true"]):focus-visible:not([aria-disabled="true"]) .house-object-art:has(.house-object-image),
+.house-object:not([data-has-bg="true"]):active:not([aria-disabled="true"]) .house-object-art:has(.house-object-image),
+.house-object:not([data-has-bg="true"])[data-grabbed="true"] .house-object-art:has(.house-object-image),
+.folder-entry:hover:not([aria-disabled="true"]) .folder-entry-art:has(.folder-entry-image):not([data-has-bg="true"]),
+.folder-entry:focus:not([aria-disabled="true"]) .folder-entry-art:has(.folder-entry-image):not([data-has-bg="true"]),
+.folder-entry:focus-visible:not([aria-disabled="true"]) .folder-entry-art:has(.folder-entry-image):not([data-has-bg="true"]),
+.folder-entry:active:not([aria-disabled="true"]) .folder-entry-art:has(.folder-entry-image):not([data-has-bg="true"]) {
   filter: var(--thing-outline-filter) !important;
+}
+
+.house-object:not([data-has-bg="true"]):hover:not([aria-disabled="true"]) .house-object-art[data-is-emoji="true"],
+.house-object:not([data-has-bg="true"]):focus:not([aria-disabled="true"]) .house-object-art[data-is-emoji="true"],
+.house-object:not([data-has-bg="true"]):focus-visible:not([aria-disabled="true"]) .house-object-art[data-is-emoji="true"],
+.house-object:not([data-has-bg="true"]):active:not([aria-disabled="true"]) .house-object-art[data-is-emoji="true"],
+.house-object:not([data-has-bg="true"])[data-grabbed="true"] .house-object-art[data-is-emoji="true"],
+.folder-entry:hover:not([aria-disabled="true"]) .folder-entry-art[data-is-emoji="true"]:not([data-has-bg="true"]),
+.folder-entry:focus:not([aria-disabled="true"]) .folder-entry-art[data-is-emoji="true"]:not([data-has-bg="true"]),
+.folder-entry:focus-visible:not([aria-disabled="true"]) .folder-entry-art[data-is-emoji="true"]:not([data-has-bg="true"]),
+.folder-entry:active:not([aria-disabled="true"]) .folder-entry-art[data-is-emoji="true"]:not([data-has-bg="true"]),
+.house-object:not([data-has-bg="true"]):hover:not([aria-disabled="true"]) .house-object-art:not(:has(.house-object-image)),
+.house-object:not([data-has-bg="true"]):focus:not([aria-disabled="true"]) .house-object-art:not(:has(.house-object-image)),
+.house-object:not([data-has-bg="true"]):focus-visible:not([aria-disabled="true"]) .house-object-art:not(:has(.house-object-image)),
+.house-object:not([data-has-bg="true"]):active:not([aria-disabled="true"]) .house-object-art:not(:has(.house-object-image)),
+.house-object:not([data-has-bg="true"])[data-grabbed="true"] .house-object-art:not(:has(.house-object-image)),
+.folder-entry:hover:not([aria-disabled="true"]) .folder-entry-art:not([data-has-bg="true"]):not(:has(.folder-entry-image)),
+.folder-entry:focus:not([aria-disabled="true"]) .folder-entry-art:not([data-has-bg="true"]):not(:has(.folder-entry-image)),
+.folder-entry:focus-visible:not([aria-disabled="true"]) .folder-entry-art:not([data-has-bg="true"]):not(:has(.folder-entry-image)),
+.folder-entry:active:not([aria-disabled="true"]) .folder-entry-art:not([data-has-bg="true"]):not(:has(.folder-entry-image)) {
+  font-weight: 700 !important;
+  font-variation-settings: "wght" 700 !important;
+  filter: none !important;
 }
 
 .house-object[data-has-bg="true"]:hover:not([aria-disabled="true"]),

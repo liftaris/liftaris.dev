@@ -3,16 +3,16 @@ import type { EmojiOption, Gift } from "./types";
 
 const entries = [
   ["popcorn", "🍿", "Popcorn", "movie cinema snack film watching"],
-  ["heart", "❤️", "Heart", "love affection care kind romance"],
+  ["heart", "❤", "Heart", "love affection care kind romance"],
   ["flower", "🌷", "Tulip", "flower spring beautiful gratitude bouquet"],
   ["sparkles", "✨", "Sparkles", "magic wonderful special shiny impressive"],
   ["coffee", "☕", "Coffee", "caffeine morning work warm drink espresso"],
   ["octopus", "🐙", "Octopus", "ocean tentacles sea clever"],
-  ["computer", "🖥️", "Computer", "coding programming software desktop technology"],
+  ["computer", "🖥", "Computer", "coding programming software desktop technology"],
   ["shoes", "👟", "Sneaker", "walk walking run exercise shoe"],
   ["globe", "🌍", "Globe", "world earth travel planet global"],
   ["plant", "🪴", "Plant", "monstera green growth garden growing"],
-  ["cloud", "☁️", "Cloud", "sky dream dreaming weather hosting"],
+  ["cloud", "☁", "Cloud", "sky dream dreaming weather hosting"],
   ["bike", "🚲", "Bicycle", "cycling bike ride outdoors"],
   ["boots", "🥾", "Hiking boot", "climbing mountain adventure hiking"],
   ["light", "💡", "Light bulb", "idea inspiration creative smart"],
@@ -23,28 +23,28 @@ const entries = [
   ["balloon", "🎈", "Balloon", "party celebrate float cheerful"],
   ["confetti", "🎊", "Confetti", "success celebrate achievement"],
   ["star", "⭐", "Star", "excellent favorite awesome achievement"],
-  ["sun", "☀️", "Sun", "happy sunny warm summer bright"],
+  ["sun", "☀", "Sun", "happy sunny warm summer bright"],
   ["moon", "🌙", "Moon", "night quiet sleep evening dreamy"],
   ["rainbow", "🌈", "Rainbow", "hope colorful pride joy"],
-  ["rain", "🌧️", "Rain cloud", "rainy sad melancholy cozy weather"],
-  ["snow", "❄️", "Snowflake", "cold winter snow ice unique"],
+  ["rain", "🌧", "Rain cloud", "rainy sad melancholy cozy weather"],
+  ["snow", "❄", "Snowflake", "cold winter snow ice unique"],
   ["fire", "🔥", "Fire", "hot amazing cool impressive lit energy"],
   ["water", "💧", "Water drop", "thirst hydrate fresh rain water"],
   ["wave", "🌊", "Ocean wave", "surf beach ocean sea flow"],
-  ["mountain", "🏔️", "Mountain", "climb hiking alpine adventure challenge"],
-  ["island", "🏝️", "Island", "vacation relax beach tropical holiday"],
+  ["mountain", "🏔", "Mountain", "climb hiking alpine adventure challenge"],
+  ["island", "🏝", "Island", "vacation relax beach tropical holiday"],
   ["tent", "⛺", "Tent", "camp camping wilderness outdoors"],
   ["rocket", "🚀", "Rocket", "launch ship fast startup space ambitious"],
-  ["satellite", "🛰️", "Satellite", "space internet orbit signal"],
+  ["satellite", "🛰", "Satellite", "space internet orbit signal"],
   ["ufo", "🛸", "Flying saucer", "alien weird space unusual mystery"],
-  ["airplane", "✈️", "Airplane", "travel flight journey trip flying"],
+  ["airplane", "✈", "Airplane", "travel flight journey trip flying"],
   ["train", "🚂", "Train", "rail travel steam journey"],
   ["boat", "⛵", "Sailboat", "sailing sea voyage boat breeze"],
   ["house", "🏠", "House", "home cozy welcome family"],
   ["key", "🔑", "Key", "unlock home access solution secret"],
   ["books", "📚", "Books", "reading literature knowledge learn study"],
   ["book", "📖", "Open book", "story reading writing novel"],
-  ["pencil", "✏️", "Pencil", "write draw sketch creative"],
+  ["pencil", "✏", "Pencil", "write draw sketch creative"],
   ["paint", "🎨", "Paint palette", "art artist design color creative"],
   ["camera", "📷", "Camera", "photo photography memory capture"],
   ["music", "🎵", "Musical note", "music song melody singing"],
@@ -55,7 +55,7 @@ const entries = [
   ["puzzle", "🧩", "Puzzle piece", "problem solution fit logic mystery"],
   ["yarn", "🧶", "Yarn", "knitting craft thread cozy"],
   ["teddy", "🧸", "Teddy bear", "hug comfort cute cuddly friend"],
-  ["candle", "🕯️", "Candle", "peace cozy memory warmth light"],
+  ["candle", "🕯", "Candle", "peace cozy memory warmth light"],
   ["gem", "💎", "Gem", "precious diamond brilliant valuable"],
   ["trophy", "🏆", "Trophy", "winner success best award achievement"],
   ["medal", "🥇", "Gold medal", "first champion achievement proud"],
@@ -105,7 +105,7 @@ const entries = [
   ["wavehello", "👋", "Waving hand", "hello hi goodbye welcome wave"],
   ["clap", "👏", "Clapping hands", "bravo applause well done congratulations"],
   ["thumbsup", "👍", "Thumbs up", "great good yes like approve"],
-  ["peace", "✌️", "Victory hand", "peace hello victory chill"],
+  ["peace", "✌", "Victory hand", "peace hello victory chill"],
   ["smile", "😊", "Smile", "happy smile kind pleased friendly"],
   ["laugh", "😂", "Laughing face", "funny laughter lol hilarious joy"],
   ["sad", "🥲", "Smiling tear", "bittersweet sad moved touched"],
@@ -116,16 +116,19 @@ const entries = [
   ["hundred", "💯", "Hundred points", "perfect excellent hundred amazing"],
 ] as const;
 
+export const normalizeEmojiPresentation = (emoji: string): string => emoji.replace(/\uFE0F/g, "");
+
 export const EMOJI_CATALOG: readonly EmojiOption[] = entries.map(([id, emoji, name, keywords]) => ({ id, emoji, name, keywords }));
 const byId = new Map(EMOJI_CATALOG.map((item) => [item.id, item]));
 export const findEmoji = (id: string): EmojiOption | undefined => byId.get(id);
 
 export function localSuggestions(text: string, limit = 5): EmojiOption[] {
   const input = text.trim().toLocaleLowerCase();
+  const normalizedInput = normalizeEmojiPresentation(input);
   const words = input.split(/\s+/).filter(Boolean);
   return EMOJI_CATALOG.map((item, index) => {
     const tokens = `${item.name} ${item.keywords}`.toLocaleLowerCase().split(/\s+/);
-    const exact = input === item.id || input === item.emoji || input === item.name.toLocaleLowerCase();
+    const exact = input === item.id || input === item.emoji || normalizedInput === item.emoji || input === item.name.toLocaleLowerCase();
     const score = (exact ? 100 : 0) + words.reduce((sum, word) => sum + (tokens.includes(word) ? 10 : tokens.some((token) => word.length > 2 && token.startsWith(word)) ? 3 : 0), 0);
     return { item, score, index };
   }).sort((a, b) => b.score - a.score || a.index - b.index).slice(0, limit).map(({ item }) => item);

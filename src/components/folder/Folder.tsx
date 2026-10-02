@@ -60,6 +60,7 @@ export function FolderContent<T>({
               <span
                 className="folder-entry-art grid place-items-center size-14 text-5xl font-emoji leading-none pointer-events-none select-none [transform:translateZ(0)] data-[has-bg=true]:rounded-lg data-[has-bg=true]:overflow-hidden"
                 style={{width:entry.width ?? 60,height:entry.height ?? 60,fontSize:Math.min(entry.width ?? 60,entry.height ?? 60)*.85}}
+                data-is-emoji={!iconImage ? "true" : undefined}
                 aria-hidden="true"
               >
                 {iconImage ? (
@@ -71,7 +72,7 @@ export function FolderContent<T>({
                     decoding="async"
                   />
                 ) : (
-                  entry.emoji
+                  entry.emoji.replace(/\uFE0F/g, "")
                 )}
               </span>
               <ThingLabel name={entry.name} className="folder-entry-label w-full" />

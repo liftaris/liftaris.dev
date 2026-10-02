@@ -6,7 +6,7 @@ import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
 import { createSceneEngine } from "../clump/matter-engine";
 import { isGift, isImageUrl, OBJECTS } from "../clump/model";
 import type { ObjectSpec, Point, SceneEngine } from "../clump/model";
-import { giftObjects, worldSize } from "../../lib/house/emoji";
+import { giftObjects, normalizeEmojiPresentation, worldSize } from "../../lib/house/emoji";
 import { getGift } from "../../lib/house/client";
 import type { Gift } from "../../lib/house/types";
 import { reconcileGifts, retiringGiftIds } from "./gift-presence";
@@ -519,7 +519,8 @@ export function HouseClump({
                 }}
               >
                 <span
-                  className="house-object-art flex items-center justify-center size-full rounded-xl pointer-events-none group-data-[shape=circle]:rounded-full group-data-[has-bg=true]:overflow-hidden [transform:translateZ(0)] opacity-[0.99] [filter:contrast(100.01%)] font-emoji has-[.house-object-image]:filter-none has-[.house-object-image]:opacity-100 group-data-[grabbed=true]:opacity-100 group-data-[gift=true]:opacity-100"
+                  className="house-object-art flex items-center justify-center size-full rounded-xl pointer-events-none group-data-[shape=circle]:rounded-full group-data-[has-bg=true]:overflow-hidden [transform:translateZ(0)] font-emoji has-[.house-object-image]:opacity-100 group-data-[grabbed=true]:opacity-100 group-data-[gift=true]:opacity-100"
+                  data-is-emoji={!iconImage ? "true" : undefined}
                   aria-hidden="true"
                 >
                   {iconImage ? (
@@ -533,7 +534,7 @@ export function HouseClump({
                       decoding="async"
                     />
                   ) : (
-                    object.emoji
+                    normalizeEmojiPresentation(object.emoji)
                   )}
                 </span>
                 {!isGiftItem && (

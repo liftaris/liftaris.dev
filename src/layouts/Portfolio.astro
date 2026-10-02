@@ -61,7 +61,7 @@ if (!displayTitle && !isHome) {
 
 if (!displayIcon && !isHome) {
   if (pathname === "/projects") {
-    displayIcon = "🖥️";
+    displayIcon = "🖥";
   } else if (pathname === "/experience") {
     displayIcon = "💼";
   } else if (pathname === "/github") {
@@ -155,7 +155,7 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
                     {isIconImage ? (
                       <img src={displayIcon} alt="" class="site-window-image" />
                     ) : (
-                      displayIcon
+                      displayIcon.replace(/\uFE0F/g, "")
                     )}
                   </span>
                 )}

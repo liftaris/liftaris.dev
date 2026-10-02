@@ -28,11 +28,11 @@ export interface ThingSpec extends ObjectSpec {
 
 export const DEFAULT_THINGS: readonly ThingSpec[] = [
   { id: "octopus", name: "Octopus", emoji: "🐙", kind: "object", desktop: true, parent_id: null, action: "none", href: null, anchor: false, width: 68, height: 70, sort_order: 1 },
-  { id: "computer", name: "Computer", emoji: "🖥️", kind: "object", desktop: true, parent_id: "portfolio-folder", action: "projects", href: null, anchor: true, width: 64, height: 58, sort_order: 2 },
+  { id: "computer", name: "Computer", emoji: "🖥", kind: "object", desktop: true, parent_id: "portfolio-folder", action: "projects", href: null, anchor: true, width: 64, height: 58, sort_order: 2 },
   { id: "shoes", name: "Walking shoes", emoji: "👟", kind: "object", desktop: true, parent_id: null, action: "none", href: null, anchor: false, width: 54, height: 40, sort_order: 3 },
   { id: "globe", name: "Globe", emoji: "🌍", kind: "object", desktop: true, parent_id: null, action: "none", href: null, anchor: false, width: 50, height: 50, sort_order: 4 },
   { id: "plant", name: "Plant", emoji: "🪴", kind: "object", desktop: true, parent_id: null, action: "none", href: null, anchor: true, width: 56, height: 66, sort_order: 5 },
-  { id: "cloud", name: "Cloud", emoji: "☁️", kind: "object", desktop: true, parent_id: null, action: "none", href: null, anchor: false, width: 60, height: 42, sort_order: 6 },
+  { id: "cloud", name: "Cloud", emoji: "☁", kind: "object", desktop: true, parent_id: null, action: "none", href: null, anchor: false, width: 60, height: 42, sort_order: 6 },
   { id: "bike", name: "Bicycle", emoji: "🚲", kind: "object", desktop: true, parent_id: null, action: "none", href: null, anchor: false, width: 74, height: 54, sort_order: 7 },
   { id: "boots", name: "Climbing shoes", emoji: "🥾", kind: "object", desktop: true, parent_id: null, action: "none", href: null, anchor: false, width: 47, height: 54, sort_order: 8 },
   { id: "light", name: "Light", emoji: "💡", kind: "object", desktop: true, parent_id: null, action: "none", href: null, anchor: true, width: 38, height: 52, sort_order: 9 },
