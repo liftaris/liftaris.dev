@@ -1,9 +1,25 @@
 ---
+import { getEmDashEntry } from 'emdash';
+import { PortableText } from 'emdash/ui';
+import { getRequestContext } from 'emdash/request-context';
 import { readThings } from '../../server/things/read';
 import { pathFor } from '../../lib/things/model';
-const things = await readThings('published');
-const path = Astro.url.pathname.replace(/\/$/,'');
-const thing = things.find(t => t.data.legacy_paths?.includes(path));
-if (!thing) return Astro.rewrite('/404');
-return Astro.redirect(pathFor(thing,things)! + (Astro.url.searchParams.get('window') === '1' ? '?window=1' : ''),301);
+import Portfolio from '../../layouts/Portfolio.astro';
+import ThemeImage from '../../components/ThemeImage.astro';
+import ContentImage from '../../components/ContentImage.astro';
+const {entry:post,error}=await getEmDashEntry('posts',Astro.params.slug!);
+if(error && error.name!=='LiveEntryNotFoundError')throw error;
+if(!post)return Astro.rewrite('/404');
+const things=await readThings('published');
+const placement=things.find(t=>t.data.page_source==='post'&&t.postId===post.data.id);
+const canonical=placement ? pathFor(placement,things) : `/blog/${post.id}`;
+if(placement && !getRequestContext()?.preview && !getRequestContext()?.editMode) return Astro.redirect(canonical!+(Astro.url.searchParams.get('window')==='1'?'?window=1':''),302);
+Astro.cache.set(false);
 ---
+<Portfolio embedded={Astro.url.searchParams.get('window')==='1'} title={`${post.data.title} | Kaio Barbosa`} windowTitle={post.data.title} windowIcon={post.data.icon||'📝'} canonicalPath={canonical ?? undefined} content={{collection:'posts',id:post.data.id,slug:post.id}}>
+  <article class="article-content">
+    {post.data.date && <p class="meta">{new Date(post.data.date).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric',timeZone:'UTC'})}</p>}
+    <h1 {...post.edit.title}>{post.data.title}</h1>
+    <PortableText value={post.data.content} components={{type:{themeImage:ThemeImage,image:ContentImage}}}/>
+  </article>
+</Portfolio>

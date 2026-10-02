@@ -10,7 +10,7 @@ export interface ThingSpec extends ObjectSpec {
   slug?: string;
   contents?: string[];
   primaryFolder?: string | null;
-  page_source?: 'content' | 'projects' | 'experience' | 'github' | 'clump';
+  page_source?: 'content' | 'post' | 'projects' | 'experience' | 'github' | 'clump';
   application?: 'leave-gift';
   window_width?: number;
   window_height?: number;

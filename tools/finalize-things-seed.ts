@@ -12,7 +12,9 @@ export async function finalizeThingsSeed(db:Kysely<Database>) {
   if(entry.draftRevisionId)throw new Error('Seed initialization refuses to overwrite a pending draft: '+p.slug);
   const ids=p.contents.map(slug=>{const e=entries.get(slug);if(!e)throw new Error('Seed target missing: '+slug);return e.id;});
   const primary=p.primary ? entries.get(p.primary)?.id : null;if(p.primary&&!primary)throw new Error('Seed parent missing: '+p.primary);
-  const saved=await handleContentUpdate(db,'things',entry.id,{data:{},references:{contents:ids,primary_folder:primary?[primary]:[]}});
+  const legacyPost=(entry.data.legacy_paths as string[]|undefined)?.find(path=>path.startsWith('/blog/'))?.slice(6);
+  const post=entry.data.page_source==='post' && legacyPost ? await repo.findBySlug('posts',legacyPost) : null;
+  const saved=await handleContentUpdate(db,'things',entry.id,{data:{},references:{contents:ids,primary_folder:primary?[primary]:[],post:post?[post.id]:[]}});
   if(!saved.success)throw new Error(saved.error.message);
   if(entry.status==='published'){const published=await handleContentPublish(db,'things',entry.id);if(!published.success)throw new Error(published.error.message);}
  }

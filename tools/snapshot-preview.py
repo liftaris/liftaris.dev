@@ -1,7 +1,7 @@
 """Read-only preview snapshot, including FTS schemas. Never accepts the production DB."""
 import json, os, sqlite3, sys, tomllib, urllib.request
 from pathlib import Path
-PREVIEW = 'a5e64636-afe8-44f9-87e6-5055554edda9'
+PREVIEW = '6bf414ef-c86a-4674-b7ab-e0dac70f7bf6' if '--things' in sys.argv else 'a5e64636-afe8-44f9-87e6-5055554edda9'
 ACCOUNT = '8df695f5ca97195e8c6f4896b81be028'
 config = tomllib.loads((Path.home()/'.config/.wrangler/config/default.toml').read_text())
 token = os.environ.get('CLOUDFLARE_API_TOKEN') or config['oauth_token']

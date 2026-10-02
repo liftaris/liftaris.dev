@@ -1,5 +1,6 @@
 ---
 import { PortableText } from 'emdash/ui';
+import { getEmDashEntry } from 'emdash';
 import type { PortableTextBlock } from '@portabletext/types';
 import { getRequestContext } from 'emdash/request-context';
 import Portfolio from '../../layouts/Portfolio.astro';
@@ -14,16 +15,23 @@ interface Props { thing: ThingRecord; things: ThingRecord[] }
 const { thing, things } = Astro.props;
 const embedded = Astro.url.searchParams.get('window') === '1';
 const icon = thing.data.icon_type === 'image' ? mediaUrl(thing.data.image) : thing.data.emoji;
+const postResult = thing.data.page_source === 'post' && thing.postId ? await getEmDashEntry('posts', thing.postId) : null;
+if (postResult?.error && postResult.error.name !== 'LiveEntryNotFoundError') throw postResult.error;
+const post = postResult?.entry;
+const title = post?.data.title ?? thing.data.name;
+const body = post?.data.content ?? (thing.data.page_source === 'post' ? [] : thing.data.body);
+const date = post?.data.date;
+const content = post ? {collection:'posts', id:post.data.id, slug:post.id} : {collection:'things',id:thing.id,slug:thing.slug};
 let canonical: string | undefined;
 try { canonical = pathFor(thing, things) ?? undefined; } catch { /* Incomplete drafts are still previewable. */ }
 ---
-<Portfolio embedded={embedded} title={`${thing.data.name} | Kaio Barbosa`} windowTitle={thing.data.name} windowIcon={icon || '📄'} restoreSlug={thing.id} canonicalPath={canonical} content={{collection:'things',id:thing.id,slug:thing.slug}}>
+<Portfolio embedded={embedded} title={`${title} | Kaio Barbosa`} windowTitle={thing.data.name} windowIcon={icon || '📄'} restoreSlug={thing.id} canonicalPath={canonical} content={content}>
   {thing.data.kind === 'folder' ? <House things={sceneThings(things)} initialFolderId={thing.id} editMode={Boolean(getRequestContext()?.editMode)} client:load /> :
   thing.data.page_source === 'projects' || thing.data.page_source === 'experience' ? <Stage view={thing.data.page_source} client:load /> :
   thing.data.page_source === 'github' ? <GitHubViewer client:load /> :
   <article class="page-content">
-    {!embedded && <h1>{thing.data.name}</h1>}
-    {thing.data.date && <p class="meta">{new Date(thing.data.date).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric',timeZone:'UTC'})}</p>}
-    <PortableText value={thing.data.body as PortableTextBlock[]} components={{type:{themeImage:ThemeImage,image:ContentImage}}} />
+    {(!embedded || post) && <h1>{title}</h1>}
+    {date && <p class="meta">{new Date(date).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric',timeZone:'UTC'})}</p>}
+    <PortableText value={body as PortableTextBlock[]} components={{type:{themeImage:ThemeImage,image:ContentImage}}} />
   </article>}
 </Portfolio>

@@ -1,6 +1,6 @@
 /** Shared authoring/rendering contract. CMS references stay separate from field data. */
 export const STUDIO_PATH = '/_emdash/admin/plugins/liftaris-things/workspace';
-export const PAGE_SOURCES = { content: null, projects: '/projects', experience: '/experience', github: '/github', clump: '/lab/clump' } as const;
+export const PAGE_SOURCES = { content: null, post: null, projects: '/projects', experience: '/experience', github: '/github', clump: '/lab/clump' } as const;
 export type ThingKind = 'page' | 'folder' | 'application';
 export type ThingData = {
   name: string; kind: ThingKind; icon_type: 'emoji' | 'image'; emoji: string; image: unknown;
@@ -13,7 +13,7 @@ export type ThingData = {
 };
 export interface ThingRecord {
   id: string; slug: string; status: string; data: ThingData;
-  contents: string[]; primaryFolder: string | null;
+  contents: string[]; primaryFolder: string | null; postId?: string | null;
 }
 export const DEFAULT_DATA: ThingData = {
   name: 'New Thing', kind: 'folder', icon_type: 'emoji', emoji: '📦', image: null,

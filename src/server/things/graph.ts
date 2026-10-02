@@ -22,7 +22,19 @@ export async function policyGraph(db: Kysely<Database>, draftId?: string, allDra
     const staged = revision?.data._references as Record<string, string[]> | undefined;
     const refs = (field: string) => (staged?.[field] ?? links.filter(l => l.slug === `things_${field}` && l.parent_group === (e.translationGroup ?? e.id)).map(l => l.child_group)).map(g => groupToId.get(g) ?? g);
     rows.push({ id: e.id, slug: typeof revision?.data._slug === 'string' ? revision.data._slug : e.slug ?? '', status: e.status,
-      data: normalizeData({ ...e.data, ...revision?.data }), contents: refs('contents'), primaryFolder: refs('primary_folder')[0] ?? null });
+      data: normalizeData({ ...e.data, ...revision?.data }), contents: refs('contents'), primaryFolder: refs('primary_folder')[0] ?? null, postId: refs('post')[0] ?? null });
   }
   return rows;
+}
+
+export async function postChoices(db: Kysely<Database>) {
+  const repo = new ContentRepository(db);
+  const posts: {id: string; title: string; slug: string; status: string}[] = [];
+  let cursor: string | undefined;
+  do {
+    const page = await repo.findMany('posts', {limit:100, cursor});
+    posts.push(...page.items.map(p => ({id:p.id, title:String(p.data.title ?? p.slug), slug:p.slug ?? p.id, status:p.status})));
+    cursor = page.nextCursor;
+  } while (cursor);
+  return posts;
 }

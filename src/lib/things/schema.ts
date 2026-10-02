@@ -15,7 +15,8 @@ export const thingFields: CreateFieldInput[] = [
   { slug: 'contents', label: 'Folder contents', type: 'reference', validation: { targetCollection: 'things', multiple: true } },
   { slug: 'primary_folder', label: 'Primary folder (URL)', type: 'reference', validation: { targetCollection: 'things', multiple: false } },
   { slug: 'path_override', label: 'Custom site path', type: 'string' },
-  select('page_source', 'Page source', ['content', 'projects', 'experience', 'github', 'clump'], 'content'),
+  select('page_source', 'Page source', ['content', 'post', 'projects', 'experience', 'github', 'clump'], 'content'),
+  { slug: 'post', label: 'Post', type: 'reference', validation: { targetCollection: 'posts', multiple: false } },
   select('application', 'Application', ['leave-gift'], 'leave-gift'),
   { slug: 'body', label: 'Content', type: 'portableText', searchable: true },
   { slug: 'date', label: 'Article date', type: 'datetime' },
@@ -25,4 +26,4 @@ export const thingFields: CreateFieldInput[] = [
   select('background_repeat', 'Background repeat', ['no-repeat', 'repeat', 'repeat-x', 'repeat-y', 'round', 'space'], 'no-repeat'),
   { slug: 'legacy_paths', label: 'Former paths', type: 'json', defaultValue: [] },
 ];
-export const thingsCollection = { slug: 'things', label: 'Things', labelSingular: 'Thing', icon: 'shapes', supports: ['drafts', 'revisions', 'preview', 'search', 'seo'], editLocking: true, routable: true, urlPattern: '/things-preview/{id}', commentsEnabled: false, admin: { listColumns: ['name', 'kind', 'desktop'] } } satisfies CreateCollectionInput;
+export const thingsCollection = { slug: 'things', label: 'Things', labelSingular: 'Thing', icon: 'shapes', supports: ['preview', 'search', 'seo'], editLocking: true, routable: true, urlPattern: '/things-preview/{id}', commentsEnabled: false, admin: { listColumns: ['name', 'kind', 'desktop'] } } satisfies CreateCollectionInput;

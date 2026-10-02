@@ -2,6 +2,7 @@
 import { copyFileSync, existsSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { localDatabase } from './local-database';
+import { migrateThingsLive } from './things-live-migration';
 import { applySeed, ContentRepository, RevisionRepository, OptionsRepository, handleContentUpdate, handleContentPublish, SchemaRegistry, handleContentGet } from 'emdash';
 import { SeoRepository } from '../node_modules/emdash/src/database/repositories/seo';
 import { BylineRepository } from '../node_modules/emdash/src/database/repositories/byline';
@@ -24,8 +25,8 @@ try {
  if(report.brokenParents.length) throw new Error('Broken parent references: '+report.brokenParents.join(', '));
  writeFileSync(output+'.report.json',JSON.stringify(report,null,2));
  if(flag!=='--apply') {console.log(JSON.stringify(report,null,2));await db.destroy();rmSync(temporary);process.exit(0);}
- if(await options.get('liftaris.things.migration.v1')) {await db.destroy();renameSync(temporary,output);console.log('Already migrated; copied unchanged.');process.exit(0);}
- await applySeed(db,{version:'1',collections:[{...thingsCollection,fields:thingFields.map(f=>({...f,validation:f.validation ? {...f.validation} : undefined}))}] },{onConflict:'update'});
+ if(await options.get('liftaris.things.migration.v1')) {await migrateThingsLive(db);await db.destroy();renameSync(temporary,output);console.log('Already migrated; copied unchanged.');process.exit(0);}
+ await applySeed(db,{version:'1',collections:[{...thingsCollection,supports:['drafts','revisions','preview','search','seo'],fields:thingFields.map(f=>({...f,validation:f.validation ? {...f.validation} : undefined}))}] },{onConflict:'update'});
  await new SchemaRegistry(db).updateCollection('posts',{hidden:true,label:'Posts archive'});
  const snapshotDrafts=new Map<string,Record<string,unknown>>();
  for(const entry of [...oldThings,...posts]) if(entry.draftRevisionId) snapshotDrafts.set(entry.id,(await revisions.findById(entry.draftRevisionId))!.data);
@@ -54,6 +55,7 @@ try {
  }
  validateGraph(await policyGraph(db));
  await options.set('liftaris.things.migration.v1',JSON.stringify(report));
+ await migrateThingsLive(db);
  Object.assign(report,{verifiedThings:(await readAll('things')).length,published:(await policyGraph(db)).length});
  writeFileSync(output+'.report.json',JSON.stringify(report,null,2));
  await db.destroy();renameSync(temporary,output);console.log(JSON.stringify(report,null,2));
