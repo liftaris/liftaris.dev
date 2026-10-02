@@ -519,7 +519,7 @@ export function HouseClump({
                 }}
               >
                 <span
-                  className="house-object-art flex items-center justify-center size-full rounded-xl pointer-events-none group-data-[shape=circle]:rounded-full group-data-[has-bg=true]:overflow-hidden [transform:translateZ(0)] opacity-[0.99] [filter:contrast(100.01%)] font-['Apple_Color_Emoji','Segoe_UI_Emoji','Noto_Color_Emoji',sans-serif] has-[.house-object-image]:filter-none has-[.house-object-image]:opacity-100 group-data-[grabbed=true]:opacity-100 group-data-[gift=true]:opacity-100"
+                  className="house-object-art flex items-center justify-center size-full rounded-xl pointer-events-none group-data-[shape=circle]:rounded-full group-data-[has-bg=true]:overflow-hidden [transform:translateZ(0)] opacity-[0.99] [filter:contrast(100.01%)] font-emoji has-[.house-object-image]:filter-none has-[.house-object-image]:opacity-100 group-data-[grabbed=true]:opacity-100 group-data-[gift=true]:opacity-100"
                   aria-hidden="true"
                 >
                   {iconImage ? (
@@ -560,7 +560,7 @@ export function HouseClump({
       aria-hidden={!canShowTrash ? "true" : undefined}
       title="Drag gifts here to remove them"
     >
-      <span className="house-trash-icon flex items-center justify-center pointer-events-none font-['Apple_Color_Emoji','Segoe_UI_Emoji','Noto_Color_Emoji',sans-serif] transition-transform duration-180 [transition-timing-function:cubic-bezier(0.2,0,0,1)] group-data-[over=true]:scale-115 group-data-[over=true]:-rotate-10 motion-reduce:transition-none motion-reduce:[animation:none!important]" aria-hidden="true">🗑️</span>
+      <span className="house-trash-icon flex items-center justify-center pointer-events-none font-emoji transition-transform duration-180 [transition-timing-function:cubic-bezier(0.2,0,0,1)] group-data-[over=true]:scale-115 group-data-[over=true]:-rotate-10 motion-reduce:transition-none motion-reduce:[animation:none!important]" aria-hidden="true">🗑️</span>
     </div>
   </div>;
 }

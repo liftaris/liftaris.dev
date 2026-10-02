@@ -20,10 +20,10 @@
 .thing-savebar { position:sticky; top:-16px; background:var(--color-kumo-base,Canvas); border-bottom:1px solid #8884; padding:12px 0; z-index:3; }
 .thing-savebar span { font-size:12px; flex:1 1 100%; }
 .thing-error { color:var(--text-color-kumo-danger,MarkText); opacity:1!important; }
-.thing-icon-preview { display:grid; place-items:center; height:88px; font-size:54px; background:#8881; border-radius:8px; margin-bottom:12px; }
+.thing-icon-preview { display:grid; place-items:center; height:88px; font-size:54px; font-family:var(--font-emoji,"Noto Emoji Variable","Noto Emoji",sans-serif); background:#8881; border-radius:8px; margin-bottom:12px; }
 .thing-icon-preview img { width:60px; height:60px; object-fit:contain; }
 .thing-emoji-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:4px; margin:8px 0; }
-.thing-emoji-grid button { font-size:24px; padding:5px; border-radius:5px; cursor:pointer; }
+.thing-emoji-grid button { font-size:24px; font-family:var(--font-emoji,"Noto Emoji Variable","Noto Emoji",sans-serif); padding:5px; border-radius:5px; cursor:pointer; }
 .thing-emoji-grid button:hover { background:#8883; }
 .thing-background-preview { max-height:140px; width:100%; object-fit:contain; margin:10px 0; }
 .things-inspector ol { margin:0; padding:0; list-style:none; }

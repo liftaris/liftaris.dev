@@ -58,7 +58,7 @@ export function FolderContent<T>({
           const artwork = (
             <>
               <span
-                className="folder-entry-art grid place-items-center size-14 text-5xl leading-none pointer-events-none select-none [transform:translateZ(0)] data-[has-bg=true]:rounded-lg data-[has-bg=true]:overflow-hidden"
+                className="folder-entry-art grid place-items-center size-14 text-5xl font-emoji leading-none pointer-events-none select-none [transform:translateZ(0)] data-[has-bg=true]:rounded-lg data-[has-bg=true]:overflow-hidden"
                 style={{width:entry.width ?? 60,height:entry.height ?? 60,fontSize:Math.min(entry.width ?? 60,entry.height ?? 60)*.85}}
                 aria-hidden="true"
               >

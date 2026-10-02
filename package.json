@@ -25,6 +25,7 @@
     "@emdash-cms/cloudflare": "1.0.1",
     "@fontsource-variable/geist-mono": "^5.3.0",
     "@fontsource-variable/manrope": "^5.3.0",
+    "@fontsource-variable/noto-emoji": "^5.3.2",
     "@fontsource/young-serif": "^5.3.0",
     "@typesafe-ai/sdk": "0.6.0",
     "astro": "^7.3.5",
