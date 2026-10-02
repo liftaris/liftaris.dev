@@ -62,3 +62,6 @@ Thing collection pages read independent entries concurrently through EmDash's
 public query APIs. They request folder contents only for folders and Post links
 only for linked pages, preserving ordered results and paginated references. This
 avoids a series of database round trips for every icon on each page render.
+
+Page routes omit folder-content references entirely; folder routes load them for
+their grid. Primary ancestry and Post visibility are still resolved in both cases.

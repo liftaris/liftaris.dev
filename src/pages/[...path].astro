@@ -4,7 +4,7 @@ import { pathFor } from '../lib/things/model';
 import { getDb } from 'emdash/runtime';
 import { formerRoute } from '../server/things/routes';
 import ThingPage from '../components/house/ThingPage.astro';
-const things = await readThings('published');
+let things = await readThings('published', { includeContents: false });
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 const thing = things.find(t => pathFor(t,things) === path);
 if (!thing) {
@@ -14,6 +14,8 @@ if (!thing) {
   if(former && former!==path) return Astro.redirect(former,301);
   return Astro.rewrite('/404');
 }
+// Page windows need routing and Post visibility, not every folder's contents.
+if (thing.data.kind === 'folder') things = await readThings('published');
 Astro.cache.set(false);
 ---
 <ThingPage thing={thing} things={things} />

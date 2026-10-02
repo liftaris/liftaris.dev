@@ -15,7 +15,7 @@ test('concurrent Thing reads preserve ordering, pagination, visibility and reque
         options[id]=opts.references;peak=Math.max(peak,++active);await new Promise(r=>setTimeout(r,1));active--;
         const value=entries.find(e=>e.id===id)??data('app','application');
         return {entry:{id,data:value,references:{
-          contents:id==='folder'?{entries:[{data:{id:'article'}}],nextCursor:'more-contents'}:undefined,
+          contents:opts.references.contents && id==='folder'?{entries:[{data:{id:'article'}}],nextCursor:'more-contents'}:undefined,
           post:{entries:id==='article'?[{data:{id:'post-id'}}]:[]},
           primary_folder:{entries:id==='article'?[{data:{id:'folder'}}]:[]},
         }}};
@@ -24,7 +24,9 @@ test('concurrent Thing reads preserve ordering, pagination, visibility and reque
     }));
     const {readThings}=await import(${JSON.stringify(new URL('./read.ts', import.meta.url).href)});
     const rows=await readThings('published');
-    console.log(JSON.stringify({ids:rows.map(r=>r.id),contents:rows[0].contents,post:rows[1].postId,parent:rows[1].primaryFolder,peak,options,seenContexts,restored:context.editMode}));
+    const fullOptions={...options};
+    const routing=await readThings('published',{includeContents:false});
+    console.log(JSON.stringify({routingContents:routing[0].contents,routingOptions:options.folder,ids:rows.map(r=>r.id),contents:rows[0].contents,post:rows[1].postId,parent:rows[1].primaryFolder,peak,options:fullOptions,seenContexts,restored:context.editMode}));
   `;
   const process = Bun.spawnSync([Bun.argv[0], '--eval', script]);
   expect(process.exitCode).toBe(0);
@@ -37,6 +39,8 @@ test('concurrent Thing reads preserve ordering, pagination, visibility and reque
   expect(result.options.folder).toEqual({primary_folder:{limit:1},contents:{limit:100}});
   expect(result.options.article).toEqual({primary_folder:{limit:1},post:{limit:1}});
   expect(result.options.app).toEqual({primary_folder:{limit:1}});
-  expect(result.seenContexts).toEqual([{editMode:false},{editMode:false}]);
+  expect(result.seenContexts).toEqual(Array(4).fill({editMode:false}));
+  expect(result.routingContents).toEqual([]);
+  expect(result.routingOptions).toEqual({primary_folder:{limit:1}});
   expect(result.restored).toBe(true);
 });

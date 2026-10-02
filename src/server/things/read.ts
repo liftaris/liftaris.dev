@@ -5,7 +5,7 @@ import { normalizeData, type ThingRecord } from '../../lib/things/model';
 /** Read independent entries concurrently instead of paying a D1 round trip per Thing.
  * Select only relevant relations and consume every contents cursor.
  */
-export async function readThings(mode: 'request' | 'published' | 'editor' = 'request'): Promise<ThingRecord[]> {
+export async function readThings(mode: 'request' | 'published' | 'editor' = 'request', options: { includeContents?: boolean } = {}): Promise<ThingRecord[]> {
   const read = async () => {
     const rows: ThingRecord[] = [];
     let cursor: string | undefined;
@@ -16,7 +16,7 @@ export async function readThings(mode: 'request' | 'published' | 'editor' = 'req
         const summaryData = summary.data as unknown as Record<string, unknown>;
         const result = await getEmDashEntry('things', summary.data.id, { references: {
           primary_folder: { limit: 1 },
-          ...(summaryData.kind === 'folder' ? { contents: { limit: 100 } } : {}),
+          ...(options.includeContents !== false && summaryData.kind === 'folder' ? { contents: { limit: 100 } } : {}),
           ...(summaryData.page_source === 'post' ? { post: { limit: 1 } } : {}),
         } });
         if (result.error) throw result.error;
