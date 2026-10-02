@@ -1,3 +1,4 @@
+import { ThingControls } from '../house/ThingAuthoring';
 import { useEffect, type ComponentProps } from "react";
 import { getBackgroundStyle, isImageUrl, type BackgroundProps } from "../clump/model";
 import { ObjectWindow } from "../window/ObjectWindow";
@@ -9,6 +10,8 @@ type FolderIcon = BackgroundProps & {
   name: string;
   emoji: string;
   image?: string | null;
+  width?: number;
+  height?: number;
 };
 export type FolderSpec<T> = FolderIcon & { kind: "folder"; items: readonly FolderEntry<T>[] };
 export type FolderEntry<T> = FolderSpec<T> | (FolderIcon & (
@@ -36,7 +39,6 @@ export type FolderContentProps<T> = {
 export function FolderContent<T>({
   folder,
   openedIds = [],
-  thingsConfig,
   monochrome,
   onOpen,
   onOpenFolder,
@@ -52,27 +54,25 @@ export function FolderContent<T>({
     <>
       <ul
         className="folder grid [grid-template-columns:repeat(auto-fill,minmax(min(100%,96px),1fr))] content-start gap-x-3 gap-y-4 m-0 p-0 list-none w-full box-border data-[has-bg=true]:rounded"
-        style={folderBg}
         data-has-bg={folderBg ? true : undefined}
         aria-label={`${folder.name} contents`}
         data-monochrome={monochrome}
       >
         {folder.items.map((entry) => {
           const iconImage = entry.image || (isImageUrl(entry.emoji) ? entry.emoji : null);
-          const entryBg = getBackgroundStyle(entry);
+
           const artwork = (
             <>
               <span
                 className="folder-entry-art grid place-items-center size-14 text-5xl leading-none pointer-events-none select-none [transform:translateZ(0)] data-[has-bg=true]:rounded-lg data-[has-bg=true]:overflow-hidden"
-                style={entryBg}
-                data-has-bg={entryBg ? true : undefined}
+                style={{width:entry.width ?? 60,height:entry.height ?? 60,fontSize:Math.min(entry.width ?? 60,entry.height ?? 60)*.85}}
                 aria-hidden="true"
               >
                 {iconImage ? (
                   <img
                     src={iconImage}
                     alt=""
-                    className="folder-entry-image block size-12 max-w-full max-h-full object-contain pointer-events-none select-none"
+                    className="folder-entry-image block size-full max-w-full max-h-full object-contain pointer-events-none select-none"
                     loading="lazy"
                     decoding="async"
                   />
@@ -85,6 +85,7 @@ export function FolderContent<T>({
           );
           return (
             <li key={entry.id} className="min-w-0">
+              <ThingControls id={entry.id} name={entry.name} />
               {entry.kind === "link" ? (
                 <a
                   className="folder-entry group flex flex-col items-center gap-2 w-full min-h-24 px-1.5 py-2.5 border border-transparent bg-transparent text-inherit font-inherit text-xs leading-[1.4] text-center no-underline [overflow-wrap:anywhere] cursor-pointer touch-manipulation outline-none hover:no-underline hover:bg-blue/7 focus-visible:no-underline focus-visible:outline-none focus-visible:border-transparent aria-disabled:cursor-default aria-disabled:opacity-65"
@@ -120,7 +121,7 @@ export function FolderContent<T>({
           );
         })}
       </ul>
-      {folder.items.length === 0 && <p className="folder-empty m-0 text-xs">This folder is empty.</p>}
+      {folder.items.length === 0 && !folderBg && <p className="folder-empty m-0 text-xs">This folder is empty.</p>}
     </>
   );
 }

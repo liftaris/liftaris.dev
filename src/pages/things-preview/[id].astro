@@ -1,0 +1,21 @@
+---
+import { getEmDashEntry } from 'emdash';
+import { getRequestContext } from 'emdash/request-context';
+import { readThings } from '../../server/things/read';
+import { normalizeData, pathFor, type ThingRecord } from '../../lib/things/model';
+import ThingPage from '../../components/house/ThingPage.astro';
+const result = await getEmDashEntry('things', Astro.params.id!);
+if (result.error?.name === 'LiveEntryNotFoundError') return Astro.rewrite('/404');
+if (result.error) throw result.error;
+if (!result.entry) return Astro.rewrite('/404');
+const entry = result.entry;
+const things = await readThings();
+const existing = things.find(t => t.id === entry.data.id);
+const thing: ThingRecord = {...existing, id:entry.data.id, slug:entry.data.slug || entry.id, status:entry.data.status, data:normalizeData(entry.data as unknown as Record<string,unknown>), contents:existing?.contents ?? [], primaryFolder:existing?.primaryFolder ?? null};
+const context = getRequestContext();
+if (!context?.preview && !context?.editMode) return Astro.redirect(pathFor(thing,things) || '/',302);
+Astro.cache.set(false);
+Astro.response.headers.set('Cache-Control','private, no-store');
+Astro.response.headers.set('X-Robots-Tag','noindex');
+---
+<ThingPage thing={thing} things={things} />

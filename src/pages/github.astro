@@ -2,6 +2,6 @@
 import Portfolio from "../layouts/Portfolio.astro";
 import { GitHubViewer } from "../components/house/GitHubViewer";
 ---
-<Portfolio title="GitHub | Kaio Barbosa" windowTitle="GitHub" windowIcon="/github.svg" restoreSlug="github">
+<Portfolio embedded={Astro.url.searchParams.get("window") === "1"} title="GitHub | Kaio Barbosa" windowTitle="GitHub" windowIcon="/github.svg" restoreSlug="github">
   <GitHubViewer client:idle />
 </Portfolio>

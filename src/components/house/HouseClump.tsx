@@ -1,7 +1,10 @@
+import { Fragment, useContext } from 'react';
+import { AuthoringContext, ThingControls } from './ThingAuthoring';
+import { spawnPoint, normalizedPoint } from '../../lib/things/model';
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
 import { createSceneEngine } from "../clump/matter-engine";
-import { getBackgroundStyle, isGift, isImageUrl, OBJECTS } from "../clump/model";
+import { isGift, isImageUrl, OBJECTS } from "../clump/model";
 import type { ObjectSpec, Point, SceneEngine } from "../clump/model";
 import { giftObjects, worldSize } from "../../lib/house/emoji";
 import { getGift } from "../../lib/house/client";
@@ -27,12 +30,10 @@ function measureViewport(element: HTMLDivElement) {
 }
 
 const EMPTY_IDS: ReadonlySet<string> = new Set();
-const EMPTY_THINGS_CONFIG: Record<string, { default_open?: boolean }> = {};
 
 export function HouseClump({
   gifts,
   inspectedIds,
-  thingsConfig = EMPTY_THINGS_CONFIG,
   desktopObjects,
   isAdmin = false,
   sentGiftIds = EMPTY_IDS,
@@ -50,6 +51,7 @@ export function HouseClump({
   onTrash?: (id: string) => void | Promise<void>;
   testDragId?: string | null;
 }) {
+  const authoring = useContext(AuthoringContext);
   const viewport = useRef<HTMLDivElement>(null);
   const world = useRef<HTMLDivElement>(null);
   const trashRef = useRef<HTMLDivElement>(null);
@@ -101,7 +103,7 @@ export function HouseClump({
       setScale(measured.scale);
     }
     const reduced = matchMedia("(prefers-reduced-motion: reduce)");
-    const scene = createSceneEngine({ scene: "clump", collision: "outline", size: bounds.current, reducedMotion: reduced.matches });
+    const scene = createSceneEngine({ scene: authoring.session ? "apartment" : "clump", collision: "outline", size: bounds.current, reducedMotion: reduced.matches });
     engine.current = scene;
     let frame = 0;
     let previous = 0;
@@ -213,10 +215,11 @@ export function HouseClump({
       bounds.current = next;
       setSize(next);
     }
-    scene.syncObjects(objects);
+    const poses = authoring.session ? objects.map(o=>({id:o.id,angle:0,...spawnPoint({width:o.width,height:o.height,spawn_x:o.spawn_x??.5,spawn_y:o.spawn_y??.5},available.current)})) : [];
+    scene.syncObjects(objects, poses);
     paint.current();
     start.current();
-  }, [objects, displayed.length]);
+  }, [objects, displayed.length, authoring.session]);
 
   const position = (event: ReactPointerEvent): Point => {
     const rect = world.current!.getBoundingClientRect();
@@ -312,10 +315,16 @@ export function HouseClump({
       engine.current?.endDrag(cancel);
     }
 
+    if (!cancel && grab.moved && authoring.session) {
+      const pose = engine.current?.getPoses().find(p=>p.id===grab.id);
+      const object = objects.find(o=>o.id===grab.id);
+      if(pose&&object) authoring.send({type:'position',id:grab.id,...normalizedPoint(pose,object,available.current)});
+    }
     start.current();
   };
 
   const pointerDown = (event: ReactPointerEvent<HTMLButtonElement>, id: string) => {
+    if(authoring.session && authoring.selected!==id) { authoring.send({type:'select',id}); return; }
     if (event.button !== 0 || grabbed.current || retiring.has(id) || pendingTrashIds.has(id)) return;
     event.preventDefault();
     event.currentTarget.focus({ preventScroll: true });
@@ -383,6 +392,7 @@ export function HouseClump({
     }
     if (retiring.has(id) || pendingTrashIds.has(id) || !["arrowleft", "arrowright", "arrowup", "arrowdown"].includes(key)) return;
     event.preventDefault();
+    if (authoring.session && authoring.selected !== id) {authoring.send({type:'select',id});return;}
     if (grabbed.current?.pointerId !== undefined) return;
     const scene = engine.current;
     if (!scene) return;
@@ -442,13 +452,13 @@ export function HouseClump({
             const opened = inspectedIds.includes(object.id);
             const iconImage = ("image" in object && (object as { image?: string | null }).image)
               || (isImageUrl(object.emoji) ? object.emoji : null);
-            const bgStyle = getBackgroundStyle(object);
+
             return (
+              <Fragment key={object.id}>
+              {!isGiftItem && <ThingControls id={object.id} name={object.name} floating />}
               <button
                 type="button"
-                key={object.id}
                 className="house-object group absolute top-0 left-0 flex flex-col items-center m-0 p-0 border-0 bg-transparent cursor-grab touch-none select-none [-webkit-tap-highlight-color:transparent] leading-none no-underline hover:no-underline focus:no-underline focus-visible:no-underline overflow-visible invisible data-[has-bg=true]:overflow-hidden data-[grabbed=true]:z-[3] data-[grabbed=true]:cursor-grabbing data-[window-open=true]:opacity-0 data-[window-open=true]:pointer-events-none data-[trashing=true]:pointer-events-none outline-none hover:outline-none focus:outline-none focus-visible:outline-none data-[gift=true]:[animation:house-arrive_220ms_ease-out] motion-reduce:data-[gift=true]:[animation-duration:1ms] data-[removing=true]:pointer-events-none data-[removing=true]:[animation:house-depart_260ms_ease-in_forwards]"
-                data-has-bg={bgStyle ? true : undefined}
                 data-object={object.id}
                 data-gift={isGiftItem ? "true" : undefined}
                 data-grabbed={grabId === object.id}
@@ -460,6 +470,8 @@ export function HouseClump({
                   width: Math.max(44, object.width),
                   height: Math.max(44, object.height),
                   fontSize: Math.max(object.width, object.height) * 0.87,
+                  outline:authoring.session && authoring.selected===object.id?'2px dashed #516aff':undefined,
+                  outlineOffset:6,
                 }}
                 aria-disabled={disabled || undefined}
                 tabIndex={disabled || opened ? -1 : 0}
@@ -509,7 +521,6 @@ export function HouseClump({
                 <span
                   className="house-object-art flex items-center justify-center size-full rounded-xl pointer-events-none group-data-[shape=circle]:rounded-full group-data-[has-bg=true]:overflow-hidden [transform:translateZ(0)] opacity-[0.99] [filter:contrast(100.01%)] font-['Apple_Color_Emoji','Segoe_UI_Emoji','Noto_Color_Emoji',sans-serif] has-[.house-object-image]:filter-none has-[.house-object-image]:opacity-100 group-data-[grabbed=true]:opacity-100 group-data-[gift=true]:opacity-100"
                   aria-hidden="true"
-                  style={bgStyle}
                 >
                   {iconImage ? (
                     <img
@@ -531,7 +542,7 @@ export function HouseClump({
                     className="absolute top-full left-1/2 -translate-x-1/2 mt-[1px] w-max max-w-[100px] pointer-events-none text-paper [text-shadow:0_1px_2px_rgba(0,0,0,0.7)]"
                   />
                 )}
-              </button>
+              </button></Fragment>
             );
           })}
         </div>

@@ -6,7 +6,17 @@ export type PostThing = ObjectSpec & { kind: "post"; href: string };
 export type HouseThing = ObjectSpec | PostThing | ThingSpec;
 
 export interface ThingSpec extends ObjectSpec {
-  kind: "object" | "folder" | "link" | "action" | "page";
+  kind: "object" | "folder" | "link" | "action" | "page" | "application";
+  slug?: string;
+  contents?: string[];
+  primaryFolder?: string | null;
+  page_source?: 'content' | 'projects' | 'experience' | 'github' | 'clump';
+  application?: 'leave-gift';
+  window_width?: number;
+  window_height?: number;
+  spawn_x?: number;
+  spawn_y?: number;
+  previewUrl?: string;
   desktop: boolean;
   parent_id?: string | null;
   action?: "none" | "projects" | "experience" | "leave-gift" | null;
@@ -58,15 +68,18 @@ export const GITHUB_THING: ThingSpec = {
 export function buildFolder(
   folderThing: ThingSpec,
   allThings: readonly ThingSpec[] = DEFAULT_THINGS,
-  posts: readonly WritingPost[] = []
+  posts: readonly WritingPost[] = [],
+  visited = new Set<string>()
 ): FolderSpec<HouseThing> {
-  const children = allThings
-    .filter((t) => t.parent_id === folderThing.id)
-    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  const nextVisited = new Set(visited).add(folderThing.id);
+  const children = (folderThing.contents
+    ? folderThing.contents.flatMap(id => allThings.find(t => t.id === id) ?? [])
+    : allThings.filter(t => t.parent_id === folderThing.id).sort((a, b) => a.sort_order - b.sort_order))
+    .filter(t => !nextVisited.has(t.id));
 
   const items: FolderEntry<HouseThing>[] = [];
 
-  if (folderThing.id === "writing-folder") {
+  if (!folderThing.contents && folderThing.id === "writing-folder") {
     for (const post of posts) {
       const isImg = isImageUrl(post.icon);
       const value: PostThing = {
@@ -85,7 +98,7 @@ export function buildFolder(
 
   for (const child of children) {
     if (child.kind === "folder") {
-      items.push(buildFolder(child, allThings, posts));
+      items.push(buildFolder(child, allThings, posts, nextVisited));
     } else if (child.kind === "link") {
       const isImg = isImageUrl(child.image) ? child.image : isImageUrl(child.emoji) ? child.emoji : undefined;
       items.push({
@@ -113,6 +126,7 @@ export function buildFolder(
         name: displayName,
         emoji: child.emoji,
         image: child.image,
+        width: child.width, height: child.height,
         background_image: child.background_image,
         background_size: child.background_size,
         background_position: child.background_position,
@@ -151,7 +165,7 @@ export function getDefaultOpenChildren(
 ): ThingSpec[] {
   const result: ThingSpec[] = [];
   const children = allThings
-    .filter((t) => t.parent_id === folderId)
+    .filter((t) => { const folder = allThings.find(f => f.id === folderId); return folder?.contents ? folder.contents.includes(t.id) : t.parent_id === folderId; })
     .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
 
   for (const thing of children) {

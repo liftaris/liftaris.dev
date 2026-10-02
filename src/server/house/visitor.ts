@@ -227,6 +227,20 @@ export async function cmsVisitorGuard(context: APIContext, ownerId: string | und
       return null;
     }
     if (method === "POST" && path === "/_emdash/api/auth/logout") return null;
+    // Gift visitors have a native subscriber session, so EmDash considers them
+    // signed in. Let browser navigation reach owner login instead of stranding
+    // the owner behind that visitor session. API requests remain forbidden.
+    if (exactPath && (method === "GET" || method === "HEAD") &&
+      (path === "/_emdash/admin" || path.startsWith("/_emdash/admin/")) &&
+      context.request.headers.get("Accept")?.includes("text/html") &&
+      !context.request.headers.has("Authorization")) {
+      const login = new URL("/_emdash/admin/login", context.url);
+      login.searchParams.set("redirect", context.url.pathname + context.url.search);
+      return new Response(null, { status: 302, headers: {
+        Location: login.pathname + login.search,
+        "Cache-Control": "private, no-store", Vary: "Cookie, Authorization, Accept",
+      } });
+    }
     return privateJson({ error: "The CMS is only available to the portfolio owner." }, 403);
   } catch (error) {
     return error instanceof HouseError ? privateJson({ error: error.message }, error.status)

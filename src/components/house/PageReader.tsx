@@ -1,21 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import type { ThingSpec } from "./folders";
-import { getCachedWindowHtml, preloadWindowHtml } from "../../lib/house/prefetch";
 
 /** Reuse the server-rendered page without duplicating PortableText in React. */
 export function PageReader({ page }: { page: ThingSpec }) {
   const iframe = useRef<HTMLIFrameElement>(null);
-  const href = page.href || `/p/${encodeURIComponent(page.id)}`;
+  const href = page.previewUrl || page.href || `/things-preview/${encodeURIComponent(page.id)}`;
   const src = `${href}${href.includes("?") ? "&" : "?"}window=1`;
-  const [cachedHtml, setCachedHtml] = useState<string | null>(() => getCachedWindowHtml(src));
-
-  useEffect(() => {
-    if (!cachedHtml) {
-      void preloadWindowHtml(src).then((html) => {
-        if (html) setCachedHtml(html);
-      });
-    }
-  }, [src, cachedHtml]);
 
   useEffect(() => {
     const frame = iframe.current!;
@@ -42,11 +32,7 @@ export function PageReader({ page }: { page: ThingSpec }) {
     frame.addEventListener("load", connect);
     connect();
     return () => { frame.removeEventListener("load", connect); listeners?.abort(); };
-  }, [cachedHtml]);
+  }, [src]);
 
-  return cachedHtml ? (
-    <iframe ref={iframe} className="post-reader block size-full border-0 bg-paper" srcDoc={cachedHtml} title={page.name} />
-  ) : (
-    <iframe ref={iframe} className="post-reader block size-full border-0 bg-paper" src={src} title={page.name} />
-  );
+  return <iframe ref={iframe} className="post-reader block size-full border-0 bg-paper" src={src} title={page.name} />;
 }

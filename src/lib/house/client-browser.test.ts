@@ -83,7 +83,7 @@ check("House orders creation/edit/reclaim snapshots and a created window never r
       if(!releaseCreated)return new Promise(r=>releaseCreated=()=>r(pluginReply(gift)));
       return pluginReply(current);
     };
-    mount(House);clickText('Compose');
+    mount(House,{things:[{id:'leave-gift',kind:'application',application:'leave-gift',name:'Leave a gift',emoji:'🎁',width:60,height:60,desktop:true}]});clickText('Compose');
     await until(()=>document.querySelector('.house-composer'));
     submit('.house-composer');await until(()=>releaseCreated);
     const immediate=!!document.querySelector('#scene [data-object="gift-1"]'), aborted=initialSignal.aborted;

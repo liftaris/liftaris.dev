@@ -59,3 +59,7 @@ dist/
 *.db
 *.db-shm
 *.db-wal
+
+# Private migration snapshots
+.local-backups/
+.worktrees/

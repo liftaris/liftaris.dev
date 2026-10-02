@@ -5,7 +5,7 @@ import type { CreatedGift, Gift, GiftDetail, HouseSnapshot, Viewer } from "../..
 import { findEmoji } from "../../lib/house/emoji";
 import { CreateGiftSchema, UpdateGiftSchema } from "./schemas";
 import { failure } from "./errors";
-import { digest, initializeGiftCollection, initializeThingsCollection } from "./cms-schema";
+import { digest, initializeGiftCollection } from "./cms-schema";
 import { takeQuota } from "./rate-limit";
 
 type Receipt = { id: string; author_id: string; fingerprint: string };
@@ -16,7 +16,6 @@ export class CmsHouseStore {
 
   async initialize(): Promise<void> {
     await initializeGiftCollection(this.db);
-    await initializeThingsCollection(this.db);
   }
 
   async snapshot(): Promise<HouseSnapshot> {

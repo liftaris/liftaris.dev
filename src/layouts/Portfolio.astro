@@ -11,6 +11,7 @@ import { isImageUrl } from "../components/clump/model";
 
 interface Props {
   title?: string;
+  canonicalPath?: string;
   windowTitle?: string;
   windowIcon?: string;
   restoreSlug?: string;
@@ -20,6 +21,7 @@ interface Props {
 const {
   title = "Kaio Barbosa",
   windowTitle,
+  canonicalPath,
   windowIcon,
   restoreSlug,
   content,
@@ -72,7 +74,7 @@ if (!actualRestoreSlug && !isHome) {
 const isIconImage = displayIcon ? isImageUrl(displayIcon) : false;
 const page = createPublicPageContext({ Astro, kind: content ? "content" : "custom", title,
   description: "Software engineer building BazaarGhost and Herm TUI.", content,
-  canonical: new URL(pathname, Astro.site).href, siteName: "Kaio Barbosa" });
+  canonical: new URL(canonicalPath || pathname, Astro.site).href, siteName: "Kaio Barbosa" });
 ---
 <!doctype html>
 <html lang="en" class:list={{ "on-home": isHome }}>

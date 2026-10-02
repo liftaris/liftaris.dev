@@ -18,6 +18,8 @@ export interface ObjectSpec extends Size, BackgroundProps {
   name: string;
   emoji: string;
   image?: string | null;
+  spawn_x?: number;
+  spawn_y?: number;
   anchor?: boolean;
   isGift?: boolean;
 }

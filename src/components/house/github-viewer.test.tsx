@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
-import { GITHUB_THING, DEFAULT_THINGS } from "./folders";
+import { GITHUB_THING } from "./folders";
 import { House } from "./House";
 import { GitHubViewer } from "./GitHubViewer";
 import { GET } from "../../pages/api/github/contributions";
@@ -8,18 +8,14 @@ import { GET } from "../../pages/api/github/contributions";
 import type { APIContext } from "astro";
 
 describe("GitHub custom Thing", () => {
-  test("GITHUB_THING is defined as a custom object and is NOT in DEFAULT_THINGS (not in CMS)", () => {
-    expect(GITHUB_THING.id).toBe("github");
-    expect(GITHUB_THING.name).toBe("GitHub");
-    expect(GITHUB_THING.desktop).toBe(true);
-    expect(GITHUB_THING.image).toBe("/github.svg");
-
-    // Must not be in CMS-seeded DEFAULT_THINGS
-    expect(DEFAULT_THINGS.some((t) => t.id === "github")).toBe(false);
+  test("an empty CMS does not recreate default or GitHub objects", () => {
+    const html = renderToStaticMarkup(<House things={[]} />);
+    expect(html).not.toContain('data-object="github"');
+    expect(html).not.toContain('data-object="computer"');
   });
 
   test("House renders the GitHub Thing on the desktop clump", () => {
-    const html = renderToStaticMarkup(<House />);
+    const html = renderToStaticMarkup(<House things={[{...GITHUB_THING,kind:"page",page_source:"github"}]} />);
     expect(html).toContain('data-object="github"');
     expect(html).toContain('src="/github.svg"');
   });

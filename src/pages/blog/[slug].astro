@@ -1,22 +1,9 @@
 ---
-import { getEmDashEntry } from "emdash";
-import { PortableText } from "emdash/ui";
-import Portfolio from "../../layouts/Portfolio.astro";
-import ThemeImage from "../../components/ThemeImage.astro";
-import ContentImage from "../../components/ContentImage.astro";
-
-const { entry: post, error, cacheHint } = await getEmDashEntry("posts", Astro.params.slug!);
-if (error && error.name !== "LiveEntryNotFoundError") throw error;
-if (!post) return Astro.rewrite("/404");
-Astro.cache.set(cacheHint);
-if (Astro.url.searchParams.get("window") === "1") {
-  Astro.response.headers.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
-}
+import { readThings } from '../../server/things/read';
+import { pathFor } from '../../lib/things/model';
+const things = await readThings('published');
+const path = Astro.url.pathname.replace(/\/$/,'');
+const thing = things.find(t => t.data.legacy_paths?.includes(path));
+if (!thing) return Astro.rewrite('/404');
+return Astro.redirect(pathFor(thing,things)! + (Astro.url.searchParams.get('window') === '1' ? '?window=1' : ''),301);
 ---
-<Portfolio embedded={Astro.url.searchParams.get("window") === "1"} title={`${post.data.title} | Kaio Barbosa`} windowTitle={post.data.title} windowIcon={post.data.icon || "📝"} restoreSlug={Astro.params.slug} content={{ collection: "posts", id: post.data.id, slug: post.id }}>
-  <article class="article-content">
-    <p class="meta">{new Date(post.data.date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })}</p>
-    <h1 {...post.edit.title}>{post.data.title}</h1>
-    <PortableText value={post.data.content} components={{ type: { themeImage: ThemeImage, image: ContentImage } }} />
-  </article>
-</Portfolio>

@@ -1,3 +1,6 @@
+import {isImageUrl,getBackgroundStyle} from "../../components/clump/model";
+import {FolderContent} from "../../components/folder/Folder";
+import {DEFAULT_THINGS} from "../../components/house/folders";
 import { expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { GiftDialog } from "../../components/house/GiftDialog";
@@ -24,7 +27,6 @@ test("redacted detail replaces old public text and attribution while the private
 });
 
 test("isImageUrl correctly identifies image and gif URLs versus emojis", () => {
-  const { isImageUrl } = require("../../components/clump/model");
   expect(isImageUrl("🐙")).toBe(false);
   expect(isImageUrl("📦")).toBe(false);
   expect(isImageUrl("hello world")).toBe(false);
@@ -56,11 +58,10 @@ test("HouseClump renders <img> for things with image or image URL emoji", () => 
   expect(scene).toMatch(/<img src="https:\/\/example\.com\/icon\.webp" alt="" class="house-object-image[^"]*"/);
 
   // Standard emoji thing renders raw emoji text
-  expect(scene).toMatch(/<span class="house-object-art[^"]*" aria-hidden="true">🐙<\/span>/);
+  expect(scene).toMatch(/<span class="house-object-art[^"]*"[^>]* aria-hidden="true">🐙<\/span>/);
 });
 
 test("Folder renders <img> for items and links with image icons", () => {
-  const { FolderContent } = require("../../components/folder/Folder");
   const folderSpec = {
     id: "test-folder",
     name: "Test Folder",
@@ -99,11 +100,10 @@ test("Folder renders <img> for items and links with image icons", () => {
 
   expect(html).toMatch(/<img src="\/images\/sparkle\.gif" alt="" class="folder-entry-image[^"]*"/);
   expect(html).toMatch(/<img src="https:\/\/example\.com\/globe\.avif" alt="" class="folder-entry-image[^"]*"/);
-  expect(html).toMatch(/<span class="folder-entry-art[^"]*" aria-hidden="true">📝<\/span>/);
+  expect(html).toMatch(/<span class="folder-entry-art[^"]*"[^>]* aria-hidden="true">📝<\/span>/);
 });
 
 test("getBackgroundStyle converts background properties into expected CSS rules", () => {
-  const { getBackgroundStyle } = require("../../components/clump/model");
 
   expect(getBackgroundStyle(null)).toBeUndefined();
   expect(getBackgroundStyle(undefined)).toBeUndefined();
@@ -160,7 +160,7 @@ test("getBackgroundStyle converts background properties into expected CSS rules"
   });
 });
 
-test("HouseClump applies background style and data-has-bg to desktop objects", () => {
+test("HouseClump keeps folder backgrounds off desktop icons", () => {
   const customThings = [
     {
       id: "bg-thing",
@@ -179,13 +179,12 @@ test("HouseClump applies background style and data-has-bg to desktop objects", (
   );
 
   expect(scene).toContain('data-object="bg-thing"');
-  expect(scene).toContain('data-has-bg="true"');
-  expect(scene).toContain("background-image:url(&quot;https://example.com/tile.png&quot;)");
-  expect(scene).toContain("background-repeat:repeat");
+  expect(scene).not.toContain('data-has-bg="true"');
+  expect(scene).not.toContain("background-image:url(&quot;https://example.com/tile.png&quot;)");
+  expect(scene).not.toContain("background-repeat:repeat");
 });
 
-test("FolderContent applies background styles to folder and folder entries", () => {
-  const { FolderContent } = require("../../components/folder/Folder");
+test("FolderContent leaves the background on the window surface and off icons", () => {
   const folderSpec = {
     id: "wallpaper-folder",
     name: "Wallpaper Folder",
@@ -210,14 +209,14 @@ test("FolderContent applies background styles to folder and folder entries", () 
 
   const html = renderToStaticMarkup(<FolderContent folder={folderSpec} />);
 
-  // Folder ul receives folder background
+  // The window applies its background once, outside the content grid.
   expect(html).toContain('data-has-bg="true"');
-  expect(html).toContain("background-image:url(&quot;/images/folder-bg.webp&quot;)");
-  expect(html).toContain("background-size:cover");
+  expect(html).not.toContain("background-image:url(&quot;/images/folder-bg.webp&quot;)");
+  expect(html).not.toContain("background-size:cover");
 
-  // Entry artwork receives entry background
-  expect(html).toContain("background-image:url(&quot;/images/star-pattern.png&quot;)");
-  expect(html).toContain("background-repeat:repeat");
+  // Entry artwork does not inherit a window background.
+  expect(html).not.toContain("background-image:url(&quot;/images/star-pattern.png&quot;)");
+  expect(html).not.toContain("background-repeat:repeat");
 });
 
 test("HouseClump renders trash emoji icon at bottom right of landing page physics area", () => {
@@ -312,7 +311,7 @@ test("House accepts thingsConfig with default_open and merges with things specs"
     computer: { default_open: true },
     shoes: { default_open: false },
   };
-  const html = renderToStaticMarkup(<House thingsConfig={thingsConfig} />);
+  const html = renderToStaticMarkup(<House things={DEFAULT_THINGS} thingsConfig={thingsConfig} />);
   expect(html).toMatch(/class="house[^"]*"/);
   expect(html).toContain('data-object="computer"');
 });

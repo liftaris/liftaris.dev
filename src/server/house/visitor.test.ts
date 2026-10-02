@@ -292,3 +292,29 @@ test("promoted visitors cannot enter native visual editing on public pages", asy
   context.locals.user = { id: fixture.sender.id, role: 50, data: { anonymous: true } } as unknown as App.Locals["user"];
   expect((await cmsVisitorGuard(context, fixture.owner.id))?.status).toBe(403);
 });
+
+test("a gift visitor opening the workspace reaches native owner login without changing identity", async () => {
+  const path = "/_emdash/admin/plugins/liftaris-things/workspace?thing=writing-folder";
+  const session = new Session({ id: fixture.sender.id });
+  const { context } = contextFor(new Request(`${origin}${path}`, { headers: { Accept: "text/html" } }), session);
+  const response = await cmsVisitorGuard(context, fixture.owner.id);
+  expect(response?.status).toBe(302);
+  const login = new URL(response!.headers.get("Location")!, origin);
+  expect(login.pathname).toBe("/_emdash/admin/login");
+  expect(login.searchParams.get("redirect")).toBe(path);
+  expect(response?.headers.get("Cache-Control")).toBe("private, no-store");
+  expect(session.value).toEqual({ id: fixture.sender.id });
+  expect(session.writes).toBe(0);
+  const owner = contextFor(new Request(`${origin}${path}`, { headers: { Accept: "text/html" } }), new Session({ id: fixture.owner.id }));
+  expect(await cmsVisitorGuard(owner.context, fixture.owner.id)).toBeNull();
+});
+
+test.each([
+  ["GET", "/_emdash/api/plugins/liftaris-things/graph"],
+  ["POST", "/_emdash/admin/plugins/liftaris-things/workspace"],
+  ["GET", "/%5femdash/admin/plugins/liftaris-things/workspace"],
+  ["GET", "/_emdash/administrator"],
+])("owner login redirect does not weaken the perimeter for %s %s", async (method, path) => {
+  const { context } = contextFor(new Request(`${origin}${path}`, { method, headers: { Accept: "text/html" } }), new Session({ id: fixture.sender.id }));
+  expect((await cmsVisitorGuard(context, fixture.owner.id))?.status).toBe(403);
+});

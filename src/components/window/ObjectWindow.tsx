@@ -26,18 +26,20 @@ type ObjectWindowProps = {
   maximizeUrl?: string;
   restoreAnimation?: boolean;
   onMaximize?: () => void;
+  onAuthorResize?: (size: {width:number;height:number}) => void;
   onReady?: () => void;
   onClose: () => void;
   children?: ReactNode;
 };
 
-export function ObjectWindow({ title, icon, source, fallbackSource, origin, monochrome = false, closeLabel = "Close window", width = 480, height = 380, minWidth = 180, minHeight = 100, resizable = true, className, autoFit = false, canClose = true, initialBounds, backgroundStyle, maximizeUrl, restoreAnimation = false, onMaximize, onReady, onClose, children }: ObjectWindowProps) {
+export function ObjectWindow({ title, icon, source, fallbackSource, origin, monochrome = false, closeLabel = "Close window", width = 480, height = 380, minWidth = 180, minHeight = 100, resizable = true, className, autoFit = false, canClose = true, initialBounds, backgroundStyle, maximizeUrl, restoreAnimation = false, onMaximize, onReady, onAuthorResize, onClose, children }: ObjectWindowProps) {
   const [body, setBody] = useState<HTMLElement | null>(null);
   const [error, setError] = useState(false);
   const initial = useRef({ source, origin, width, height, minWidth, minHeight, resizable, initialBounds, className });
   const windowInstance = useRef<WinBox | null>(null);
   const readyFired = useRef(false);
   const isAnimating = useRef(false);
+  const resizeCallback = useRef(onAuthorResize); resizeCallback.current = onAuthorResize;
   const close = useRef(onClose);
   close.current = onClose;
   const closeAllowed = useRef(canClose);
@@ -121,6 +123,12 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
     }
   }, [body, autoFit]);
 
+  useLayoutEffect(() => {
+    const win = windowInstance.current;
+    if(!win || !body || !onAuthorResize || win.max || isAnimating.current)return;
+    win.resize(Math.min(width,innerWidth-24),Math.min(height,innerHeight-40));
+  },[body,width,height,onAuthorResize]);
+
   // Capture focus before React removes portal children on parent-driven close.
   useLayoutEffect(() => {
     // Geometry and source belong to this mounted window, not its changing content.
@@ -144,7 +152,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
           <button type="button" class="object-window-icon"></button>
           <div class="object-window-handle" tabindex="0" role="button"><div class="wb-title"></div></div>
         </div>
-      </div><div class="wb-body"></div>`;
+      </div><div class="wb-body"></div><div class="wb-n"></div><div class="wb-s"></div><div class="wb-e"></div><div class="wb-w"></div><div class="wb-ne"></div><div class="wb-nw"></div><div class="wb-se"></div><div class="wb-sw"></div>`;
       let closing = false;
       const options: WinBox.Params & { template: HTMLElement } = {
         root: document.body,
@@ -179,6 +187,15 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
       windowInstance.current = win;
       const frame = win.window as HTMLElement;
       frame.setAttribute("role", "dialog");
+      let sizing = false;
+      const resizeStart = (event: PointerEvent) => { sizing = event.target instanceof HTMLElement && /^wb-(n|s|e|w|ne|nw|se|sw)$/.test(event.target.className); };
+      const resizeEnd = () => {
+        if(sizing && !win.max && !isAnimating.current) resizeCallback.current?.({width:Math.round(Number(win.width)),height:Math.round(Number(win.height))});
+        sizing=false;
+      };
+      frame.addEventListener('pointerdown',resizeStart);
+      document.addEventListener('pointerup',resizeEnd);
+
       const iconButton = frame.querySelector<HTMLButtonElement>(".object-window-icon")!;
       iconButton.title = "Drag to move; click to minimize";
       // WinBox owns movement; the pointer gesture only distinguishes a click from a drag.
@@ -491,6 +508,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
       }
       setBody(win.body);
       detach = () => {
+        frame.removeEventListener('pointerdown',resizeStart); document.removeEventListener('pointerup',resizeEnd);
         window.removeEventListener("resize", fit);
         document.removeEventListener("focusin", trackFocus);
         frame.removeEventListener("keydown", keyboard);

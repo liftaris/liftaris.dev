@@ -1,0 +1,107 @@
+[
+  {
+    "slug": "octopus",
+    "contents": [],
+    "primary": null
+  },
+  {
+    "slug": "computer",
+    "contents": [],
+    "primary": "portfolio-folder"
+  },
+  {
+    "slug": "shoes",
+    "contents": [],
+    "primary": null
+  },
+  {
+    "slug": "globe",
+    "contents": [],
+    "primary": null
+  },
+  {
+    "slug": "plant",
+    "contents": [],
+    "primary": null
+  },
+  {
+    "slug": "cloud",
+    "contents": [],
+    "primary": null
+  },
+  {
+    "slug": "bike",
+    "contents": [],
+    "primary": null
+  },
+  {
+    "slug": "boots",
+    "contents": [],
+    "primary": null
+  },
+  {
+    "slug": "light",
+    "contents": [],
+    "primary": null
+  },
+  {
+    "slug": "case",
+    "contents": [],
+    "primary": "portfolio-folder"
+  },
+  {
+    "slug": "leave-gift",
+    "contents": [],
+    "primary": null
+  },
+  {
+    "slug": "portfolio-folder",
+    "contents": [
+      "computer",
+      "case",
+      "lab-folder"
+    ],
+    "primary": null
+  },
+  {
+    "slug": "writing",
+    "contents": [
+      "understanding-l-systems",
+      "bazaar-ghost",
+      "building-a-website"
+    ],
+    "primary": null
+  },
+  {
+    "slug": "lab-folder",
+    "contents": [
+      "clump-lab"
+    ],
+    "primary": "portfolio-folder"
+  },
+  {
+    "slug": "clump-lab",
+    "contents": [],
+    "primary": "lab-folder"
+  },
+  {
+    "slug": "understanding-l-systems",
+    "contents": [],
+    "primary": "writing"
+  },
+  {
+    "slug": "bazaar-ghost",
+    "contents": [],
+    "primary": "writing"
+  },
+  {
+    "slug": "building-a-website",
+    "contents": [],
+    "primary": "writing"
+  },
+  {
+    "slug": "github",
+    "contents": [],
+    "primary": null
+  }
+]

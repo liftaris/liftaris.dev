@@ -1,3 +1,4 @@
+import { AuthoringContext, useThingPreview, ThingsToolbar } from './ThingAuthoring';
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { ensureViewer, getHouse, houseMutations, reclaimGift } from "../../lib/house/client";
@@ -6,27 +7,18 @@ import { giftObjects } from "../../lib/house/emoji";
 import { GiftComposer } from "./GiftComposer";
 import { GiftDialog } from "./GiftDialog";
 import { HouseClump } from "./HouseClump";
-import { getBackgroundStyle, isImageUrl } from "../clump/model";
+import { getBackgroundStyle } from "../clump/model";
 import { ObjectWindow } from "../window/ObjectWindow";
 import { Folder, type FolderSpec } from "../folder/Folder";
 import {
-  DEFAULT_THINGS,
-  GITHUB_THING,
-  PORTFOLIO_FOLDER_OBJECT,
-  WRITING_FOLDER_OBJECT,
   buildFolder,
-  writingFolder,
   getDefaultOpenChildren,
   getInitialDefaultOpenThings,
   type HouseThing,
-  type PostThing,
   type ThingSpec,
   type WritingPost,
 } from "./folders";
-import { PostReader } from "./PostReader";
 import { PageReader } from "./PageReader";
-import { GitHubViewer } from "./GitHubViewer";
-import { Stage } from "../../../components/Stage";
 
 const EMPTY_GIFTS: readonly Gift[] = [];
 type OpenedThing = { object: HouseThing | FolderSpec<HouseThing>; gift?: Gift; detail?: GiftDetail; origin: DOMRect; source: HTMLButtonElement; previewBounds?: DOMRect; restoreAnimation?: boolean; onReady?: () => void };
@@ -56,55 +48,25 @@ function saveSentGiftIds(ids: ReadonlySet<string>): void {
 }
 
 function isFolderObject(id: string, kind?: string): boolean {
-  return kind === "folder" || id === "portfolio-folder" || id === "writing-folder" || id === "lab-folder" || id.endsWith("-folder");
+  return kind === "folder";
 }
 
 export function House({
   posts = EMPTY_POSTS,
-  things = DEFAULT_THINGS,
+  things = [],
+  editMode = false,
+  initialFolderId,
   thingsConfig,
 }: {
   posts?: readonly WritingPost[];
   things?: readonly ThingSpec[];
+  editMode?: boolean;
+  initialFolderId?: string;
   thingsConfig?: Record<string, { default_open?: boolean }>;
 }) {
-  const effectiveThings = useMemo(() => {
-    const list = [...things];
-    if (!list.some((t) => t.id === GITHUB_THING.id)) {
-      list.push(GITHUB_THING);
-    }
-    return list.map((t) => {
-      const override = thingsConfig?.[t.id];
-      if (!override) return t;
-      return {
-        ...t,
-        ...(override.default_open !== undefined ? { default_open: override.default_open } : {}),
-      };
-    });
-  }, [things, thingsConfig]);
-
-  const foldersById = useMemo(() => {
-    const map = new Map<string, FolderSpec<HouseThing>>();
-    for (const thing of effectiveThings) {
-      if (thing.kind === "folder") {
-        map.set(thing.id, buildFolder(thing, effectiveThings, posts));
-      }
-    }
-    if (!map.has("writing-folder")) {
-      map.set("writing-folder", writingFolder(posts, effectiveThings));
-    }
-    if (!map.has("portfolio-folder")) {
-      const pfThing = effectiveThings.find((t) => t.id === "portfolio-folder") ?? DEFAULT_THINGS.find((t) => t.id === "portfolio-folder")!;
-      map.set("portfolio-folder", buildFolder(pfThing, effectiveThings, posts));
-    }
-    return map;
-  }, [effectiveThings, posts]);
-
-  const desktopThings = useMemo(() => {
-    const dt = effectiveThings.filter((t) => t.desktop);
-    return dt.length > 0 ? dt : undefined;
-  }, [effectiveThings]);
-
+  const { things: effectiveThings, authoring } = useThingPreview(things, editMode);
+  const foldersById = useMemo(() => new Map(effectiveThings.filter(t=>t.kind==='folder').map(t=>[t.id,buildFolder(t,effectiveThings)])),[effectiveThings]);
+  const desktopThings = useMemo(() => effectiveThings.filter(t=>t.desktop),[effectiveThings]);
   const mergedThingsConfig = useMemo(() => {
     const config: Record<string, { default_open?: boolean }> = {};
     for (const thing of effectiveThings) {
@@ -240,6 +202,7 @@ export function House({
   }, [mutate]);
   useEffect(() => {
     setReady(true);
+    if(authoring.session)return;
     let active = true;
     const controller = new AbortController();
     initialRead.current = controller;
@@ -262,38 +225,13 @@ export function House({
     initialOpenDone.current = true;
 
     const urlParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
-    const restoreSlug = urlParams?.get("restore");
+    const restoreSlug = initialFolderId ?? urlParams?.get("restore");
 
-    const toOpen = [...getInitialDefaultOpenThings(effectiveThings)];
+    const toOpen = authoring.session ? [] : [...getInitialDefaultOpenThings(effectiveThings)];
 
     let restoredId: string | null = null;
     if (restoreSlug) {
-      let restoredThing: HouseThing | undefined;
-      if (restoreSlug === "projects") {
-        restoredThing = effectiveThings.find((t) => t.action === "projects" || t.id === "computer");
-      } else if (restoreSlug === "experience") {
-        restoredThing = effectiveThings.find((t) => t.action === "experience" || t.id === "case");
-      } else if (restoreSlug === "github") {
-        restoredThing = GITHUB_THING;
-      } else {
-        const post = posts.find((p) => p.slug === restoreSlug || p.id === restoreSlug);
-        if (post) {
-          const isImg = isImageUrl(post.icon);
-          const postThing: PostThing = {
-            kind: "post",
-            id: `post:${post.id}`,
-            name: post.title,
-            emoji: isImg ? "📝" : post.icon,
-            image: isImg ? post.icon : undefined,
-            href: `/blog/${encodeURIComponent(post.slug)}`,
-            width: 56,
-            height: 64,
-          };
-          restoredThing = postThing;
-        } else {
-          restoredThing = effectiveThings.find((t) => t.id === restoreSlug || t.href?.includes(restoreSlug));
-        }
-      }
+      const restoredThing = effectiveThings.find(t=>t.id===restoreSlug || t.slug===restoreSlug || t.page_source===restoreSlug || t.href===`/${restoreSlug}`);
 
       if (restoredThing) {
         restoredId = (restoredThing as HouseThing).id;
@@ -343,12 +281,22 @@ export function House({
       });
       return next;
     });
-  }, [effectiveThings, foldersById, posts]);
+  }, [effectiveThings, foldersById, posts, initialFolderId]);
 
+  useEffect(() => {
+    if (!editMode) return;
+    setOpened(items => items.flatMap(item => {
+      if(item.gift) return [item];
+      const updated = foldersById.get(item.object.id) ?? effectiveThings.find(t=>t.id===item.object.id);
+      return updated ? [{...item,object:updated}] : [];
+    }));
+  }, [effectiveThings,foldersById,editMode]);
+  const geometry = (id: string) => authoring.session ? (size: {width:number;height:number}) => authoring.send({type:'resize',id,window_width:size.width,window_height:size.height}) : undefined;
   return (
+    <AuthoringContext.Provider value={authoring}><ThingsToolbar />
     <div className="house flex flex-col size-full min-w-0 min-h-0 @container text-paper" data-ready={ready}>
       <HouseClump
-        gifts={snapshot?.gifts ?? EMPTY_GIFTS}
+        gifts={authoring.session ? EMPTY_GIFTS : snapshot?.gifts ?? EMPTY_GIFTS}
         inspectedIds={opened.map((item) => item.object.id)}
         thingsConfig={mergedThingsConfig}
         desktopObjects={desktopThings}
@@ -361,49 +309,35 @@ export function House({
       {sessionError && <p className="house-connection shrink-0 max-h-[30%] overflow-auto mt-2 px-4 text-center text-xs" role="status">{sessionError}</p>}
 
       {opened.map((item) => {
+        const spec = effectiveThings.find(t=>t.id===item.object.id);
         const folder = "kind" in item.object && item.object.kind === "folder" && "items" in item.object ? (item.object as FolderSpec<HouseThing>) : undefined;
-        const post = "kind" in item.object && item.object.kind === "post" ? item.object : undefined;
         const page = "kind" in item.object && item.object.kind === "page" ? (item.object as ThingSpec) : undefined;
         const parentFolderId = "parent_id" in item.object && item.object.parent_id ? item.object.parent_id : undefined;
         const fallbackSource = () => document.querySelector<HTMLButtonElement>(`[data-folder-entry="${CSS.escape(item.object.id)}"]`)
           ?? document.querySelector<HTMLButtonElement>(`[data-object="${CSS.escape(item.object.id)}"]:not([data-removing="true"])`)
           ?? (parentFolderId ? document.querySelector<HTMLButtonElement>(`[data-object="${CSS.escape(parentFolderId)}"]`) : null)
-          ?? document.querySelector<HTMLButtonElement>(`[data-object="${post ? WRITING_FOLDER_OBJECT.id : PORTFOLIO_FOLDER_OBJECT.id}"]`)
           ?? document.querySelector<HTMLButtonElement>('[data-object="leave-gift"]');
         if (folder) return <Folder key={item.object.id} folder={folder}
           origin={item.origin} source={item.source} fallbackSource={fallbackSource} monochrome openedIds={opened.map((entry) => entry.object.id)}
           thingsConfig={mergedThingsConfig}
+          width={spec?.window_width} height={spec?.window_height} onAuthorResize={geometry(item.object.id)}
+          maximizeUrl={spec?.href ?? undefined}
           restoreAnimation={item.restoreAnimation}
           onOpen={open} onOpenFolder={open} onClose={() => close(item.object.id)} />;
-        const action = "action" in item.object ? item.object.action : undefined;
-        const isGitHub = item.object.id === GITHUB_THING.id;
-        const view = action === "projects" || item.object.id === "computer" ? "projects" : action === "experience" || item.object.id === "case" ? "experience" : undefined;
-        const composing = action === "leave-gift" || item.object.id === "leave-gift";
-        const title = isGitHub ? "GitHub" : view === "projects" ? "Projects" : view === "experience" ? "Experience" : item.object.name;
-        const icon = ("image" in item.object && (item.object as { image?: string | null }).image) || item.object.emoji;
-        const bgStyle = getBackgroundStyle("background_image" in item.object ? item.object : undefined);
-        const maximizeUrl = isGitHub
-          ? "/github"
-          : view === "projects"
-          ? "/projects"
-          : view === "experience"
-          ? "/experience"
-          : post
-          ? post.href
-          : page
-          ? page.href || `/p/${encodeURIComponent(page.id)}`
-          : undefined;
+        const composing = spec?.kind === 'application' && spec.application === 'leave-gift';
+        const title = item.object.name;
+        const icon = item.object.image || item.object.emoji;
+        const bgStyle = spec?.kind === 'folder' ? getBackgroundStyle(spec) : undefined;
+        const maximizeUrl = spec?.href ?? undefined;
         return <ObjectWindow key={item.object.id} title={title} icon={icon} origin={item.origin} source={item.source} fallbackSource={fallbackSource}
-          className={isGitHub ? "github-window" : undefined}
-          autoFit={isGitHub}
           maximizeUrl={maximizeUrl}
           restoreAnimation={item.restoreAnimation}
-          width={isGitHub ? 770 : post || page ? 780 : composing ? 640 : undefined} height={isGitHub ? 272 : post || page ? 720 : composing ? 660 : undefined} canClose={!composing || !savingGift}
+          width={spec?.window_width} height={spec?.window_height} onAuthorResize={geometry(item.object.id)} canClose={!composing || !savingGift}
           initialBounds={item.previewBounds} backgroundStyle={bgStyle} onReady={item.onReady}
           monochrome={!item.gift} closeLabel={item.gift ? "Close gift" : undefined} onClose={() => close(item.object.id)}>
-          {item.gift ? <GiftDialog gift={item.gift} initialDetail={item.detail} onClose={() => close(item.object.id)} onDetail={refreshDetail} mutate={mutate} /> : composing ? <GiftComposer onGift={(gift, bounds, form) => receiveGift(item, gift, bounds, form)} mutate={mutate} onSavingChange={setSavingGift} /> : post ? <PostReader post={post} /> : page ? <PageReader page={page} /> : isGitHub ? <GitHubViewer /> : view ? <Stage view={view} /> : null}
+          {item.gift ? <GiftDialog gift={item.gift} initialDetail={item.detail} onClose={() => close(item.object.id)} onDetail={refreshDetail} mutate={mutate} /> : composing ? <GiftComposer onGift={(gift, bounds, form) => receiveGift(item, gift, bounds, form)} mutate={mutate} onSavingChange={setSavingGift} /> : page ? <PageReader page={page} /> : null}
         </ObjectWindow>;
       })}
-    </div>
+    </div></AuthoringContext.Provider>
   );
 }

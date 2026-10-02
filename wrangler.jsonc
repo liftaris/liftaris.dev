@@ -78,14 +78,14 @@
       {
         "binding": "DB",
         // Preview gifts, native users and CMS content never touch production.
-        "database_name": "liftaris-emdash-preview",
-        "database_id": "a5e64636-afe8-44f9-87e6-5055554edda9"
+        "database_name": "liftaris-things-authoring-preview",
+        "database_id": "6bf414ef-c86a-4674-b7ab-e0dac70f7bf6"
       }
     ],
     "r2_buckets": [
       {
         "binding": "MEDIA",
-        "bucket_name": "liftaris-emdash-media-preview"
+        "bucket_name": "liftaris-things-authoring-media"
       }
     ],
     "images": {

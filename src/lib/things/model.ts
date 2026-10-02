@@ -1,0 +1,112 @@
+/** Shared authoring/rendering contract. CMS references stay separate from field data. */
+export const STUDIO_PATH = '/_emdash/admin/plugins/liftaris-things/workspace';
+export const PAGE_SOURCES = { content: null, projects: '/projects', experience: '/experience', github: '/github', clump: '/lab/clump' } as const;
+export type ThingKind = 'page' | 'folder' | 'application';
+export type ThingData = {
+  name: string; kind: ThingKind; icon_type: 'emoji' | 'image'; emoji: string; image: unknown;
+  width: number; height: number; window_width: number; window_height: number;
+  desktop: boolean; default_open: boolean; sort_order: number; spawn_x: number; spawn_y: number;
+  page_source: keyof typeof PAGE_SOURCES; body: unknown[]; date?: string | null;
+  application: 'leave-gift'; path_override: string; background_image: unknown;
+  background_size: string; background_position: string; background_repeat: string;
+  legacy_paths: string[];
+};
+export interface ThingRecord {
+  id: string; slug: string; status: string; data: ThingData;
+  contents: string[]; primaryFolder: string | null;
+}
+export const DEFAULT_DATA: ThingData = {
+  name: 'New Thing', kind: 'folder', icon_type: 'emoji', emoji: '📦', image: null,
+  width: 60, height: 60, window_width: 480, window_height: 380, desktop: true,
+  default_open: false, sort_order: 0, spawn_x: .5, spawn_y: .5,
+  page_source: 'content', body: [], application: 'leave-gift', path_override: '',
+  background_image: null, background_size: 'cover', background_position: 'center', background_repeat: 'no-repeat', legacy_paths: [],
+};
+export function slugFromName(name: string): string {
+  return name.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'thing';
+}
+export function mediaUrl(value: unknown): string | null {
+  if (typeof value === 'string') return value.startsWith('/') || /^https?:\/\//.test(value) ? value : null;
+  if (!value || typeof value !== 'object') return null;
+  const v = value as Record<string, unknown>;
+  const meta = v.meta as Record<string, unknown> | undefined;
+  return typeof v.src === 'string' ? v.src : typeof v.url === 'string' ? v.url : typeof meta?.storageKey === 'string' ? '/_emdash/api/media/file/' + meta.storageKey : null;
+}
+export function normalizeData(data: Record<string, unknown>): ThingData {
+  return { ...DEFAULT_DATA, ...data } as ThingData;
+}
+export function pathFor(thing: ThingRecord, all: readonly ThingRecord[], seen = new Set<string>()): string | null {
+  if (seen.has(thing.id)) throw new Error('Primary folders cannot form a cycle.');
+  seen.add(thing.id);
+  if (thing.data.kind === 'application') return null;
+  const builtin = thing.data.kind === 'page' ? PAGE_SOURCES[thing.data.page_source] : null;
+  if (builtin) return builtin;
+  if (thing.data.path_override) return validPath(thing.data.path_override);
+  const segment = thing.slug;
+  if (!/^[a-z0-9][a-z0-9_-]*$/.test(segment)) throw new Error(`Choose a lowercase URL slug for ${thing.data.name}.`);
+  if (!thing.primaryFolder) return '/' + segment;
+  const parent = all.find(t => t.id === thing.primaryFolder);
+  if (!parent || parent.data.kind !== 'folder') throw new Error(`${thing.data.name} needs an available primary folder.`);
+  return `${pathFor(parent, all, seen)}/${segment}`;
+}
+export function validPath(path: string): string {
+  if (!/^\/(?:[a-z0-9][a-z0-9_-]*)(?:\/[a-z0-9][a-z0-9_-]*)*$/.test(path)) throw new Error('Use a site path such as /writing/my-post, with lowercase URL segments.');
+  return path;
+}
+const RESERVED = new Set(['api', '_emdash', '_astro', '_image', 'admin', 'p', 'blog', 'things-preview', '404', 'work', 'posts', 'lab']);
+export function validateGraph(all: readonly ThingRecord[]): void {
+  const routes = new Map<string, string>();
+  const visit = (thing: ThingRecord, seen: Set<string>) => {
+    if (seen.has(thing.id)) throw new Error('Folders cannot contain themselves or an ancestor.');
+    const next = new Set(seen).add(thing.id);
+    for (const id of thing.contents) {
+      const child = all.find(t => t.id === id);
+      if (child?.data.kind === 'folder') visit(child, next);
+    }
+  };
+  for (const thing of all) {
+    if (!['page','folder','application'].includes(thing.data.kind)) throw new Error(`Choose a valid kind for ${thing.data.name}.`);
+    if (!thing.data.name?.trim()) throw new Error('Every Thing needs a name.');
+    // Validate ancestry independently of URL generation: overrides and built-in
+    // routes must not hide a cycle or an unavailable parent.
+    const ancestors = new Set([thing.id]);
+    let parentId = thing.primaryFolder;
+    while (parentId) {
+      if (ancestors.has(parentId)) throw new Error('Primary folders cannot form a cycle.');
+      ancestors.add(parentId);
+      const parent = all.find(t => t.id === parentId);
+      if (!parent || parent.data.kind !== 'folder') throw new Error(`${thing.data.name} needs a published primary folder.`);
+      parentId = parent.primaryFolder;
+    }
+    if (thing.data.kind === 'folder') visit(thing, new Set());
+    const path = pathFor(thing, all);
+    if (!path) continue;
+    const builtin = thing.data.kind === 'page' && PAGE_SOURCES[thing.data.page_source] === path;
+    if ((!builtin && RESERVED.has(path.split('/')[1])) || (!builtin && Object.values(PAGE_SOURCES).includes(path as '/projects'))) throw new Error(`${path} is reserved by the site.`);
+    if (routes.has(path)) throw new Error(`${path} is already used by another Thing.`);
+    routes.set(path, thing.id);
+  }
+}
+export function dependentNames(id: string, all: readonly ThingRecord[]): string[] {
+  return all.filter(t => t.primaryFolder === id).map(t => t.data.name);
+}
+export function canAddToFolder(folderId: string, candidateId: string, all: readonly ThingRecord[]): boolean {
+  const visited = new Set<string>();
+  const reachesFolder = (id: string): boolean => {
+    if (id === folderId) return true;
+    if (visited.has(id)) return false;
+    visited.add(id);
+    const candidate = all.find(t => t.id === id);
+    return candidate?.data.kind === 'folder' && candidate.contents.some(reachesFolder);
+  };
+  return !reachesFolder(candidateId);
+}
+export function spawnPoint(data: Pick<ThingData, 'spawn_x' | 'spawn_y' | 'width' | 'height'>, size: {width: number; height: number}) {
+  return { x: data.width / 2 + 5 + data.spawn_x * Math.max(0, size.width - data.width - 10),
+    y: data.height / 2 + 5 + data.spawn_y * Math.max(0, size.height - data.height - 32) };
+}
+export function normalizedPoint(point: {x: number; y: number}, data: {width: number; height: number}, size: {width: number; height: number}) {
+  const clamp = (n: number) => Math.max(0, Math.min(1, n));
+  return { spawn_x: clamp((point.x - data.width / 2 - 5) / Math.max(1, size.width - data.width - 10)),
+    spawn_y: clamp((point.y - data.height / 2 - 5) / Math.max(1, size.height - data.height - 32)) };
+}

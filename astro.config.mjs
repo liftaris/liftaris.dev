@@ -32,7 +32,12 @@ export default defineConfig({
   integrations: [react(), emdash({
     database: d1({ binding: "DB" }),
     storage: r2({ binding: "MEDIA" }),
+    toolbar: "client",
     plugins: [{
+      id: "liftaris-things", version: "1.0.0", format: "native",
+      entrypoint: fileURLToPath(new URL("./src/plugins/things.ts", import.meta.url)),
+      adminEntry: "/src/plugins/things/admin.tsx",
+    }, {
       id: "liftaris-theme-image",
       version: "1.0.0",
       format: "native",

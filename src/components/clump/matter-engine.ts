@@ -1,3 +1,4 @@
+import { spawnPoint } from '../../lib/things/model';
 import Matter from "matter-js";
 import { createCollider } from "./colliders";
 import {
@@ -96,7 +97,9 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
       ? { ...seed, x: size.width / 2 + (seed.x - size.width / 2) * 0.76,
         y: size.height / 2 + (seed.y - size.height / 2) * 0.82 }
       : seed;
-    const pose = contain(poseOverride ?? supplied ?? initial, object, size);
+    const authored = object.spawn_x !== undefined && object.spawn_y !== undefined
+      ? {id:object.id,angle:0,...spawnPoint({width:object.width,height:object.height,spawn_x:object.spawn_x,spawn_y:object.spawn_y},size)} : undefined;
+    const pose = contain(poseOverride ?? supplied ?? authored ?? initial, object, size);
     const body = createCollider(object, pose, options.collision, isFixed(object, options.scene));
     if (isGift(object)) {
       body.frictionAir = 0.012;
@@ -202,8 +205,16 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
       }
       items = objects.map((object, index) => {
         const existing = byId.get(object.id);
-        if (existing) return existing;
-        const item = makeItem(object, index, poses.find((pose) => pose.id === object.id));
+        if (existing && existing.object.width === object.width && existing.object.height === object.height) {
+          existing.object = object;
+          const pose = poses.find(p=>p.id===object.id);
+          if(pose && !drag) setPose(existing,pose);
+          return existing;
+        }
+        const previous = existing ? poseOf(object.id,existing.body) : undefined;
+        if(existing) { if(drag?.item===existing)endDrag(true); Composite.remove(engine.world,existing.body); }
+
+        const item = makeItem(object, index, poses.find((pose) => pose.id === object.id) ?? previous);
         byId.set(object.id, item);
         Composite.add(engine.world, item.body);
         return item;
