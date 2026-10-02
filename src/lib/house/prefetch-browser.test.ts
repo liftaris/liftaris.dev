@@ -18,7 +18,10 @@ check('hover and keyboard focus warm embedded pages with native Astro prefetch, 
   const result = browser('eval', `(async () => {
     const until = async (test) => {const end = Date.now()+20000;while(!test()){if(Date.now()>end)throw Error('Timed out');await new Promise(r=>setTimeout(r,30));}};
     await until(()=>document.querySelector('[data-object="computer"]'));
-    await new Promise(r=>setTimeout(r,1500));
+    // Visitor initialization sets a cookie. Wait for its POST + confirming GET:
+    // a cookie change correctly invalidates Vary: Cookie between hover and open.
+    const identity = new URL('/api/house/me',location.href).href;
+    await until(()=>performance.getEntriesByName(identity).filter(e=>e.responseEnd>0).length>=2);
     const icon = document.querySelector('[data-object="computer"]');
     icon.dispatchEvent(new PointerEvent('pointerover',{bubbles:true,pointerType:'mouse'}));
     const embedded = new URL('/projects?window=1',location.href).href;
