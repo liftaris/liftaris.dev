@@ -81,10 +81,18 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
   }, [body, onReady]);
 
   useLayoutEffect(() => {
-    if (maximizeUrl) {
+    const button = body?.closest(".object-window")?.querySelector(".wb-max");
+    if (!button || !maximizeUrl) return;
+    const prefetch = () => {
       void import("astro:prefetch").then(({ prefetch }) => prefetch(maximizeUrl)).catch(() => {});
-    }
-  }, [maximizeUrl]);
+    };
+    button.addEventListener("pointerenter", prefetch);
+    button.addEventListener("focus", prefetch);
+    return () => {
+      button.removeEventListener("pointerenter", prefetch);
+      button.removeEventListener("focus", prefetch);
+    };
+  }, [body, maximizeUrl]);
 
   useLayoutEffect(() => {
     const win = windowInstance.current;

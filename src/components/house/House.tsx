@@ -66,7 +66,7 @@ export function House({
 }) {
   const { things: effectiveThings, authoring } = useThingPreview(things, editMode);
   const foldersById = useMemo(() => new Map(effectiveThings.filter(t=>t.kind==='folder').map(t=>[t.id,buildFolder(t,effectiveThings)])),[effectiveThings]);
-  const desktopThings = useMemo(() => effectiveThings.filter(t=>t.desktop).map(t=>({...t,items:foldersById.get(t.id)?.items})),[effectiveThings,foldersById]);
+  const desktopThings = useMemo(() => effectiveThings.filter(t=>t.desktop),[effectiveThings]);
   const mergedThingsConfig = useMemo(() => {
     const config: Record<string, { default_open?: boolean }> = {};
     for (const thing of effectiveThings) {

@@ -18,21 +18,12 @@ export function windowPageUrl(href: string): string {
 }
 
 export function getThingPrefetchUrls(thing?: Target | null): string[] {
-  const urls = new Set<string>();
-  const visited = new Set<Target>();
-  function visit(target?: Target | null) {
-    if (!target || target.previewUrl || visited.has(target)) return;
-    visited.add(target);
-    for (const entry of target.items ?? []) {
-      if (entry && typeof entry === 'object') visit(('value' in entry ? entry.value : entry) as Target);
-    }
-    const url = target.href || (target.page_source ? PAGE_SOURCES[target.page_source] : null);
-    if (!url?.startsWith('/') || url.startsWith('//')) return;
-    urls.add(url);
-    if (target.kind === 'page' || target.kind === 'post') urls.add(windowPageUrl(url));
-  }
-  visit(thing);
-  return [...urls];
+  // Folders already render from the scene data. Warming every descendant here
+  // makes the page the visitor actually chooses compete with unrelated renders.
+  if (!thing || thing.previewUrl || thing.kind === 'folder') return [];
+  const url = thing.href || (thing.page_source ? PAGE_SOURCES[thing.page_source] : null);
+  if (!url?.startsWith('/') || url.startsWith('//')) return [];
+  return [thing.kind === 'page' || thing.kind === 'post' ? windowPageUrl(url) : url];
 }
 
 export function prefetchUrl(url?: string | null) {

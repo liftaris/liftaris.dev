@@ -41,9 +41,12 @@ Integration tests cover direct Thing saves, independent Post drafts, reference c
 
 ### Page prefetch
 
-Icon hover and keyboard focus call Astro's native `prefetch()` for the canonical
-and embedded page URLs. Folder icons resolve their ordered contents before
-prefetching, including nested folders and reusable Post Things.
+Icon hover and keyboard focus call Astro's native `prefetch()` for the embedded
+page URL. The maximize control prefetches the canonical URL on hover/focus; simply
+opening a window does not start another full-page render. Folders render locally
+from the scene data. Inside a folder, hovering or focusing
+a Page or Post icon prefetches that window alone; folder hover does not fetch every
+descendant page.
 
 Public PageReader windows read the prefetched HTML through the browser HTTP cache
 and render it with `srcDoc`: Chromium does not reuse link-prefetch responses for
@@ -54,3 +57,8 @@ windows use native iframe navigation; editing and signed preview responses stay
 
 Run the live prefetch regression against a running server or the branch preview:
 `HOUSE_PREFETCH_URL=http://127.0.0.1:4331 bun test src/lib/house/prefetch-browser.test.ts`.
+
+Thing collection pages read independent entries concurrently through EmDash's
+public query APIs. They request folder contents only for folders and Post links
+only for linked pages, preserving ordered results and paginated references. This
+avoids a series of database round trips for every icon on each page render.

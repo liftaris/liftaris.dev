@@ -30,23 +30,32 @@ check('hover and keyboard focus warm embedded pages with native Astro prefetch, 
     icon.click();
     await until(()=>[...document.querySelectorAll('iframe')].some(f=>f.srcdoc && f.contentDocument?.querySelector('astro-island')));
     const reads = performance.getEntriesByName(embedded).filter(e=>e.initiatorType==='fetch');
+    const fullPage = new URL('/projects',location.href).href;
+    const noDuplicatePage = performance.getEntriesByName(fullPage).length === 0;
+    document.querySelector('iframe.post-reader').closest('.object-window').querySelector('.wb-max').focus();
+    await until(()=>performance.getEntriesByName(fullPage).some(e=>e.initiatorType==='link' && e.responseEnd>0));
     document.querySelector('[data-object="case"]').focus();
     const experience = new URL('/experience?window=1',location.href).href;
     await until(()=>performance.getEntriesByName(experience).some(e=>e.initiatorType==='link' && e.responseEnd>0));
-    return {nativeLink,fetches:reads.length,cached:reads[0]?.transferSize===0 && reads[0]?.decodedBodySize>0,focusPrefetched:true};
+    return {nativeLink,noDuplicatePage,maximizePrefetched:true,fetches:reads.length,cached:reads[0]?.transferSize===0 && reads[0]?.decodedBodySize>0,focusPrefetched:true};
   })()`).result;
-  expect(result).toEqual({nativeLink:true,fetches:1,cached:true,focusPrefetched:true});
+  expect(result).toEqual({nativeLink:true,noDuplicatePage:true,maximizePrefetched:true,fetches:1,cached:true,focusPrefetched:true});
 }, 60_000);
 
-check('hovering Writing resolves referenced Post Things before the folder is opened', () => {
+check('folders open locally and only the hovered or focused article is prefetched', () => {
   browser('open', base!);
   const result = browser('eval', `(async () => {
     const end=Date.now()+20000;
     while(!document.querySelector('[data-object="writing-folder"]')){if(Date.now()>end)throw Error('No Writing folder');await new Promise(r=>setTimeout(r,30));}
     await new Promise(r=>setTimeout(r,1500));
     document.querySelector('[data-object="writing-folder"]').dispatchEvent(new PointerEvent('pointerover',{bubbles:true,pointerType:'mouse'}));
+    await new Promise(r=>setTimeout(r,200));
+    const unrelatedPrefetches = [...document.querySelectorAll('link[rel=prefetch]')].filter(l=>l.href.includes('/writing')).length;
+    document.querySelector('[data-object="writing-folder"]').click();
+    while(!document.querySelector('[data-folder-entry="01M3DGW2FEY2W6TAYFZAECFG36"]')){if(Date.now()>end)throw Error('Folder did not open');await new Promise(r=>setTimeout(r,30));}
+    document.querySelector('[data-folder-entry="01M3DGW2FEY2W6TAYFZAECFG36"]').focus();
     while(![...document.querySelectorAll('link[rel=prefetch]')].some(l=>l.href.includes('/writing/') && l.href.includes('window=1'))){if(Date.now()>end)throw Error('Post window not prefetched');await new Promise(r=>setTimeout(r,30));}
-    return {folderOpened:!!document.querySelector('[data-folder-entry]'),postPrefetched:true};
+    return {unrelatedPrefetches,folderOpened:!!document.querySelector('[data-folder-entry]'),postPrefetched:true};
   })()`).result;
-  expect(result).toEqual({folderOpened:false,postPrefetched:true});
+  expect(result).toEqual({unrelatedPrefetches:0,folderOpened:true,postPrefetched:true});
 }, 60_000);
