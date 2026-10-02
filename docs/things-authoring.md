@@ -38,3 +38,19 @@ Apply the EmDash seed, then run `bun tools/finalize-things-seed.ts LOCAL.db` bef
 Run `bun test`, `bun run typecheck`, `bun run lint`, and `bun run build`. Run real-browser gift/window regressions with `HOUSE_BROWSER_TESTS=1 bun test src/lib/house/client-browser.test.ts`.
 
 Integration tests cover direct Thing saves, independent Post drafts, reference changes, stale revision rejection, trash/restore, fresh seeds, and resumable conversion of the prior model. Browser checks cover immediate anonymous visibility and both light/dark inspector themes.
+
+### Page prefetch
+
+Icon hover and keyboard focus call Astro's native `prefetch()` for the canonical
+and embedded page URLs. Folder icons resolve their ordered contents before
+prefetching, including nested folders and reusable Post Things.
+
+Public PageReader windows read the prefetched HTML through the browser HTTP cache
+and render it with `srcDoc`: Chromium does not reuse link-prefetch responses for
+direct iframe navigation. Embedded HTML uses `private, max-age=30` and varies by
+Cookie and Authorization. There is no persistent JavaScript HTML cache. Editor
+windows use native iframe navigation; editing and signed preview responses stay
+`no-store`, including refreshed previews after saves.
+
+Run the live prefetch regression against a running server or the branch preview:
+`HOUSE_PREFETCH_URL=http://127.0.0.1:4331 bun test src/lib/house/prefetch-browser.test.ts`.

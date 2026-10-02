@@ -1,4 +1,6 @@
 ---
+import { getRequestContext } from "emdash/request-context";
+import { windowCacheControl } from "../server/things/window-cache";
 import { ClientRouter } from "astro:transitions";
 import { EmDashHead, EmDashBodyStart, EmDashBodyEnd } from "emdash/ui";
 import { createPublicPageContext } from "emdash/page";
@@ -27,6 +29,11 @@ const {
   content,
   embedded = false,
 } = Astro.props;
+if (embedded) {
+  const context = getRequestContext();
+  Astro.response.headers.set("Cache-Control", windowCacheControl(Astro.request, Boolean(context?.editMode || context?.preview)));
+  Astro.response.headers.append("Vary", "Cookie, Authorization");
+}
 const pathname = Astro.url.pathname.replace(/\/$/, "") || "/";
 const onBlog = pathname.startsWith("/blog/");
 const isHome = pathname === "/";

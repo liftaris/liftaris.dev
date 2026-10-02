@@ -1,11 +1,34 @@
-import { useEffect, useRef } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
+import { windowPageUrl } from "../../lib/house/prefetch";
+import { AuthoringContext } from "./ThingAuthoring";
 import type { ThingSpec } from "./folders";
 
 /** Reuse the server-rendered page without duplicating PortableText in React. */
 export function PageReader({ page }: { page: ThingSpec }) {
   const iframe = useRef<HTMLIFrameElement>(null);
   const href = page.previewUrl || page.href || `/things-preview/${encodeURIComponent(page.id)}`;
-  const src = `${href}${href.includes("?") ? "&" : "?"}window=1`;
+  const src = windowPageUrl(href);
+  const { enabled: editing } = useContext(AuthoringContext);
+  const direct = editing || Boolean(page.previewUrl);
+  const [loaded, setLoaded] = useState<{ src: string; html?: string }>();
+
+  useEffect(() => {
+    if (direct) return;
+    const controller = new AbortController();
+    // Chromium partitions iframe navigations from link-prefetch responses.
+    // Read through the browser HTTP cache warmed by Astro, with no JS HTML cache.
+    void fetch(src, { signal: controller.signal }).then(async response => {
+      if (!response.ok || !response.headers.get("content-type")?.includes("text/html")) throw new Error("Page unavailable");
+      if (new URL(response.url).origin !== location.origin) throw new Error("External page");
+      const html = await response.text();
+      if (!controller.signal.aborted) setLoaded({ src, html });
+    }).catch(() => {
+      // Native navigation remains available if fetching HTML fails.
+      if (!controller.signal.aborted) setLoaded({ src });
+    });
+    return () => controller.abort();
+  }, [src, direct]);
+  const current = loaded?.src === src ? loaded : undefined;
 
   useEffect(() => {
     const frame = iframe.current!;
@@ -34,5 +57,5 @@ export function PageReader({ page }: { page: ThingSpec }) {
     return () => { frame.removeEventListener("load", connect); listeners?.abort(); };
   }, [src]);
 
-  return <iframe ref={iframe} className="post-reader block size-full border-0 bg-paper" src={src} title={page.name} />;
+  return <iframe ref={iframe} className="post-reader block size-full border-0 bg-paper" src={direct || (current && !current.html) ? src : undefined} srcDoc={!direct ? current?.html : undefined} title={page.name} />;
 }

@@ -22,6 +22,7 @@ beforeAll(async () => {
   if (!enabled) return;
   directory = await mkdtemp(join(tmpdir(), "house-client-tests-"));
   const stubs: Record<string, string> = {
+    "astro:prefetch": "export const prefetch = () => {}",
     "./HouseClump": `export function HouseClump({gifts,onOpen}) {return <div id="scene"><button data-object="leave-gift" onClick={e=>onOpen({id:"leave-gift",name:"Present",emoji:"🎁"},e.currentTarget)}>Compose</button>{gifts.map(g=><button key={g.id} data-object={g.id} onClick={e=>onOpen({id:g.id,name:g.emojiId,emoji:g.emojiId},e.currentTarget,g)}>{g.id}:{g.emojiId}</button>)}</div>}`,
     "../folder/Folder": "export const Folder = () => null",
     "../../../components/Stage": "export const Stage = () => null",
@@ -34,11 +35,12 @@ beforeAll(async () => {
         import {flushSync} from "react-dom";
         import {House} from "./src/components/house/House";
         import {GiftDialog} from "./src/components/house/GiftDialog";
+        import {PageReader} from "./src/components/house/PageReader";
         import {ObjectWindow} from "./src/components/window/ObjectWindow";
         import {houseMutations} from "./src/lib/house/client";
         const gift = {id:"gift-1",emojiId:"gift",authorName:"Quiet Otter",createdAt:"2026-09-24",visibility:"public",message:"Old public note",version:1,canEdit:true,canReclaim:true,canRemove:false};
         let root;
-        Object.assign(window, {React,gift,House,GiftDialog,ObjectWindow,houseMutations,
+        Object.assign(window, {React,gift,House,GiftDialog,PageReader,ObjectWindow,houseMutations,
           pluginReply(data,init) {return Response.json(data.error ? {success:false,error:{message:data.error}} : {success:true,data},init);},
           mount(Component,props={}) {if(root)flushSync(()=>root.unmount());root=createRoot(document.getElementById("root"));flushSync(()=>root.render(React.createElement(Component,props)));},
           render(Component,props) {flushSync(()=>root.render(React.createElement(Component,props)));},
@@ -202,4 +204,29 @@ check("ObjectWindow updates in place without resetting content, focus, geometry 
     final.focusReturned=document.activeElement===source;final.windows=document.querySelectorAll('.object-window').length;source.remove();return final;
   `);
   expect(result).toEqual({ sameWindow: true, sameBody: true, sameInput: true, value: "Keep this draft", focused: true, selection: [3, 7], position: [100, 120], title: "Heart", icon: "❤️", ready: 1, focusReturned: true, windows: 0 });
+}, 40_000);
+
+check("PageReader cancels obsolete HTML reads, reloads on reopen, and bypasses cached HTML for signed previews", () => {
+  const result = evaluate(`
+    const requests=[];
+    window.fetch=(url,options)=>new Promise(resolve=>requests.push({url,signal:options.signal,finish(text){
+      const response=new Response('<h1>'+text+'</h1>',{headers:{'Content-Type':'text/html'}});
+      Object.defineProperty(response,'url',{value:location.href});resolve(response);
+    }}));
+    const page={id:'a',name:'Article',kind:'page',href:'/a'};
+    mount(PageReader,{page});await until(()=>requests.length===1);
+    render(PageReader,{page:{...page,id:'b',href:'/b'}});await until(()=>requests.length===2);
+    const aborted=requests[0].signal.aborted;
+    requests[1].finish('New article');await until(()=>document.querySelector('iframe').srcdoc.includes('New article'));
+    requests[0].finish('Stale article');await tick();
+    const latest=document.querySelector('iframe').srcdoc.includes('New article');
+    mount(PageReader,{page:{...page,id:'b',href:'/b'}});await until(()=>requests.length===3);
+    const noOldHtml=!document.querySelector('iframe').srcdoc;
+    requests[2].finish('Saved article');await until(()=>document.querySelector('iframe').srcdoc.includes('Saved article'));
+    render(PageReader,{page:{...page,previewUrl:'/things-preview/a?_preview=signed'}});await tick();
+    const frame=document.querySelector('iframe');
+    const final={aborted,latest,noOldHtml,reads:requests.length,previewSrc:frame.getAttribute('src'),previewHtml:frame.getAttribute('srcdoc')};
+    mount(()=>null);return final;
+  `);
+  expect(result).toEqual({aborted:true,latest:true,noOldHtml:true,reads:3,previewSrc:'/things-preview/a?_preview=signed&window=1',previewHtml:null});
 }, 40_000);

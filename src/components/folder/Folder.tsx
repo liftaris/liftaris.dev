@@ -1,5 +1,5 @@
 import { ThingControls } from '../house/ThingAuthoring';
-import { useEffect, type ComponentProps } from "react";
+import { type ComponentProps } from "react";
 import { getBackgroundStyle, isImageUrl, type BackgroundProps } from "../clump/model";
 import { ObjectWindow } from "../window/ObjectWindow";
 import { prefetchThing } from "../../lib/house/prefetch";
@@ -43,12 +43,6 @@ export function FolderContent<T>({
   onOpen,
   onOpenFolder,
 }: FolderContentProps<T>) {
-  useEffect(() => {
-    for (const entry of folder.items) {
-      const itemTarget = entry.kind === "item" ? entry.value : entry;
-      prefetchThing(itemTarget as { id?: string; action?: string; href?: string | null; kind?: string });
-    }
-  }, [folder.items]);
   const folderBg = getBackgroundStyle(folder);
   return (
     <>
