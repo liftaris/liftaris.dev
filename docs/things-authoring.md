@@ -65,3 +65,8 @@ avoids a series of database round trips for every icon on each page render.
 
 Page routes omit folder-content references entirely; folder routes load them for
 their grid. Primary ancestry and Post visibility are still resolved in both cases.
+
+For normal CMS URLs, `readThingAtPath()` reads the slug and its primary-folder
+chain, checks the result with the shared canonical resolver, and searches native
+`path_override` fields when needed. The full graph is reserved for folder grids
+and legacy-route fallback, so opening one article does not read every Thing.

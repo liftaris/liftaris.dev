@@ -1,6 +1,6 @@
 import { getEmDashCollection, getEmDashEntry, getEmDashReferences } from 'emdash';
 import { getRequestContext, runWithContext } from 'emdash/request-context';
-import { normalizeData, type ThingRecord } from '../../lib/things/model';
+import { normalizeData, pathFor, type ThingRecord } from '../../lib/things/model';
 
 /** Read independent entries concurrently instead of paying a D1 round trip per Thing.
  * Select only relevant relations and consume every contents cursor.
@@ -45,3 +45,43 @@ export async function readThings(mode: 'request' | 'published' | 'editor' = 'req
   return runWithContext({ ...getRequestContext(), editMode: mode === 'editor', preview: undefined }, read);
 }
 export { sceneThings } from '../../lib/things/scene';
+
+/** Resolve a normal page in O(primary-folder depth), not O(all Things).
+ * Native slugs are unique within the collection; validate the full canonical
+ * path so an unrelated page with the same final segment is never served.
+ */
+export async function readThingAtPath(path: string): Promise<{ thing: ThingRecord; things: ThingRecord[] } | null> {
+  return runWithContext({ ...getRequestContext(), editMode: false, preview: undefined }, async () => {
+    const resolve = async (id: string) => {
+      const things: ThingRecord[] = [];
+      const seen = new Set<string>();
+      let next: string | null = id;
+      while (next) {
+        const result = await getEmDashEntry('things', next, { references: { primary_folder: { limit: 1 }, post: { limit: 1 } } });
+        if (result.error?.name === 'LiveEntryNotFoundError') return null;
+        if (result.error) throw result.error;
+        if (!result.entry) return null;
+        const entry = result.entry;
+        if (seen.has(entry.data.id)) return null;
+        seen.add(entry.data.id);
+        const refs = entry.references as Record<string, { entries: { data: {id: string} }[] }> | undefined;
+        const data = normalizeData(entry.data as unknown as Record<string, unknown>);
+        const postId = refs?.post?.entries[0]?.data.id ?? null;
+        if (data.page_source === 'post' && !postId) return null;
+        const thing: ThingRecord = {id:entry.data.id,slug:entry.data.slug || entry.id,status:entry.data.status,data,
+          contents:[],primaryFolder:refs?.primary_folder?.entries[0]?.data.id ?? null,postId};
+        things.push(thing);
+        next = data.path_override ? null : thing.primaryFolder;
+      }
+      const thing = things[0];
+      return thing && pathFor(thing, things) === path ? {thing,things} : null;
+    };
+    const slug = path.split('/').at(-1);
+    if (!slug) return null;
+    const normal = await resolve(slug);
+    if (normal) return normal;
+    const override = await getEmDashCollection('things', { where: { path_override: path }, limit: 1 });
+    if (override.error) throw override.error;
+    return override.entries[0] ? resolve(override.entries[0].data.id) : null;
+  });
+}

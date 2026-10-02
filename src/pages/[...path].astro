@@ -1,12 +1,13 @@
 ---
-import { readThings } from '../server/things/read';
+import { readThings, readThingAtPath } from '../server/things/read';
 import { pathFor } from '../lib/things/model';
 import { getDb } from 'emdash/runtime';
 import { formerRoute } from '../server/things/routes';
 import ThingPage from '../components/house/ThingPage.astro';
-let things = await readThings('published', { includeContents: false });
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
-const thing = things.find(t => pathFor(t,things) === path);
+const resolved = await readThingAtPath(path);
+let things = resolved?.things ?? await readThings('published', { includeContents: false });
+const thing = resolved?.thing ?? things.find(t => pathFor(t,things) === path);
 if (!thing) {
   const previous = things.find(t => t.data.legacy_paths?.includes(path));
   if (previous) return Astro.redirect(pathFor(previous,things)!,301);
