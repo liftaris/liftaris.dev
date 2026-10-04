@@ -155,7 +155,7 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
                     {isIconImage ? (
                       <img src={displayIcon} alt="" class="site-window-image" />
                     ) : (
-                      displayIcon.replace(/\uFE0F/g, "")
+                      displayIcon.replace(/\uFE0F/g, "").trim()
                     )}
                   </span>
                 )}

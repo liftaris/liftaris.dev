@@ -162,4 +162,15 @@ describe("GitHub custom Thing", () => {
     expect(globalCss).toContain(".pane {\n  animation: none;\n}");
     expect(globalCss).toContain(".wb-restore-square");
   });
+
+  test("window titlebar is fully opaque and emoji icons normalize VS16 presentation", async () => {
+    const globalCss = await Bun.file(new URL("../../styles/global.css", import.meta.url).pathname).text();
+    expect(globalCss).toContain(".site-window-header {\n  height: 18px;\n  line-height: 18px;\n  background: var(--color-window-bar);\n  border-bottom: 1px solid var(--color-window-bar);");
+    expect(globalCss).toContain(".object-window .wb-header {\n  height: 18px;\n  line-height: 18px;\n  overflow: hidden;\n  background: var(--color-window-bar);\n  border-bottom: 1px solid var(--color-window-bar);");
+    expect(globalCss).not.toContain("backdrop-filter: blur");
+
+    const objectWindowCode = await Bun.file(new URL("../window/ObjectWindow.tsx", import.meta.url).pathname).text();
+    expect(objectWindowCode).toContain("normalizeEmojiPresentation(icon).trim()");
+  });
 });
+

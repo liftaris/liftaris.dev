@@ -3,6 +3,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type WinBox from "winbox/src/js/winbox.js";
 import { isImageUrl } from "../clump/model";
+import { normalizeEmojiPresentation } from "../../lib/house/emoji";
 import "winbox/dist/css/winbox.min.css";
 
 type ObjectWindowProps = {
@@ -68,7 +69,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
       img.className = "object-window-image";
       iconButton.appendChild(img);
     } else {
-      iconButton.textContent = icon;
+      iconButton.textContent = normalizeEmojiPresentation(icon).trim();
     }
     iconButton.setAttribute("aria-label", `Collapse ${title} window`);
     const maxBtn = frame.querySelector<HTMLButtonElement>(".wb-max");
@@ -370,14 +371,14 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
         if (outerDrag && !outerDrag.textContent?.trim()) {
           const iconSpan = document.createElement("span");
           iconSpan.className = "site-window-icon";
-          if (icon?.startsWith("/") || icon?.startsWith("http")) {
+          if (isImageUrl(icon)) {
             const img = document.createElement("img");
             img.src = icon;
             img.alt = "";
             img.className = "site-window-image";
             iconSpan.appendChild(img);
           } else if (icon) {
-            iconSpan.textContent = icon;
+            iconSpan.textContent = normalizeEmojiPresentation(icon).trim();
           }
           const handleDiv = document.createElement("div");
           handleDiv.className = "site-window-handle";

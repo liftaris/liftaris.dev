@@ -555,8 +555,8 @@ body.embedded-post {
 /* WinBox object window integration */
 .winbox.object-window {
   color: var(--color-window-bar);
-  background: color-mix(in srgb, var(--color-window-bar) 80%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-window-bar) 80%, transparent);
+  background: var(--color-window-bar);
+  border: 1px solid var(--color-window-bar);
   border-radius: 2px;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28), 0 4px 12px rgba(0, 0, 0, 0.16);
   font-family: var(--font-mono), monospace;
@@ -566,10 +566,8 @@ body.embedded-post {
   height: 18px;
   line-height: 18px;
   overflow: hidden;
-  background: color-mix(in srgb, var(--color-window-bar) 80%, transparent);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid color-mix(in srgb, var(--color-paper) 20%, transparent);
+  background: var(--color-window-bar);
+  border-bottom: 1px solid var(--color-window-bar);
   border-radius: 1px 1px 0 0;
   color: var(--color-paper);
 }
