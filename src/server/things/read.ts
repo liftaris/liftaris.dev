@@ -3,9 +3,11 @@ import { getRequestContext, runWithContext } from 'emdash/request-context';
 import { normalizeData, pathFor, type ThingRecord } from '../../lib/things/model';
 
 let thingsCache: { key: string; rows: ThingRecord[]; expiresAt: number } | null = null;
+let editCache: { key: string; rows: ThingRecord[]; expiresAt: number } | null = null;
 
 export function invalidateThingsCache() {
   thingsCache = null;
+  editCache = null;
 }
 
 /** Read independent entries concurrently instead of paying a D1 round trip per Thing.
@@ -18,6 +20,9 @@ export async function readThings(mode: 'request' | 'published' | 'editor' = 'req
 
   if (!isEditing && thingsCache && thingsCache.key === cacheKey && Date.now() < thingsCache.expiresAt) {
     return thingsCache.rows;
+  }
+  if (isEditing && editCache && editCache.key === cacheKey && Date.now() < editCache.expiresAt) {
+    return editCache.rows;
   }
 
   const read = async () => {
@@ -55,6 +60,8 @@ export async function readThings(mode: 'request' | 'published' | 'editor' = 'req
     } while (cursor);
     if (!isEditing) {
       thingsCache = { key: cacheKey, rows, expiresAt: Date.now() + 30_000 };
+    } else {
+      editCache = { key: cacheKey, rows, expiresAt: Date.now() + 5_000 };
     }
     return rows;
   };

@@ -46,7 +46,7 @@ function Workspace() {
     // Read the revision before the graph so a concurrent edit can only make
     // our token stale, never authorize overwriting an older graph snapshot.
     const content = await fetchContent('things', id);
-    const record = await reload();
+    const record = graph.current.length ? graph.current : await reload();
     const found = record.find(t => t.id === id); if (!found) throw new Error('This Thing is no longer available.');
     item.current = content; setCurrent(found); dirty.current = false; setPreviewUrl(undefined); setError('');
     const acquired = await acquireEntryLock('things', id);
@@ -98,10 +98,14 @@ function Workspace() {
         dirty.current = generation.current !== version;
       }
       if (value.primaryFolder) {
-        const parent = await fetchContent('things', value.primaryFolder);
-        const latest = await reload();
-        const ids = latest.find(t => t.id === value.primaryFolder)?.contents ?? [];
-        if (!ids.includes(result.id)) await updateContent('things', value.primaryFolder, { data: {}, references: { contents: [...ids, result.id] }, _rev: parent._rev });
+        const parentThing = graph.current.find(t => t.id === value.primaryFolder);
+        if (!parentThing || !parentThing.contents.includes(result.id)) {
+          const parent = await fetchContent('things', value.primaryFolder);
+          const parentContents = (parent.references as { contents?: { entries?: { id: string }[] } } | undefined)?.contents?.entries?.map(e => e.id) ?? parentThing?.contents ?? [];
+          if (!parentContents.includes(result.id)) {
+            await updateContent('things', value.primaryFolder, { data: {}, references: { contents: [...parentContents, result.id] }, _rev: parent._rev });
+          }
+        }
       }
       await reload(); await refreshPreview(result.id);
       setState(dirty.current ? 'Unsaved' : 'Saved');

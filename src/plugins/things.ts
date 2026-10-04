@@ -1,6 +1,6 @@
 import { definePlugin, ContentSaveRejectedError, PluginRouteError } from 'emdash';
 import { getDb } from 'emdash/runtime';
-import { policyGraph, postChoices } from '../server/things/graph';
+import { policyGraph, postChoices, invalidatePostsCache } from '../server/things/graph';
 import { rememberRoutes, routeChanges } from '../server/things/routes';
 import { dependentNames, validateGraph, normalizeData, type ThingRecord } from '../lib/things/model';
 import { invalidateThingsCache } from '../server/things/read';
@@ -26,7 +26,6 @@ export function createPlugin() {
             const after=[...before.filter(t=>t.id!==candidate.id),{...candidate,status:'published',data:normalizeData(candidate.data)}];
             validateGraph(after);
             if(candidate.data.page_source==='post' && !(await postChoices(db)).some(p=>p.id===candidate.postId)) throw new Error('Choose a Post to display.');
-            await rememberRoutes(db,before,after);
             return {valid:true,changes:routeChanges(before,after)};
           } catch(error) {throw new PluginRouteError('INVALID_THING',error instanceof Error ? error.message : String(error),400);}
         } },
@@ -39,18 +38,36 @@ export function createPlugin() {
         if (d.path_override && (typeof d.path_override !== 'string' || !/^\/[a-z0-9][a-z0-9_/-]*$/.test(d.path_override))) throw new ContentSaveRejectedError('Use a lowercase site path.');
       },
       'content:beforePublish': async event => {
-        if (event.collection !== 'things') return;
-        try { const db=await getDb();const after=await policyGraph(db,String(event.content.id));validateGraph(after);await rememberRoutes(db,await policyGraph(db),after); invalidateThingsCache(); }
+        if (event.collection !== 'things') {
+          if (event.collection === 'posts') invalidatePostsCache();
+          return;
+        }
+        try {
+          const db = await getDb();
+          const [after, before] = await Promise.all([
+            policyGraph(db, String(event.content.id)),
+            policyGraph(db),
+          ]);
+          validateGraph(after);
+          await rememberRoutes(db, before, after);
+          invalidateThingsCache();
+        }
         catch (error) { return { cancel: true, reason: error instanceof Error ? error.message : 'Invalid Thing relationships.' }; }
       },
       'content:beforeDelete': async event => {
-        if (event.collection !== 'things') return true;
+        if (event.collection !== 'things') {
+          if (event.collection === 'posts') invalidatePostsCache();
+          return true;
+        }
         const denied = await denyRemoval(event.id);
         if (!denied) invalidateThingsCache();
         return !denied;
       },
       'content:beforeUnpublish': async event => {
-        if (event.collection !== 'things') return;
+        if (event.collection !== 'things') {
+          if (event.collection === 'posts') invalidatePostsCache();
+          return;
+        }
         const reason = await denyRemoval(String(event.content.id));
         if (reason) return { cancel: true, reason };
         invalidateThingsCache();
