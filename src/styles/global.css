@@ -349,21 +349,31 @@ body.on-home {
 
 .wb-max-square {
   display: inline-block;
-  width: 10px;
-  height: 10px;
-  border: 1.5px solid currentColor;
-  box-sizing: border-box;
+  width: 10px !important;
+  height: 10px !important;
+  min-width: 10px !important;
+  min-height: 10px !important;
+  max-width: 10px !important;
+  max-height: 10px !important;
+  border: 1.5px solid currentColor !important;
+  box-sizing: border-box !important;
   vertical-align: middle;
+  flex-shrink: 0;
 }
 
 .wb-restore-square {
   position: relative;
   display: inline-block;
-  width: 10px;
-  height: 10px;
-  border: 1.5px solid currentColor;
-  box-sizing: border-box;
+  width: 10px !important;
+  height: 10px !important;
+  min-width: 10px !important;
+  min-height: 10px !important;
+  max-width: 10px !important;
+  max-height: 10px !important;
+  border: 1.5px solid currentColor !important;
+  box-sizing: border-box !important;
   vertical-align: middle;
+  flex-shrink: 0;
 }
 
 .wb-restore-square::after {
@@ -371,11 +381,11 @@ body.on-home {
   position: absolute;
   bottom: 0;
   left: 0;
-  width: 50%;
-  height: 50%;
-  border-top: 1.5px solid currentColor;
-  border-right: 1.5px solid currentColor;
-  box-sizing: border-box;
+  width: 5px !important;
+  height: 5px !important;
+  border-top: 1.5px solid currentColor !important;
+  border-right: 1.5px solid currentColor !important;
+  box-sizing: border-box !important;
 }
 
 @media (hover: hover) {
@@ -653,6 +663,7 @@ body.embedded-post {
   border-radius: 0;
   color: inherit;
   background: none;
+  background-image: none !important;
   font: inherit;
   font-size: 16px;
   line-height: 1;
@@ -665,17 +676,28 @@ body.embedded-post {
 .object-window .wb-control button.wb-close {
   border-radius: 0;
 }
+.object-window .wb-control span,
+.object-window .wb-control .wb-max-square,
+.object-window .wb-control .wb-restore-square {
+  width: 10px !important;
+  height: 10px !important;
+  min-width: 10px !important;
+  min-height: 10px !important;
+  max-width: 10px !important;
+  max-height: 10px !important;
+  flex-shrink: 0;
+}
 .object-window.no-max .wb-max,
 .object-window .wb-max {
   display: inline-flex !important;
 }
 .object-window .wb-max .wb-restore-square {
-  display: none;
+  display: none !important;
 }
 .object-window .wb-max .wb-max-square {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
+  display: inline-block !important;
+  width: 10px !important;
+  height: 10px !important;
   border: 1.5px solid currentColor;
   box-sizing: border-box;
   vertical-align: middle;
@@ -711,17 +733,21 @@ body.on-home .winbox.object-window.max:has(.folder) {
 }
 .object-window.max .wb-max .wb-max-square,
 .object-window.maximizing .wb-max .wb-max-square {
-  display: none;
+  display: none !important;
 }
 .object-window.max .wb-max .wb-restore-square,
 .object-window.maximizing .wb-max .wb-restore-square {
-  display: inline-block;
+  display: inline-block !important;
+  width: 10px !important;
+  height: 10px !important;
 }
 .object-window.restoring .wb-max .wb-max-square {
-  display: inline-block;
+  display: inline-block !important;
+  width: 10px !important;
+  height: 10px !important;
 }
 .object-window.restoring .wb-max .wb-restore-square {
-  display: none;
+  display: none !important;
 }
 .winbox .wb-body,
 .object-window .wb-body {
