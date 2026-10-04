@@ -20,3 +20,14 @@ test('folder choices exclude self and ancestors but permit reusable shortcuts',(
  expect(canAddToFolder('c','page',all)).toBe(true);
  expect(canAddToFolder('a','c',all)).toBe(true);
 });
+test('spawn coordinates support decimal values with 0.001 step', async () => {
+ const { thingFields } = await import('./schema');
+ const spawnX = thingFields.find(f => f.slug === 'spawn_x');
+ const spawnY = thingFields.find(f => f.slug === 'spawn_y');
+ expect(spawnX?.validation?.min).toBe(0);
+ expect(spawnX?.validation?.max).toBe(1);
+ expect((spawnX?.validation as { step?: number })?.step).toBe(0.001);
+ expect(spawnY?.validation?.min).toBe(0);
+ expect(spawnY?.validation?.max).toBe(1);
+ expect((spawnY?.validation as { step?: number })?.step).toBe(0.001);
+});

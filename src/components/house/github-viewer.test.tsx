@@ -175,5 +175,18 @@ describe("GitHub custom Thing", () => {
     expect(objectWindowCode).toContain("normalizeEmojiPresentation(icon).trim()");
     expect(objectWindowCode).toContain('frame.style.border = "4px double var(--ink)"');
   });
+
+  test("window titlebar focus behavior has outline only on buttons, not titlebar or icon", async () => {
+    const globalCss = await Bun.file(new URL("../../styles/global.css", import.meta.url).pathname).text();
+    expect(globalCss).toContain(".object-window-handle:focus-visible");
+    expect(globalCss).toContain(".object-window-icon:focus-visible");
+    expect(globalCss).toContain(".object-window .wb-control button:focus-visible");
+    expect(globalCss).toContain(".site-window-max:focus-visible");
+    expect(globalCss).toContain(".site-window-close:focus-visible");
+
+    const objectWindowCode = await Bun.file(new URL("../window/ObjectWindow.tsx", import.meta.url).pathname).text();
+    expect(objectWindowCode).toContain('class="object-window-icon" tabindex="-1"');
+    expect(objectWindowCode).not.toContain("iconButton.focus(");
+  });
 });
 

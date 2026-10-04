@@ -158,7 +158,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
           <button type="button" class="wb-close">×</button>
         </div>
         <div class="wb-drag">
-          <button type="button" class="object-window-icon"></button>
+          <button type="button" class="object-window-icon" tabindex="-1"></button>
           <div class="object-window-handle" tabindex="0" role="button"><div class="wb-title"></div></div>
         </div>
       </div><div class="wb-body"></div><div class="wb-n"></div><div class="wb-s"></div><div class="wb-e"></div><div class="wb-w"></div><div class="wb-ne"></div><div class="wb-nw"></div><div class="wb-se"></div><div class="wb-sw"></div>`;
@@ -213,7 +213,6 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
         if (event.button !== 0 || iconPress) return;
         iconPress = { id: event.pointerId, x: event.clientX, y: event.clientY, moved: false };
         iconButton.setPointerCapture(event.pointerId);
-        iconButton.focus({ preventScroll: true });
       };
       iconButton.onpointermove = (event) => {
         if (iconPress?.id === event.pointerId) iconPress.moved ||= Math.hypot(event.clientX - iconPress.x, event.clientY - iconPress.y) >= 5;

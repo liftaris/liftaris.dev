@@ -65,5 +65,8 @@
   "type": "module",
   "emdash": {
     "seed": "seed/seed.json"
+  },
+  "patchedDependencies": {
+    "@emdash-cms/admin@1.0.1": "patches/@emdash-cms%2Fadmin@1.0.1.patch"
   }
 }

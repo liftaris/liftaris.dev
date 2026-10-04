@@ -48,7 +48,7 @@ function Workspace() {
     const content = await fetchContent('things', id);
     const record = graph.current.length ? graph.current : await reload();
     const found = record.find(t => t.id === id); if (!found) throw new Error('This Thing is no longer available.');
-    item.current = content; setCurrent(found); dirty.current = false; setPreviewUrl(undefined); setError('');
+    item.current = content; setCurrent({ ...found, data: { ...found.data, ...(content.data as Record<string, unknown>) } }); dirty.current = false; setPreviewUrl(undefined); setError('');
     const acquired = await acquireEntryLock('things', id);
     lock.current = { id, token: undefined }; setLocked(!(acquired.heldByCaller || !acquired.enabled));
     if (!(acquired.heldByCaller || !acquired.enabled)) setError('Another editor holds this Thing. Open it after they finish.');
@@ -159,7 +159,7 @@ function Workspace() {
       if (message.type === 'select') void open(message.id).catch(fail);
       if (message.type === 'trash') void trash(message.id).catch(fail);
       if ((message.type === 'resize' || message.type === 'position') && current.current?.id === message.id) {
-        if (message.type === 'position') patch({ spawn_x: message.spawn_x, spawn_y: message.spawn_y });
+        if (message.type === 'position') patch({ spawn_x: Math.round(message.spawn_x * 1000) / 1000, spawn_y: Math.round(message.spawn_y * 1000) / 1000 });
         else patch({ window_width: message.window_width, window_height: message.window_height });
       }
     };
@@ -172,7 +172,7 @@ function Workspace() {
   const act = (task: () => Promise<unknown>) => { setError(''); void task().catch(fail); };
   const d = draft?.data;
   const text = (key: keyof ThingData, label: string) => <label>{label}<input value={String(d?.[key] ?? '')} onChange={e => patch({ [key]: e.target.value })} /></label>;
-  const number = (key: keyof ThingData, label: string, min: number, max: number, step = 1) => <label>{label}<input type="number" min={min} max={max} step={step} value={Number(d?.[key] ?? 0)} onChange={e => { const value = e.target.valueAsNumber; if (Number.isFinite(value)) patch({ [key]: Math.min(max, Math.max(min, value)) }); }} /></label>;
+  const number = (key: keyof ThingData, label: string, min: number, max: number, step: number | string = 1) => <label>{label}<input type="number" min={min} max={max} step={step} value={Number(d?.[key] ?? 0)} onChange={e => { const value = e.target.valueAsNumber; if (Number.isFinite(value)) patch({ [key]: Math.min(max, Math.max(min, value)) }); }} /></label>;
   const toggle = (key: keyof ThingData, label: string) => <label className="thing-check"><input type="checkbox" checked={Boolean(d?.[key])} onChange={e => patch({ [key]: e.target.checked })} />{label}</label>;
   let route = 'No public page'; try { route = draft ? pathFor(draft, [...things.filter(t => t.id !== draft.id), draft]) ?? route : route; } catch(e) { route = e instanceof Error ? e.message : route; }
   return <div className="things-workspace">
@@ -195,7 +195,7 @@ function Workspace() {
         {d.kind === 'folder' && <details open><summary>Folder contents</summary><ol>{draft.contents.map((id,i) => <li key={id}><span>{things.find(t=>t.id===id)?.data.name ?? 'Unavailable Thing'} · {things.find(t=>t.id===id)?.primaryFolder === draft.id ? 'Primary placement' : 'Shortcut'}</span><button aria-label="Move up" disabled={!i} onClick={() => {const ids=[...draft.contents]; [ids[i-1],ids[i]]=[ids[i],ids[i-1]];patchRecord({contents:ids});}}>↑</button><button aria-label="Remove from folder" onClick={() => patchRecord({contents:draft.contents.filter(x=>x!==id)})}>Remove</button></li>)}</ol><input type="search" aria-label="Find folder contents" placeholder="Find a Thing to add…" value={folderQuery} onChange={e=>setFolderQuery(e.target.value)} /><select aria-label="Add existing Thing" value="" onChange={e => e.target.value && patchRecord({contents:[...draft.contents,e.target.value]})}><option value="">Add a Thing…</option>{things.filter(t=>!draft.contents.includes(t.id)&&canAddToFolder(draft.id,t.id,things)&&t.data.name.toLowerCase().includes(folderQuery.toLowerCase())).map(t=><option key={t.id} value={t.id}>{t.data.name}</option>)}</select>
           <Button onClick={()=>setPicker('background_image')}>Choose background…</Button>{mediaUrl(d.background_image)&&<><img className="thing-background-preview" src={mediaUrl(d.background_image)!} alt="Folder background"/><Button onClick={()=>patch({background_image:null})}>Remove background</Button></>}
           {(['background_size','background_position','background_repeat'] as const).map(key=><label key={key}>{key.replace('background_','')}<select value={d[key]} onChange={e=>patch({[key]:e.target.value})}>{(key==='background_size'?['cover','contain','auto','100% 100%','50%','75%','150%','200%']:key==='background_position'?['center','top','bottom','left','right','top left','top right','bottom left','bottom right']:['no-repeat','repeat','repeat-x','repeat-y','round','space']).map(v=><option key={v}>{v}</option>)}</select></label>)}</details>}
-        <details open><summary>Location</summary>{toggle('desktop','Show on homepage')}<div className="thing-pair">{number('spawn_x','Starting X (0–1)',0,1,.01)}{number('spawn_y','Starting Y (0–1)',0,1,.01)}</div>{number('sort_order','Homepage order',0,100000)}<label>URL slug<input value={draft.slug} onChange={e=>patchRecord({slug:e.target.value})}/></label><label>Primary folder<select value={draft.primaryFolder ?? ''} onChange={e=>patchRecord({primaryFolder:e.target.value||null})}><option value="">Site root</option>{things.filter(t=>t.id!==draft.id&&t.data.kind==='folder').map(t=><option key={t.id} value={t.id}>{t.data.name}</option>)}</select></label>{text('path_override','Custom path (optional)')}<output>{route}</output></details>
+        <details open><summary>Location</summary>{toggle('desktop','Show on homepage')}<div className="thing-pair">{number('spawn_x','Starting X (0–1)',0,1,0.001)}{number('spawn_y','Starting Y (0–1)',0,1,0.001)}</div>{number('sort_order','Homepage order',0,100000)}<label>URL slug<input value={draft.slug} onChange={e=>patchRecord({slug:e.target.value})}/></label><label>Primary folder<select value={draft.primaryFolder ?? ''} onChange={e=>patchRecord({primaryFolder:e.target.value||null})}><option value="">Site root</option>{things.filter(t=>t.id!==draft.id&&t.data.kind==='folder').map(t=><option key={t.id} value={t.id}>{t.data.name}</option>)}</select></label>{text('path_override','Custom path (optional)')}<output>{route}</output></details>
         {draft.id!=='new'&&<div className="thing-actions"><a href={`/_emdash/admin/content/things/${draft.id}`}>History & advanced settings</a><Button onClick={()=>act(()=>trash(draft.id))}>Move to trash</Button></div>}
       </fieldset>}
     </aside></div>

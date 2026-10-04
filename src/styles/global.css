@@ -626,9 +626,10 @@ body.embedded-post {
 }
 .object-window-icon,
 .object-window-icon:hover,
+.object-window-icon:focus,
 .object-window-icon:focus-visible {
   text-decoration: none;
-  outline: none;
+  outline: none !important;
 }
 .object-window-image {
   display: block;
@@ -749,6 +750,62 @@ body.on-home .winbox.object-window.max:has(.folder) {
 }
 .object-window :focus-visible { outline: 2px solid currentColor; outline-offset: -4px; }
 .object-window .wb-body :focus-visible { outline-offset: 3px; }
+
+/* Window titlebar focus behavior: outline should only be on the buttons, never on titlebar or icon */
+.object-window .wb-header,
+.object-window .wb-header:focus,
+.object-window .wb-header:focus-visible,
+.site-window-header,
+.site-window-header:focus,
+.site-window-header:focus-visible,
+.object-window .wb-drag,
+.object-window .wb-drag:focus,
+.object-window .wb-drag:focus-visible,
+.site-window-drag,
+.site-window-drag:focus,
+.site-window-drag:focus-visible,
+.object-window-handle,
+.object-window-handle:focus,
+.object-window-handle:focus-visible,
+.site-window-handle,
+.site-window-handle:focus,
+.site-window-handle:focus-visible,
+.object-window .wb-title,
+.object-window .wb-title:focus,
+.object-window .wb-title:focus-visible,
+.site-window-title,
+.site-window-title:focus,
+.site-window-title:focus-visible,
+.object-window-icon,
+.object-window-icon:hover,
+.object-window-icon:focus,
+.object-window-icon:focus-visible,
+.site-window-icon,
+.site-window-icon:hover,
+.site-window-icon:focus,
+.site-window-icon:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.object-window .wb-control button,
+.site-window-controls a,
+.site-window-controls button,
+.site-window-control-btn,
+.site-window-max,
+.site-window-close {
+  outline: none;
+}
+
+.object-window .wb-control button:focus-visible,
+.site-window-controls a:focus-visible,
+.site-window-controls button:focus-visible,
+.site-window-control-btn:focus-visible,
+.site-window-max:focus-visible,
+.site-window-close:focus-visible {
+  outline: 2px solid currentColor !important;
+  outline-offset: -4px;
+}
 .object-window button:disabled { opacity: .65; cursor: wait; }
 @media (hover: hover) {
   .object-window .wb-control button:hover { background: color-mix(in srgb, var(--color-paper) 16%, transparent); }

@@ -1,5 +1,5 @@
 import type { CreateFieldInput, CreateCollectionInput } from 'emdash';
-const num = (slug: string, label: string, value: number, min: number, max: number): CreateFieldInput => ({ slug, label, type: ['width','height','sort_order'].includes(slug) ? 'integer' : 'number', defaultValue: value, validation: { min, max } });
+const num = (slug: string, label: string, value: number, min: number, max: number, step?: number): CreateFieldInput => ({ slug, label, type: ['width','height','sort_order'].includes(slug) ? 'integer' : 'number', defaultValue: value, validation: { min, max, ...(step ? { step } : {}) } });
 const select = (slug: string, label: string, options: string[], value: string): CreateFieldInput => ({ slug, label, type: 'select', defaultValue: value, validation: { options } });
 export const thingFields: CreateFieldInput[] = [
   { slug: 'name', label: 'Name', type: 'string', required: true, searchable: true },
@@ -11,7 +11,7 @@ export const thingFields: CreateFieldInput[] = [
   num('window_width', 'Initial window width', 480, 180, 2560), num('window_height', 'Initial window height', 380, 100, 1800),
   { slug: 'desktop', label: 'Show on homepage', type: 'boolean', defaultValue: true },
   { slug: 'default_open', label: 'Open on arrival', type: 'boolean', defaultValue: false },
-  num('sort_order', 'Homepage order', 0, 0, 100000), num('spawn_x', 'Starting X', .5, 0, 1), num('spawn_y', 'Starting Y', .5, 0, 1),
+  num('sort_order', 'Homepage order', 0, 0, 100000), num('spawn_x', 'Starting X', .5, 0, 1, 0.001), num('spawn_y', 'Starting Y', .5, 0, 1, 0.001),
   { slug: 'contents', label: 'Folder contents', type: 'reference', validation: { targetCollection: 'things', multiple: true } },
   { slug: 'primary_folder', label: 'Primary folder (URL)', type: 'reference', validation: { targetCollection: 'things', multiple: false } },
   { slug: 'path_override', label: 'Custom site path', type: 'string' },
