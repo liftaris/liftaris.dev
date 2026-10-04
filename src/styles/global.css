@@ -201,8 +201,7 @@ body.on-home {
 .physics-area {
   position: relative;
   box-sizing: border-box;
-  border: 5px dashed var(--color-paper);
-  border-radius: 12px;
+  border: none;
   overflow: hidden;
 }
 
@@ -553,15 +552,17 @@ body.embedded-post {
 }
 
 /* WinBox object window integration */
+.winbox,
 .winbox.object-window {
   color: var(--ink);
-  background: var(--ink);
+  background: var(--color-paper);
   border: 4px double var(--ink);
   border-radius: 0;
   box-shadow: 8px 8px 0px #00000047;
   font-family: var(--font-mono), monospace;
   transform-origin: top left;
 }
+.winbox .wb-header,
 .object-window .wb-header {
   height: 18px;
   line-height: 18px;
@@ -724,6 +725,7 @@ body.on-home .winbox.object-window.max:has(.folder) {
 .object-window.restoring .wb-max .wb-restore-square {
   display: none;
 }
+.winbox .wb-body,
 .object-window .wb-body {
   background: var(--color-paper);
   color: var(--color-blue);

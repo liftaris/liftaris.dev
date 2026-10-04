@@ -102,7 +102,7 @@ describe("GitHub custom Thing", () => {
     expect(globalCss).toContain(".site-window-icon");
     expect(globalCss).toContain(".site-window-title");
     expect(globalCss).toContain(".physics-area");
-    expect(globalCss).toContain("border: 5px dashed var(--color-paper);");
+    expect(globalCss).toContain("border: none;");
   });
 
   test("Portfolio.astro renders title and icon for subroutes and physics area for home", async () => {
@@ -166,9 +166,9 @@ describe("GitHub custom Thing", () => {
   test("window titlebar uses ink background and border is 4px double ink with no radius", async () => {
     const globalCss = await Bun.file(new URL("../../styles/global.css", import.meta.url).pathname).text();
     expect(globalCss).toContain(".site-window-header {\n  height: 18px;\n  line-height: 18px;\n  background: var(--ink);\n  border-bottom: 1px solid var(--ink);");
-    expect(globalCss).toContain(".object-window .wb-header {\n  height: 18px;\n  line-height: 18px;\n  overflow: hidden;\n  background: var(--ink);\n  border-bottom: 1px solid var(--ink);");
+    expect(globalCss).toContain(".winbox .wb-header,\n.object-window .wb-header {\n  height: 18px;\n  line-height: 18px;\n  overflow: hidden;\n  background: var(--ink);\n  border-bottom: 1px solid var(--ink);");
     expect(globalCss).toContain(".site-window {\n  display: flex;\n  flex-direction: column;\n  box-sizing: border-box;\n  position: relative;\n  z-index: 1;\n  overflow: hidden;\n  border-radius: 0;\n  background: var(--color-paper);\n  border: 4px double var(--ink);");
-    expect(globalCss).toContain(".winbox.object-window {\n  color: var(--ink);\n  background: var(--ink);\n  border: 4px double var(--ink);\n  border-radius: 0;\n  box-shadow: 8px 8px 0px #00000047;");
+    expect(globalCss).toContain(".winbox,\n.winbox.object-window {\n  color: var(--ink);\n  background: var(--color-paper);\n  border: 4px double var(--ink);\n  border-radius: 0;\n  box-shadow: 8px 8px 0px #00000047;");
     expect(globalCss).not.toContain("backdrop-filter: blur");
 
     const objectWindowCode = await Bun.file(new URL("../window/ObjectWindow.tsx", import.meta.url).pathname).text();
