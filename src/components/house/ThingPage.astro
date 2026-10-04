@@ -8,6 +8,7 @@ import ThemeImage from '../ThemeImage.astro';
 import ContentImage from '../ContentImage.astro';
 import { Stage } from '../../../components/Stage';
 import { GitHubViewer } from './GitHubViewer';
+import { Guestbook } from './Guestbook';
 import { House } from './House';
 import { sceneThings } from '../../lib/things/scene';
 import { mediaUrl, pathFor, type ThingRecord } from '../../lib/things/model';
@@ -24,11 +25,13 @@ const date = post?.data.date;
 const content = post ? {collection:'posts', id:post.data.id, slug:post.id} : {collection:'things',id:thing.id,slug:thing.slug};
 let canonical: string | undefined;
 try { canonical = pathFor(thing, things) ?? undefined; } catch { /* Incomplete drafts are still previewable. */ }
+const isGuestbook = thing.id === 'leave-gift' || thing.slug === 'guestbook' || thing.slug === 'leave-gift' || thing.data.application === 'leave-gift';
 ---
 <Portfolio embedded={embedded} title={`${title} | Kaio Barbosa`} windowTitle={thing.data.name} windowIcon={icon || '📄'} restoreSlug={thing.id} canonicalPath={canonical} content={content}>
   {thing.data.kind === 'folder' ? <House things={sceneThings(things)} initialFolderId={thing.id} editMode={Boolean(getRequestContext()?.editMode)} client:load /> :
   thing.data.page_source === 'projects' || thing.data.page_source === 'experience' ? <Stage view={thing.data.page_source} client:load /> :
   thing.data.page_source === 'github' ? <GitHubViewer client:load /> :
+  isGuestbook ? <Guestbook client:load /> :
   <article class="page-content">
     {post && <h1>{title}</h1>}
     {date && <p class="meta">{new Date(date).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric',timeZone:'UTC'})}</p>}

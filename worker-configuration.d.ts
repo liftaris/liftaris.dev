@@ -8,6 +8,7 @@ interface __BaseEnv_Env {
 	HOUSE_OWNER_ID: string;
 	EMDASH_SETUP_KEY: string;
 	JEV_API_KEY: string;
+	AI?: any;
 }
 declare namespace Cloudflare {
 	interface GlobalProps {

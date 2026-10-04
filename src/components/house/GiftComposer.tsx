@@ -63,7 +63,7 @@ export function GiftComposer({ onGift, mutate, onSavingChange }: {
     setSaving(true);
     onSavingChange(true);
     setError("");
-    const draft = { emojiId: selected.id, ...(text.trim() ? { message: text.trim() } : {}), visibility: text.trim() ? visibility : "public" as Audience, ...(displayName.trim() ? { displayName: displayName.trim() } : {}) };
+    const draft = { emojiId: selected.id, message: text.trim(), authorName: displayName.trim() || "Anonymous", visibility: text.trim() ? visibility : "public" as Audience };
     const key = JSON.stringify(draft);
     if (pending.current?.key !== key) pending.current = { key, id: crypto.randomUUID() };
     try {

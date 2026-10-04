@@ -775,6 +775,28 @@ body.on-home .winbox.object-window.max:has(.folder) {
   scrollbar-width: thin;
   scrollbar-color: var(--color-blue) transparent;
 }
+
+.winbox.guestbook-window .wb-body,
+.winbox.object-window:has(.guestbook-view) .wb-body,
+.object-window:has(.guestbook-view) .wb-body,
+.site-window:has(.guestbook-view) .site-window-body {
+  background: var(--color-blue) !important;
+  background-image: none !important;
+  color: var(--color-paper) !important;
+  scrollbar-color: var(--color-paper) var(--color-blue);
+}
+
+.winbox.guestbook-window .object-window-content,
+.object-window:has(.guestbook-view) .object-window-content,
+.site-window:has(.guestbook-view) .object-window-content {
+  background: var(--color-blue) !important;
+  background-image: none !important;
+  max-width: 100%;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
 .object-window :focus-visible { outline: 2px solid currentColor; outline-offset: -4px; }
 .object-window .wb-body :focus-visible { outline-offset: 3px; }
 

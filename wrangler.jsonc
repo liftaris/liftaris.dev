@@ -41,6 +41,9 @@
   "images": {
     "binding": "IMAGES"
   },
+  "ai": {
+    "binding": "AI"
+  },
   "triggers": {
     "crons": [
       "* * * * *"
@@ -90,6 +93,9 @@
     ],
     "images": {
       "binding": "IMAGES"
+    },
+    "ai": {
+      "binding": "AI"
     }
   },
   "secrets": {

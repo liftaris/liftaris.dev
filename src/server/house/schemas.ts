@@ -1,13 +1,18 @@
 import { Schema } from "effect";
 
-const Identifier = Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(100), Schema.isPattern(/^[a-zA-Z0-9_-]+$/));
+export const Identifier = Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(100), Schema.isPattern(/^[a-zA-Z0-9_-]+$/));
 
-const GiftFields = {
+export const CreateGiftSchema = Schema.Struct({
+  requestId: Identifier,
   emojiId: Identifier,
-  message: Schema.optional(Schema.String.check(Schema.isMaxLength(2_000))),
-  visibility: Schema.Literals(["public", "private"]),
-  displayName: Schema.optional(Schema.String.check(Schema.isMaxLength(60))),
-};
+  message: Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(400)),
+  authorName: Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(60)),
+  location: Schema.optional(Schema.String.check(Schema.isMaxLength(60))),
+});
 
-export const CreateGiftSchema = Schema.Struct({ ...GiftFields, requestId: Identifier });
-export const UpdateGiftSchema = Schema.Struct({ ...GiftFields, version: Schema.Int.check(Schema.isGreaterThan(0)) });
+export const UpdateGiftSchema = Schema.Struct({
+  emojiId: Identifier,
+  message: Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(400)),
+  authorName: Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(60)),
+  location: Schema.optional(Schema.String.check(Schema.isMaxLength(60))),
+});

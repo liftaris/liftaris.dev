@@ -75,7 +75,7 @@
       "editLocking": true,
       "routable": true,
       "urlPattern": "/things-preview/{id}",
-      "commentsEnabled": false,
+      "commentsEnabled": true,
       "admin": {
         "listColumns": [
           "name",
@@ -3110,15 +3110,15 @@
         "slug": "leave-gift",
         "status": "published",
         "data": {
-          "name": "Leave a gift",
-          "kind": "application",
+          "name": "Guestbook",
+          "kind": "page",
           "icon_type": "emoji",
           "emoji": "🎁",
           "image": null,
           "width": 64,
           "height": 64,
-          "window_width": 420,
-          "window_height": 340,
+          "window_width": 560,
+          "window_height": 480,
           "desktop": true,
           "default_open": false,
           "sort_order": 11,

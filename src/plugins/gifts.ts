@@ -6,6 +6,7 @@ import { CmsHouseStore } from "../server/house/cms-store";
 import { HouseError, failure } from "../server/house/errors";
 import { sameOrigin } from "../server/house/http";
 import { resolveCmsViewer } from "../server/house/visitor";
+import { moderateWithClef } from "../server/house/clef";
 
 const GiftId = Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(100), Schema.isPattern(/^[a-zA-Z0-9_-]+$/));
 const decodeId = Schema.decodeUnknownSync(GiftId);
@@ -23,6 +24,7 @@ export function createPlugin(options: Partial<Dependencies> = {}) {
     ownerId: async () => (await import("cloudflare:workers")).env.HOUSE_OWNER_ID,
     ...options,
   };
+
   async function invoke(ctx: RouteContext, action: "snapshot" | "public-gift" | "gift" | "create" | "update") {
     try {
       if (ctx.request.method !== "GET") {
@@ -36,15 +38,21 @@ export function createPlugin(options: Partial<Dependencies> = {}) {
       const db = await dependencies.database();
       const store = new CmsHouseStore(db);
       await store.initialize();
-      if (action === "snapshot") return await store.snapshot();
-      const viewer = publicRead ? { visitor: null, owner: false }
-        : await resolveCmsViewer(db, ctx.user?.id, await dependencies.ownerId());
-      if (!publicRead && !viewer.visitor) throw failure(401, "Your visitor identity is needed for this action.");
+
+      const viewer = await resolveCmsViewer(db, ctx.user?.id, await dependencies.ownerId());
+
+      if (action === "snapshot" || action === "public-gift") {
+        return await store.snapshot(viewer);
+      }
+
+      if (!viewer.visitor) throw failure(401, "Your visitor identity is needed for this action.");
       if (action === "create") return await store.create(ctx.input, viewer);
+
       const ids = new URL(ctx.request.url).searchParams.getAll("id");
       let id: string;
       try { id = decodeId(ids.length === 1 ? ids[0] : undefined); }
       catch { throw failure(400, "Choose a gift from this portfolio."); }
+
       if (ctx.request.method === "GET") return await store.detail(id, viewer);
       if (ctx.request.method === "DELETE") return await store.remove(id, viewer);
       return await store.update(id, ctx.input, viewer);
@@ -57,8 +65,19 @@ export function createPlugin(options: Partial<Dependencies> = {}) {
   return definePlugin({
     id: "liftaris-gifts",
     version: "1.0.0",
-    // Trusted native plugin: core repositories retain authorship/idempotent IDs.
-    // Visitors themselves keep subscriber permissions, never CMS write access.
+    capabilities: ["users:read", "comments:moderate"],
+    hooks: {
+      "comment:moderate": {
+        exclusive: true,
+        handler: async (event) => {
+          const decision = await moderateWithClef(event.comment.body, event.comment.authorName);
+          return {
+            status: decision.approved ? "approved" : "pending",
+            reason: decision.reason,
+          };
+        },
+      },
+    },
     routes: {
       snapshot: {
         public: true, methods: [...GIFT_METHODS.snapshot], request: { body: "none" },

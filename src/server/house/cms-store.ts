@@ -1,124 +1,265 @@
-import { ContentRepository, invalidateCollectionCache, type ContentItem, type Database } from "emdash";
+import { invalidateCommentObjectCache, type Database } from "emdash";
 import { sql, type Kysely } from "kysely";
-import { DateTime, Schema } from "effect";
+import { Schema } from "effect";
 import type { CreatedGift, Gift, GiftDetail, HouseSnapshot, Viewer } from "../../lib/house/types";
 import { findEmoji } from "../../lib/house/emoji";
 import { CreateGiftSchema, UpdateGiftSchema } from "./schemas";
 import { failure } from "./errors";
-import { digest, initializeGiftCollection } from "./cms-schema";
+import { digest } from "./cms-schema";
 import { takeQuota } from "./rate-limit";
+import { moderateWithClef } from "./clef";
+
+type CommentRow = {
+  id: string;
+  collection: string;
+  content_id: string;
+  parent_id: string | null;
+  author_name: string;
+  author_email: string;
+  author_user_id: string | null;
+  body: string;
+  status: string;
+  moderation_metadata: string | null;
+  created_at: string;
+  updated_at: string;
+};
 
 type Receipt = { id: string; author_id: string; fingerprint: string };
 
 export class CmsHouseStore {
-  private readonly content: ContentRepository;
-  constructor(private readonly db: Kysely<Database>) { this.content = new ContentRepository(db); }
+  constructor(private readonly db: Kysely<Database>) {}
 
   async initialize(): Promise<void> {
-    await initializeGiftCollection(this.db);
+    // Ensure comments are enabled for the things collection where the guestbook lives
+    await sql`UPDATE _emdash_collections SET comments_enabled = 1 WHERE slug IN ('things', 'gifts')`.execute(this.db);
+
+    await sql`CREATE TABLE IF NOT EXISTS house_gift_receipts (
+      id TEXT PRIMARY KEY, author_id TEXT NOT NULL, fingerprint TEXT NOT NULL
+    )`.execute(this.db);
   }
 
-  async snapshot(): Promise<HouseSnapshot> {
-    const gifts: Gift[] = [];
-    let cursor: string | undefined;
-    do {
-      const page = await this.content.findMany("gifts", { where: { status: "published" }, orderBy: { field: "createdAt", direction: "asc" }, limit: 100, cursor });
-      gifts.push(...page.items.map(publicGift));
-      cursor = page.nextCursor;
-    } while (cursor);
+  async snapshot(viewer?: Viewer | null): Promise<HouseSnapshot> {
+    let query = this.db
+      .selectFrom("_emdash_comments as c")
+      .selectAll()
+      .where("collection", "in", ["things", "gifts"])
+      .where("content_id", "in", ["leave-gift", "guestbook"]);
+
+    if (viewer?.owner) {
+      query = query.where("status", "in", ["approved", "pending"]);
+    } else if (viewer?.visitor) {
+      const visitorId = viewer.visitor.id;
+      query = query.where((eb) =>
+        eb.or([
+          eb("status", "=", "approved"),
+          eb.and([
+            eb("status", "=", "pending"),
+            eb("author_user_id", "=", visitorId),
+          ]),
+        ]),
+      );
+    } else {
+      query = query.where("status", "=", "approved");
+    }
+
+    const rows = (await query.orderBy("created_at", "asc").execute()) as unknown as CommentRow[];
+
+    const gifts: Gift[] = rows.map((row) => commentToGift(row, viewer));
     return { gifts };
   }
 
   async create(input: unknown, viewer: Viewer): Promise<CreatedGift> {
     if (!viewer.visitor) throw failure(401, "Your visitor identity is needed for this action.");
+
     let command: typeof CreateGiftSchema.Type;
-    try { command = Schema.decodeUnknownSync(CreateGiftSchema)(input); }
-    catch { throw failure(400, "Check the gift, name, and message and try again."); }
-    const data = giftData(command, viewer.visitor.name);
+    try {
+      command = Schema.decodeUnknownSync(CreateGiftSchema)(input);
+    } catch {
+      throw failure(400, "Check the gift icon, name, and message (up to 400 characters) and try again.");
+    }
+
     const id = `gift-${await digest(`${viewer.visitor.id}:${command.requestId}`)}`;
-    const fingerprint = await digest(JSON.stringify(data));
+    const fingerprint = await digest(JSON.stringify(command));
+
     const retry = async (): Promise<CreatedGift | null> => {
       const { rows } = await sql<Receipt>`SELECT * FROM house_gift_receipts WHERE id = ${id}`.execute(this.db);
       if (!rows[0]) return null;
-      if (rows[0].fingerprint !== fingerprint) throw failure(409, "This request was already used for a different gift.");
-      const item = await this.content.findById("gifts", id);
-      return { ...await this.snapshot(), createdGiftId: item?.status === "published" ? id : null };
+      if (rows[0].fingerprint !== fingerprint) {
+        throw failure(409, "This request was already used for a different gift.");
+      }
+      return { ...(await this.snapshot(viewer)), createdGiftId: id };
     };
+
     const previous = await retry();
     if (previous) return previous;
-    if (!viewer.owner && !await takeQuota(this.db, `house:gifts:${viewer.visitor.id}`, 10)) {
+
+    if (!viewer.owner && !(await takeQuota(this.db, `house:gifts:${viewer.visitor.id}`, 10))) {
       throw failure(429, "A few gifts at a time is plenty. Try again in a minute.");
     }
+
+    // Moderate message using Cloudflare Clef decision model
+    const clefDecision = await moderateWithClef(command.message, command.authorName);
+    const status = clefDecision.approved ? "approved" : "pending";
+
+    const emojiItem = findEmoji(command.emojiId);
+    const emoji = emojiItem?.emoji || "🎁";
+
+    const metadata = {
+      emojiId: command.emojiId,
+      emoji,
+      location: command.location?.trim() || null,
+      clefReason: clefDecision.reason,
+    };
+
+    const now = new Date().toISOString();
+
     try {
-      await this.content.create({ id, type: "gifts", status: "published", authorId: viewer.visitor.id,
-        data: { ...data, submission_hash: fingerprint } });
+      await this.db
+        .insertInto("_emdash_comments")
+        .values({
+          id,
+          collection: "things",
+          content_id: "leave-gift",
+          parent_id: null,
+          author_name: command.authorName.trim(),
+          author_email: `${viewer.visitor.id}@visitors.invalid`,
+          author_user_id: viewer.visitor.id,
+          body: command.message.trim(),
+          status,
+          ip_hash: null,
+          user_agent: null,
+          moderation_metadata: JSON.stringify(metadata),
+          created_at: now,
+          updated_at: now,
+        })
+        .execute();
+
+      await sql`INSERT OR REPLACE INTO house_gift_receipts (id, author_id, fingerprint) VALUES (${id}, ${viewer.visitor.id}, ${fingerprint})`.execute(this.db);
+
+      invalidateCommentObjectCache();
     } catch (error) {
       const saved = await retry();
       if (saved) return saved;
       throw error;
     }
-    return { ...await this.snapshot(), createdGiftId: id };
+
+    return { ...(await this.snapshot(viewer)), createdGiftId: id };
   }
 
   async detail(id: string, viewer: Viewer): Promise<GiftDetail> {
-    const item = await this.content.findById("gifts", id);
-    if (!item || item.status !== "published") throw failure(404, "This gift is no longer here.");
-    const owns = viewer.visitor?.id === item.authorId;
-    const gift = publicGift(item);
-    const canRead = gift.visibility === "public" || owns || viewer.owner;
-    return { ...gift, version: item.version,
-      authorName: canRead ? String(item.data.author_name) : null,
-      message: canRead ? String(item.data.message ?? "") || null : null,
-      canEdit: owns || viewer.owner, canReclaim: owns, canRemove: viewer.owner,
+    const row = (await this.db
+      .selectFrom("_emdash_comments")
+      .selectAll()
+      .where("id", "=", id)
+      .executeTakeFirst()) as unknown as CommentRow | undefined;
+
+    if (!row) throw failure(404, "This gift is no longer here.");
+    const gift = commentToGift(row, viewer);
+    const owns = Boolean(viewer.visitor?.id && row.author_user_id === viewer.visitor.id);
+
+    return {
+      ...gift,
+      canEdit: owns || viewer.owner,
+      canReclaim: owns || viewer.owner,
+      canRemove: owns || viewer.owner,
     };
   }
 
   async update(id: string, input: unknown, viewer: Viewer): Promise<HouseSnapshot> {
     if (!viewer.visitor) throw failure(401, "Your visitor identity is needed for this action.");
-    const detail = await this.detail(id, viewer);
-    if (!detail.canEdit) throw failure(403, "Only its sender or Kaio can edit this gift.");
+
+    const row = (await this.db
+      .selectFrom("_emdash_comments")
+      .selectAll()
+      .where("id", "=", id)
+      .executeTakeFirst()) as unknown as CommentRow | undefined;
+
+    if (!row) throw failure(404, "This gift is no longer here.");
+    const owns = Boolean(viewer.visitor?.id && row.author_user_id === viewer.visitor.id);
+    if (!owns && !viewer.owner) throw failure(403, "Only its author or Kaio can edit this gift.");
+
     let command: typeof UpdateGiftSchema.Type;
-    try { command = Schema.decodeUnknownSync(UpdateGiftSchema)(input); }
-    catch { throw failure(400, "Check the gift, name, and message and try again."); }
-    const data = giftData(command, viewer.visitor.name);
-    // EmDash 0.40.1's field update still has no atomic expected-version predicate.
-    // Native draft-pointer CAS + publish is possible, but is two commits with
-    // failure reconciliation, not a drop-in replacement for immediate edits.
-    // Preserve this fence until that lifecycle migration is independently tested.
-    const result = await sql`UPDATE ec_gifts
-      SET emoji_id = ${data.emoji_id}, author_name = ${data.author_name},
-        message = ${data.message}, visibility = ${data.visibility},
-        updated_at = ${DateTime.formatIso(DateTime.nowUnsafe())}, version = version + 1
-      WHERE id = ${id} AND version = ${command.version}
-        AND status = 'published' AND deleted_at IS NULL
-        ${viewer.owner ? sql`` : sql`AND author_id = ${viewer.visitor.id}`}
-    `.execute(this.db);
-    if (!result.numAffectedRows) throw failure(409, "This gift changed. Reload it before saving again.");
-    invalidateCollectionCache("gifts");
-    return this.snapshot();
+    try {
+      command = Schema.decodeUnknownSync(UpdateGiftSchema)(input);
+    } catch {
+      throw failure(400, "Check the gift icon, name, and message (up to 400 characters) and try again.");
+    }
+
+    // Re-run Clef moderation on the updated message
+    const clefDecision = await moderateWithClef(command.message, command.authorName);
+    const status = clefDecision.approved ? "approved" : "pending";
+
+    const emojiItem = findEmoji(command.emojiId);
+    const emoji = emojiItem?.emoji || "🎁";
+
+    const metadata = {
+      emojiId: command.emojiId,
+      emoji,
+      location: command.location?.trim() || null,
+      clefReason: clefDecision.reason,
+    };
+
+    const now = new Date().toISOString();
+
+    await this.db
+      .updateTable("_emdash_comments")
+      .set({
+        author_name: command.authorName.trim(),
+        body: command.message.trim(),
+        status,
+        moderation_metadata: JSON.stringify(metadata),
+        updated_at: now,
+      })
+      .where("id", "=", id)
+      .execute();
+
+    invalidateCommentObjectCache();
+    return this.snapshot(viewer);
   }
 
   async remove(id: string, viewer: Viewer): Promise<HouseSnapshot> {
     if (!viewer.visitor) throw failure(401, "Your visitor identity is needed for this action.");
-    const item = await this.content.findByIdIncludingTrashed("gifts", id);
-    if (!item) throw failure(404, "This gift is no longer here.");
-    if (!viewer.owner && item.authorId !== viewer.visitor.id) throw failure(403, "Only its sender or Kaio can remove this gift.");
-    await this.content.delete("gifts", id);
-    return this.snapshot();
+
+    const row = (await this.db
+      .selectFrom("_emdash_comments")
+      .selectAll()
+      .where("id", "=", id)
+      .executeTakeFirst()) as unknown as CommentRow | undefined;
+
+    if (!row) throw failure(404, "This gift is no longer here.");
+    const owns = Boolean(viewer.visitor?.id && row.author_user_id === viewer.visitor.id);
+    if (!owns && !viewer.owner) throw failure(403, "Only its author or Kaio can remove this gift.");
+
+    await this.db.deleteFrom("_emdash_comments").where("id", "=", id).execute();
+
+    invalidateCommentObjectCache();
+    return this.snapshot(viewer);
   }
 }
 
-function giftData(command: Omit<typeof UpdateGiftSchema.Type, "version">, name: string) {
-  if (!findEmoji(command.emojiId)) throw failure(400, "Choose one of the suggested emoji.");
-  return { emoji_id: command.emojiId, author_name: command.displayName?.trim() || name,
-    message: command.message?.trim() || null, visibility: command.message?.trim() ? command.visibility : "public" };
-}
+function commentToGift(row: CommentRow, viewer?: Viewer | null): Gift {
+  let meta: Record<string, unknown> = {};
+  try {
+    if (row.moderation_metadata) meta = JSON.parse(row.moderation_metadata);
+  } catch {
+    // ignore parse error
+  }
 
-function publicGift(item: ContentItem): Gift {
-  const visibility = item.data.message && item.data.visibility === "private" ? "private" : "public";
+  const emojiId = typeof meta.emojiId === "string" ? meta.emojiId : "gift";
+  const emoji = typeof meta.emoji === "string" ? meta.emoji : findEmoji(emojiId)?.emoji || "🎁";
+  const location = typeof meta.location === "string" ? meta.location : null;
+  const isAuthor = Boolean(viewer?.visitor?.id && row.author_user_id === viewer.visitor.id);
+
   return {
-    id: item.id, emojiId: String(item.data.emoji_id), authorName: visibility === "public" ? String(item.data.author_name) : null, createdAt: item.createdAt,
-    visibility,
-    message: visibility === "public" && typeof item.data.message === "string" ? item.data.message : null,
+    id: row.id,
+    emojiId,
+    emoji,
+    authorName: row.author_name,
+    location,
+    message: row.body,
+    status: (row.status === "approved" || row.status === "pending" ? row.status : "pending") as "approved" | "pending",
+    createdAt: row.created_at || new Date().toISOString(),
+    canEdit: isAuthor || Boolean(viewer?.owner),
+    canDelete: isAuthor || Boolean(viewer?.owner),
   };
 }

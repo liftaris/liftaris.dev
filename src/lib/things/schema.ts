@@ -28,4 +28,4 @@ export const thingFields: CreateFieldInput[] = [
   select('background_repeat', 'Background repeat', ['no-repeat', 'repeat', 'repeat-x', 'repeat-y', 'round', 'space'], 'no-repeat'),
   { slug: 'legacy_paths', label: 'Former paths', type: 'json', defaultValue: [] },
 ];
-export const thingsCollection = { slug: 'things', label: 'Things', labelSingular: 'Thing', icon: 'shapes', supports: ['preview', 'search', 'seo'], editLocking: true, routable: true, urlPattern: '/things-preview/{id}', commentsEnabled: false, admin: { listColumns: ['name', 'kind', 'desktop'] } } satisfies CreateCollectionInput;
+export const thingsCollection = { slug: 'things', label: 'Things', labelSingular: 'Thing', icon: 'shapes', supports: ['preview', 'search', 'seo'], editLocking: true, routable: true, urlPattern: '/things-preview/{id}', commentsEnabled: true, admin: { listColumns: ['name', 'kind', 'desktop'] } } satisfies CreateCollectionInput;

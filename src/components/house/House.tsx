@@ -6,6 +6,7 @@ import type { Gift, GiftDetail, HouseSnapshot } from "../../lib/house/types";
 import { giftObjects } from "../../lib/house/emoji";
 import { GiftComposer } from "./GiftComposer";
 import { GiftDialog } from "./GiftDialog";
+import { Guestbook } from "./Guestbook";
 import { HouseClump } from "./HouseClump";
 import { getBackgroundStyle } from "../clump/model";
 import { ObjectWindow } from "../window/ObjectWindow";
@@ -47,7 +48,7 @@ function saveSentGiftIds(ids: ReadonlySet<string>): void {
   }
 }
 
-function isFolderObject(id: string, kind?: string): boolean {
+function isFolderObject(_id: string, kind?: string): boolean {
   return kind === "folder";
 }
 
@@ -327,20 +328,37 @@ export function House({
           maximizeUrl={spec?.href ?? undefined}
           restoreAnimation={item.restoreAnimation}
           onOpen={open} onOpenFolder={open} onClose={() => close(item.object.id)} />;
-        const composing = spec?.kind === 'application' && spec.application === 'leave-gift';
-        const title = item.object.name;
-        const icon = item.object.image || item.object.emoji;
-        const bgStyle = spec?.kind === 'folder' ? getBackgroundStyle(spec) : undefined;
-        const maximizeUrl = spec?.href ?? undefined;
+        const isGuestbook = item.object.id === 'leave-gift' || spec?.id === 'leave-gift' || spec?.slug === 'guestbook' || (spec?.kind === 'application' && spec.application === 'leave-gift') || item.object.name === 'Guestbook';
+        const composing = !isGuestbook && spec?.kind === 'application' && spec.application === 'leave-gift';
+        const title = isGuestbook ? (item.object.name || 'Guestbook') : item.object.name;
+        const icon = isGuestbook ? (item.object.image || item.object.emoji || '🎁') : (item.object.image || item.object.emoji);
+        const bgStyle = isGuestbook
+          ? { backgroundColor: "var(--color-blue)", backgroundImage: "none" }
+          : spec?.kind === 'folder'
+            ? getBackgroundStyle(spec)
+            : undefined;
+        const windowClass = isGuestbook ? "guestbook-window" : undefined;
+        const maximizeUrl = spec?.href ?? (isGuestbook ? "/leave-gift" : undefined);
+        const winWidth = spec?.window_width ?? (isGuestbook ? 560 : undefined);
+        const winHeight = spec?.window_height ?? (isGuestbook ? 480 : undefined);
         return <ObjectWindow key={item.object.id} title={title} icon={icon} origin={item.origin} source={item.source} fallbackSource={fallbackSource}
           maximizeUrl={maximizeUrl}
           restoreAnimation={item.restoreAnimation}
-          width={spec?.window_width} height={spec?.window_height}
+          className={windowClass}
+          width={winWidth} height={winHeight}
           x={spec?.window_x} y={spec?.window_y}
           onAuthorResize={geometry(item.object.id)} onAuthorMove={moveGeometry(item.object.id)} canClose={!composing || !savingGift}
           initialBounds={item.previewBounds} backgroundStyle={bgStyle} onReady={item.onReady}
-          monochrome={!item.gift} closeLabel={item.gift ? "Close gift" : undefined} onClose={() => close(item.object.id)}>
-          {item.gift ? <GiftDialog gift={item.gift} initialDetail={item.detail} onClose={() => close(item.object.id)} onDetail={refreshDetail} mutate={mutate} /> : composing ? <GiftComposer onGift={(gift, bounds, form) => receiveGift(item, gift, bounds, form)} mutate={mutate} onSavingChange={setSavingGift} /> : page ? <PageReader page={page} /> : null}
+          monochrome={!item.gift && !isGuestbook} closeLabel={item.gift ? "Close gift" : undefined} onClose={() => close(item.object.id)}>
+          {item.gift ? (
+            <GiftDialog gift={item.gift} initialDetail={item.detail} onClose={() => close(item.object.id)} onDetail={refreshDetail} mutate={mutate} />
+          ) : isGuestbook ? (
+            <Guestbook initialSnapshot={snapshot} mutate={mutate} onGiftsChange={(gifts) => accept({ gifts })} />
+          ) : composing ? (
+            <GiftComposer onGift={(gift, bounds, form) => receiveGift(item, gift, bounds, form)} mutate={mutate} onSavingChange={setSavingGift} />
+          ) : page ? (
+            <PageReader page={page} />
+          ) : null}
         </ObjectWindow>;
       })}
     </div></AuthoringContext.Provider>

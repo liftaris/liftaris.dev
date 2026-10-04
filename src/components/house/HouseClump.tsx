@@ -6,7 +6,7 @@ import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
 import { createSceneEngine } from "../clump/matter-engine";
 import { isGift, isImageUrl, OBJECTS } from "../clump/model";
 import type { ObjectSpec, Point, SceneEngine } from "../clump/model";
-import { giftObjects, normalizeEmojiPresentation, worldSize } from "../../lib/house/emoji";
+import { normalizeEmojiPresentation, worldSize } from "../../lib/house/emoji";
 import { getGift } from "../../lib/house/client";
 import type { Gift } from "../../lib/house/types";
 import { reconcileGifts, retiringGiftIds } from "./gift-presence";
@@ -16,7 +16,7 @@ import { ThingLabel } from "./ThingLabel";
 
 type Grab = { id: string; point: Point; origin: Point; moved: boolean; pointerId?: number };
 const INITIAL_SIZE = { width: 500, height: 600 };
-const GIFT_ENTRY: ObjectSpec = { id: "leave-gift", name: "Leave a gift", emoji: "🎁", width: 64, height: 64 };
+const GIFT_ENTRY: ObjectSpec = { id: "leave-gift", name: "Guestbook", emoji: "🎁", width: 64, height: 64 };
 
 function measureViewport(element: HTMLDivElement) {
   // Measure the fixed outer box: scrollbars appearing as the crowd grows must
@@ -74,7 +74,7 @@ export function HouseClump({
   const available = useRef(INITIAL_SIZE);
   const growth = useRef({ width: 0, height: 0 });
   const baseObjects = useMemo(() => desktopObjects ?? [...OBJECTS, GITHUB_THING, PORTFOLIO_FOLDER_OBJECT, WRITING_FOLDER_OBJECT, GIFT_ENTRY], [desktopObjects]);
-  const objects = useMemo(() => [...baseObjects, ...giftObjects(displayed)], [baseObjects, displayed]);
+  const objects = useMemo(() => baseObjects, [baseObjects]);
   const retiring = retiringGiftIds(displayed, gifts, [...inspectedIds, grabId]);
   const liveIds = new Set(gifts.map((gift) => gift.id));
 
@@ -548,7 +548,7 @@ export function HouseClump({
           })}
         </div>
       </div>
-      <p id="house-movement-help" className="house-sr-only sr-only">Drag to move things in your own arrangement. With a keyboard, arrows move, Enter places, and Escape cancels. Press Enter on a thing to open its window. When the collection grows, scroll this area to explore more gifts. Senders and admins can drag gifts to the trash icon at the bottom right to remove them.</p>
+      <p id="house-movement-help" className="house-sr-only sr-only">Drag to move things in your own arrangement. With a keyboard, arrows move, Enter places, and Escape cancels. Press Enter on a thing to open its window.</p>
     </div>
     <div
       ref={trashRef}
