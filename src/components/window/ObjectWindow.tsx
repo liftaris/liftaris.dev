@@ -110,7 +110,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
       const padY = parseFloat(style.paddingTop || "0") + parseFloat(style.paddingBottom || "0");
 
       const targetWidth = Math.ceil(rect.width + padX + 6);
-      const targetHeight = Math.ceil(rect.height + padY + 28 + 6);
+      const targetHeight = Math.ceil(rect.height + padY + 18 + 6);
 
       const maxWidth = innerWidth - Number(win.left) - Number(win.right);
       const maxHeight = innerHeight - Number(win.top) - Number(win.bottom);
@@ -164,12 +164,12 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
       let closing = false;
       const options: WinBox.Params & { template: HTMLElement } = {
         root: document.body,
-        template, index: 20, header: 28,
+        template, index: 20, header: 18,
         class: ["object-window", "@container", "no-full", !resizable && "no-resize", "no-animation", windowClass].filter(Boolean).join(" "),
         width, height,
         minwidth: Math.min(minWidth, width),
         minheight: Math.min(minHeight, height),
-        top: 28, left: 12, right: 12, bottom: 12,
+        top: 18, left: 12, right: 12, bottom: 12,
         x: initialBounds?.left ?? origin.left + 24, y: initialBounds?.top ?? origin.top + 16,
         onclose(force) {
           if (force) return false;
@@ -260,12 +260,12 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
             frame.style.left = `${outerRect.left}px`;
             frame.style.width = `${outerRect.width}px`;
             frame.style.height = `${outerRect.height}px`;
-            frame.style.borderRadius = "0 0 12px 12px";
+            frame.style.borderRadius = "0 0 2px 2px";
           } else {
-            frame.style.top = "28px";
+            frame.style.top = "18px";
             frame.style.left = "0px";
             frame.style.width = "100vw";
-            frame.style.height = "calc(100vh - 28px)";
+            frame.style.height = "calc(100vh - 18px)";
           }
           frame.style.boxShadow = "none";
           frame.style.border = "none";
@@ -312,12 +312,12 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
             frame.style.left = `${outerRect.left}px`;
             frame.style.width = `${outerRect.width}px`;
             frame.style.height = `${outerRect.height}px`;
-            frame.style.borderRadius = "0 0 12px 12px";
+            frame.style.borderRadius = "0 0 2px 2px";
           } else {
-            frame.style.top = "28px";
+            frame.style.top = "18px";
             frame.style.left = "0px";
             frame.style.width = "100vw";
-            frame.style.height = "calc(100vh - 28px)";
+            frame.style.height = "calc(100vh - 18px)";
           }
           frame.style.boxShadow = "none";
           frame.style.border = "none";
@@ -352,7 +352,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
           frame.style.left = `${routeLeft}px`;
           frame.style.width = `${routeWidth}px`;
           frame.style.height = `${routeHeight}px`;
-          frame.style.borderRadius = "3px";
+          frame.style.borderRadius = "2px";
           if (siteWindow && siteWindow.classList.contains("site-window")) {
             siteWindow.style.transition = "max-height 220ms cubic-bezier(0.16, 1, 0.3, 1)";
             siteWindow.style.maxHeight = "none";
@@ -477,7 +477,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
           frame.style.left = `${routeLeft}px`;
           frame.style.width = `${routeWidth}px`;
           frame.style.height = `${routeHeight}px`;
-          frame.style.borderRadius = "3px";
+          frame.style.borderRadius = "2px";
         } else {
           frame.style.top = "0px";
           frame.style.left = "0px";

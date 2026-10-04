@@ -114,9 +114,9 @@ describe("GitHub custom Thing", () => {
     expect(astroLayout).toContain("physics-area");
   });
 
-  test("ObjectWindow bounds maximize and dragging below 28px outermost titlebar with no border spacing", async () => {
+  test("ObjectWindow bounds maximize and dragging below 18px outermost titlebar with no border spacing", async () => {
     const code = await Bun.file(new URL("../window/ObjectWindow.tsx", import.meta.url).pathname).text();
-    expect(code).toContain("top: 28");
+    expect(code).toContain("top: 18");
     expect(code).toContain('frame.style.top = "0px"');
     expect(code).toContain('frame.style.height = "100vh"');
     expect(code).toContain('frame.style.border = "none"');
@@ -124,10 +124,10 @@ describe("GitHub custom Thing", () => {
 
     const windowCss = await Bun.file(new URL("../../styles/global.css", import.meta.url).pathname).text();
     expect(windowCss).toContain(".winbox.object-window.max");
-    expect(windowCss).toContain("top: 28px !important");
+    expect(windowCss).toContain("top: 18px !important");
     expect(windowCss).toContain("left: 0px !important");
     expect(windowCss).toContain("width: 100vw !important");
-    expect(windowCss).toContain("height: calc(100vh - 28px) !important");
+    expect(windowCss).toContain("height: calc(100vh - 18px) !important");
     expect(windowCss).toContain(".object-window:has(.folder) .object-window-content");
     expect(windowCss).toContain(".winbox.object-window.restoring");
   });
