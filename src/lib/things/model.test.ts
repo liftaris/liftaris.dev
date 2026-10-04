@@ -31,3 +31,8 @@ test('spawn coordinates support decimal values with 0.001 step', async () => {
  expect(spawnY?.validation?.max).toBe(1);
  expect((spawnY?.validation as { step?: number })?.step).toBe(0.001);
 });
+test('ThingPage does not render h1 for content pages', async () => {
+ const content = await Bun.file(new URL('../../components/house/ThingPage.astro', import.meta.url).pathname).text();
+ expect(content).toContain('{post && <h1>{title}</h1>}');
+ expect(content).not.toContain('{(!embedded || post) && <h1>{title}</h1>}');
+});
