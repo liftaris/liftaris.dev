@@ -261,7 +261,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
             frame.style.left = `${outerRect.left}px`;
             frame.style.width = `${outerRect.width}px`;
             frame.style.height = `${outerRect.height}px`;
-            frame.style.borderRadius = "0 0 2px 2px";
+            frame.style.borderRadius = "0";
           } else {
             frame.style.top = "18px";
             frame.style.left = "0px";
@@ -313,7 +313,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
             frame.style.left = `${outerRect.left}px`;
             frame.style.width = `${outerRect.width}px`;
             frame.style.height = `${outerRect.height}px`;
-            frame.style.borderRadius = "0 0 2px 2px";
+            frame.style.borderRadius = "0";
           } else {
             frame.style.top = "18px";
             frame.style.left = "0px";
@@ -353,7 +353,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
           frame.style.left = `${routeLeft}px`;
           frame.style.width = `${routeWidth}px`;
           frame.style.height = `${routeHeight}px`;
-          frame.style.borderRadius = "2px";
+          frame.style.borderRadius = "0";
           if (siteWindow && siteWindow.classList.contains("site-window")) {
             siteWindow.style.transition = "max-height 220ms cubic-bezier(0.16, 1, 0.3, 1)";
             siteWindow.style.maxHeight = "none";
@@ -365,7 +365,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
           frame.style.height = "100vh";
         }
         frame.style.boxShadow = "none";
-        frame.style.border = "1px solid var(--color-window-border)";
+        frame.style.border = "4px double var(--ink)";
 
         const outerDrag = document.querySelector<HTMLElement>(".site-window-drag");
         if (outerDrag && !outerDrag.textContent?.trim()) {
@@ -478,7 +478,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
           frame.style.left = `${routeLeft}px`;
           frame.style.width = `${routeWidth}px`;
           frame.style.height = `${routeHeight}px`;
-          frame.style.borderRadius = "2px";
+          frame.style.borderRadius = "0";
         } else {
           frame.style.top = "0px";
           frame.style.left = "0px";
@@ -486,7 +486,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
           frame.style.height = "100vh";
         }
         frame.style.boxShadow = "none";
-        frame.style.border = "1px solid var(--color-window-border)";
+        frame.style.border = "4px double var(--ink)";
 
         requestAnimationFrame(() => {
           if (disposed) return;
