@@ -70,7 +70,7 @@ function ProjectsPane() {
       {PROJECTS.map((item) => {
         const primaryHref = item.links.find((link) => link.primary)?.href ?? item.links[0].href;
         return (
-          <article className="card @container grid grid-cols-1 @md:grid-cols-[54px_1fr] gap-4 @md:gap-6 border-b border-paper/20 pb-4 pt-4" key={item.slug}>
+          <article className="card @container grid grid-cols-1 gap-3 border-b border-paper/20 pb-4 pt-4" key={item.slug}>
             <div>
               <p>{item.year} / {item.tag}</p>
               <div className="projectTitleRow @container flex flex-col @md:flex-row justify-between items-baseline gap-2 flex-wrap">
@@ -122,7 +122,7 @@ export function Stage({ view }: StageProps) {
     <div className="pane experiencePane">
       {jobs.map((job) => (
         <article
-          className="row @container grid grid-cols-1 @md:grid-cols-[54px_1fr] gap-4 @md:gap-6 border-b border-paper/20 pb-4 pt-4"
+          className="row @container grid grid-cols-1 gap-3 border-b border-paper/20 pb-4 pt-4"
           key={job.company}
         >
           <div>

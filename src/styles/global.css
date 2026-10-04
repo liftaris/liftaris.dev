@@ -534,7 +534,6 @@ body.embedded-post {
   min-height: auto;
 }
 
-.embedded-post .object-window-content,
 .object-window-content:has(.article-content),
 .object-window-content:has(.page-content),
 .object-window:has(.article-content) .object-window-content,
@@ -779,21 +778,26 @@ body.on-home .winbox.object-window.max:has(.folder) {
 .site-window .card,
 .site-window .row,
 .object-window .card,
-.object-window .row {
+.object-window .row,
+.pane .card,
+.pane .row {
   grid-template-columns: 1fr;
   gap: 12px;
   border-color: color-mix(in srgb, var(--color-blue) 20%, transparent);
 }
 
 .site-window .projectTitleRow,
-.object-window .projectTitleRow {
+.object-window .projectTitleRow,
+.pane .projectTitleRow {
   flex-wrap: wrap;
 }
 
 .site-window .card h3,
 .site-window .row h3,
 .object-window .card h3,
-.object-window .row h3 {
+.object-window .row h3,
+.pane .card h3,
+.pane .row h3 {
   font-size: clamp(26px, 4cqi, 38px);
   line-height: 1.05;
 }
@@ -801,7 +805,9 @@ body.on-home .winbox.object-window.max:has(.folder) {
 .site-window .card p,
 .site-window .row p,
 .object-window .card p,
-.object-window .row p {
+.object-window .row p,
+.pane .card p,
+.pane .row p {
   margin: 0;
   font-size: 14px;
   line-height: 1.5;
@@ -811,7 +817,9 @@ body.on-home .winbox.object-window.max:has(.folder) {
 .site-window .row > div:first-child > p:first-child,
 .object-window .row > div:first-child > p:first-child,
 .site-window .card p:first-child,
-.object-window .card p:first-child {
+.object-window .card p:first-child,
+.pane .row > div:first-child > p:first-child,
+.pane .card p:first-child {
   display: block;
   margin: 0 0 10px;
   font-size: 11px;
@@ -823,14 +831,17 @@ body.on-home .winbox.object-window.max:has(.folder) {
 .site-window .links a,
 .site-window .chips span,
 .object-window .links a,
-.object-window .chips span {
+.object-window .chips span,
+.pane .links a,
+.pane .chips span {
   border-color: color-mix(in srgb, var(--color-blue) 35%, transparent);
   color: var(--color-blue);
   background: none;
 }
 
 .site-window .links a:hover,
-.object-window .links a:hover {
+.object-window .links a:hover,
+.pane .links a:hover {
   background: color-mix(in srgb, var(--color-blue) 10%, transparent);
 }
 

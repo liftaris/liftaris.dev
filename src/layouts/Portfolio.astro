@@ -100,7 +100,7 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
     <link rel="icon" href="/favicon.ico" />
     {!embedded && <ClientRouter fallback="swap" />}
   </head>
-  <body class={embedded ? (isHome ? "embedded-post on-home" : "embedded-post") : (isHome ? "on-home" : undefined)}>
+  <body class={embedded ? (isHome ? "embedded-post on-home" : "embedded-post object-window @container") : (isHome ? "on-home" : undefined)}>
     <EmDashBodyStart page={page} />
     <svg width="0" height="0" class="sr-only" style="position:absolute;width:0;height:0;overflow:hidden;pointer-events:none;" aria-hidden="true" focusable="false">
       <defs>
