@@ -3,6 +3,7 @@ import { getDb } from 'emdash/runtime';
 import { policyGraph, postChoices } from '../server/things/graph';
 import { rememberRoutes, routeChanges } from '../server/things/routes';
 import { dependentNames, validateGraph, normalizeData, type ThingRecord } from '../lib/things/model';
+import { invalidateThingsCache } from '../server/things/read';
 
 export function createPlugin() {
   const denyRemoval = async (id: string) => {
@@ -39,14 +40,20 @@ export function createPlugin() {
       },
       'content:beforePublish': async event => {
         if (event.collection !== 'things') return;
-        try { const db=await getDb();const after=await policyGraph(db,String(event.content.id));validateGraph(after);await rememberRoutes(db,await policyGraph(db),after); }
+        try { const db=await getDb();const after=await policyGraph(db,String(event.content.id));validateGraph(after);await rememberRoutes(db,await policyGraph(db),after); invalidateThingsCache(); }
         catch (error) { return { cancel: true, reason: error instanceof Error ? error.message : 'Invalid Thing relationships.' }; }
       },
-      'content:beforeDelete': async event => event.collection !== 'things' || !await denyRemoval(event.id),
+      'content:beforeDelete': async event => {
+        if (event.collection !== 'things') return true;
+        const denied = await denyRemoval(event.id);
+        if (!denied) invalidateThingsCache();
+        return !denied;
+      },
       'content:beforeUnpublish': async event => {
         if (event.collection !== 'things') return;
         const reason = await denyRemoval(String(event.content.id));
         if (reason) return { cancel: true, reason };
+        invalidateThingsCache();
       },
     },
   });

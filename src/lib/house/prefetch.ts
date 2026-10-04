@@ -4,6 +4,7 @@ type Target = {
   id?: string;
   href?: string | null;
   kind?: string;
+  action?: string | null;
   page_source?: keyof typeof PAGE_SOURCES;
   previewUrl?: string;
   items?: readonly unknown[];
@@ -21,9 +22,12 @@ export function getThingPrefetchUrls(thing?: Target | null): string[] {
   // Folders already render from the scene data. Warming every descendant here
   // makes the page the visitor actually chooses compete with unrelated renders.
   if (!thing || thing.previewUrl || thing.kind === 'folder') return [];
-  const url = thing.href || (thing.page_source ? PAGE_SOURCES[thing.page_source] : null);
+  const sourceUrl = thing.page_source ? PAGE_SOURCES[thing.page_source] : null;
+  const actionUrl = thing.action === 'projects' ? '/projects' : thing.action === 'experience' ? '/experience' : null;
+  const builtinUrl = thing.id === 'computer' ? '/projects' : thing.id === 'case' ? '/experience' : thing.id === 'github' ? '/github' : null;
+  const url = thing.href || sourceUrl || actionUrl || builtinUrl;
   if (!url?.startsWith('/') || url.startsWith('//')) return [];
-  return [thing.kind === 'page' || thing.kind === 'post' ? windowPageUrl(url) : url];
+  return [thing.kind === 'page' || thing.kind === 'post' || thing.kind === 'object' || !thing.kind ? windowPageUrl(url) : url];
 }
 
 export function prefetchUrl(url?: string | null) {

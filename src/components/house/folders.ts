@@ -72,14 +72,14 @@ export function buildFolder(
   visited = new Set<string>()
 ): FolderSpec<HouseThing> {
   const nextVisited = new Set(visited).add(folderThing.id);
-  const children = (folderThing.contents
+  const children = (folderThing.contents?.length
     ? folderThing.contents.flatMap(id => allThings.find(t => t.id === id) ?? [])
-    : allThings.filter(t => t.parent_id === folderThing.id).sort((a, b) => a.sort_order - b.sort_order))
+    : allThings.filter(t => t.parent_id === folderThing.id || t.primaryFolder === folderThing.id).sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)))
     .filter(t => !nextVisited.has(t.id));
 
   const items: FolderEntry<HouseThing>[] = [];
 
-  if (!folderThing.contents && folderThing.id === "writing-folder") {
+  if ((!folderThing.contents || folderThing.contents.length === 0) && folderThing.id === "writing-folder") {
     for (const post of posts) {
       const isImg = isImageUrl(post.icon);
       const value: PostThing = {
@@ -164,8 +164,13 @@ export function getDefaultOpenChildren(
   visitedFolders = new Set<string>([folderId])
 ): ThingSpec[] {
   const result: ThingSpec[] = [];
+  const folder = allThings.find(f => f.id === folderId);
   const children = allThings
-    .filter((t) => { const folder = allThings.find(f => f.id === folderId); return folder?.contents ? folder.contents.includes(t.id) : t.parent_id === folderId; })
+    .filter((t) => {
+      return folder?.contents?.length
+        ? folder.contents.includes(t.id)
+        : (t.parent_id === folderId || t.primaryFolder === folderId);
+    })
     .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
 
   for (const thing of children) {

@@ -14,7 +14,7 @@ const things=await readThings('published');
 const placement=things.find(t=>t.data.page_source==='post'&&t.postId===post.data.id);
 const canonical=placement ? pathFor(placement,things) : `/blog/${post.id}`;
 if(placement && !getRequestContext()?.preview && !getRequestContext()?.editMode) return Astro.redirect(canonical!+(Astro.url.searchParams.get('window')==='1'?'?window=1':''),302);
-Astro.cache.set(false);
+if (getRequestContext()?.editMode || getRequestContext()?.preview) Astro.cache.set(false);
 ---
 <Portfolio embedded={Astro.url.searchParams.get('window')==='1'} title={`${post.data.title} | Kaio Barbosa`} windowTitle={post.data.title} windowIcon={post.data.icon||'📝'} canonicalPath={canonical ?? undefined} content={{collection:'posts',id:post.data.id,slug:post.id}}>
   <article class="article-content">

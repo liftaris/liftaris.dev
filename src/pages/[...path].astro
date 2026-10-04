@@ -3,6 +3,7 @@ import { readThings, readThingAtPath } from '../server/things/read';
 import { pathFor } from '../lib/things/model';
 import { getDb } from 'emdash/runtime';
 import { formerRoute } from '../server/things/routes';
+import { getRequestContext } from 'emdash/request-context';
 import ThingPage from '../components/house/ThingPage.astro';
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 const resolved = await readThingAtPath(path);
@@ -17,6 +18,6 @@ if (!thing) {
 }
 // Page windows need routing and Post visibility, not every folder's contents.
 if (thing.data.kind === 'folder') things = await readThings('published');
-Astro.cache.set(false);
+if (getRequestContext()?.editMode || getRequestContext()?.preview) Astro.cache.set(false);
 ---
 <ThingPage thing={thing} things={things} />

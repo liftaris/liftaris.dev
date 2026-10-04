@@ -311,7 +311,7 @@ export function House({
       {opened.map((item) => {
         const spec = effectiveThings.find(t=>t.id===item.object.id);
         const folder = "kind" in item.object && item.object.kind === "folder" && "items" in item.object ? (item.object as FolderSpec<HouseThing>) : undefined;
-        const page = "kind" in item.object && item.object.kind === "page" ? (item.object as ThingSpec) : undefined;
+        const page = "kind" in item.object && (item.object.kind === "page" || item.object.kind === "post") ? (item.object as ThingSpec) : undefined;
         const parentFolderId = "parent_id" in item.object && item.object.parent_id ? item.object.parent_id : undefined;
         const fallbackSource = () => document.querySelector<HTMLButtonElement>(`[data-folder-entry="${CSS.escape(item.object.id)}"]`)
           ?? document.querySelector<HTMLButtonElement>(`[data-object="${CSS.escape(item.object.id)}"]:not([data-removing="true"])`)

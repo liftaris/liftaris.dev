@@ -6,6 +6,6 @@ import { getRequestContext } from 'emdash/request-context';
 const editMode = getRequestContext()?.editMode === true;
 const things = sceneThings(await readThings());
 // A Thing can change many folder routes and appearances; never cache an editor snapshot.
-Astro.cache.set(false);
+if (editMode) Astro.cache.set(false);
 ---
 <Portfolio><House things={things} editMode={editMode} client:load /></Portfolio>

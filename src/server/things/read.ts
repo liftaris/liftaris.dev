@@ -2,10 +2,24 @@ import { getEmDashCollection, getEmDashEntry, getEmDashReferences } from 'emdash
 import { getRequestContext, runWithContext } from 'emdash/request-context';
 import { normalizeData, pathFor, type ThingRecord } from '../../lib/things/model';
 
+let thingsCache: { key: string; rows: ThingRecord[]; expiresAt: number } | null = null;
+
+export function invalidateThingsCache() {
+  thingsCache = null;
+}
+
 /** Read independent entries concurrently instead of paying a D1 round trip per Thing.
  * Select only relevant relations and consume every contents cursor.
  */
 export async function readThings(mode: 'request' | 'published' | 'editor' = 'request', options: { includeContents?: boolean } = {}): Promise<ThingRecord[]> {
+  const context = getRequestContext();
+  const isEditing = mode === 'editor' || context?.editMode === true || Boolean(context?.preview);
+  const cacheKey = options.includeContents !== false ? 'full' : 'routing';
+
+  if (!isEditing && thingsCache && thingsCache.key === cacheKey && Date.now() < thingsCache.expiresAt) {
+    return thingsCache.rows;
+  }
+
   const read = async () => {
     const rows: ThingRecord[] = [];
     let cursor: string | undefined;
@@ -39,6 +53,9 @@ export async function readThings(mode: 'request' | 'published' | 'editor' = 'req
       rows.push(...resolved.filter((row): row is ThingRecord => row !== null));
       cursor = page.nextCursor;
     } while (cursor);
+    if (!isEditing) {
+      thingsCache = { key: cacheKey, rows, expiresAt: Date.now() + 30_000 };
+    }
     return rows;
   };
   if (mode === 'request') return read();
