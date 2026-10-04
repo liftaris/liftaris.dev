@@ -332,7 +332,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
           return;
         }
 
-        const siteWindow = document.querySelector<HTMLElement>(".site-window");
+        const siteWindow = document.querySelector<HTMLElement>(".site-window, .physics-area");
         const siteRect = siteWindow?.getBoundingClientRect();
 
         isAnimating.current = true;
@@ -353,7 +353,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
           frame.style.width = `${routeWidth}px`;
           frame.style.height = `${routeHeight}px`;
           frame.style.borderRadius = "3px";
-          if (siteWindow) {
+          if (siteWindow && siteWindow.classList.contains("site-window")) {
             siteWindow.style.transition = "max-height 220ms cubic-bezier(0.16, 1, 0.3, 1)";
             siteWindow.style.maxHeight = "none";
           }
@@ -460,7 +460,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
         const targetW = Number(win.width);
         const targetH = Number(win.height);
 
-        const siteWindow = document.querySelector<HTMLElement>(".site-window");
+        const siteWindow = document.querySelector<HTMLElement>(".site-window, .physics-area");
         const siteRect = siteWindow?.getBoundingClientRect();
 
         const isMd = typeof window !== "undefined" && window.innerWidth >= 768;

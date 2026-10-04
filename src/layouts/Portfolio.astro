@@ -218,11 +218,6 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
 
       bindControls();
       document.addEventListener("astro:page-load", bindControls);
-      document.addEventListener("astro:before-swap", (ev) => {
-        if (ev.to.pathname === "/" && ev.from.pathname !== "/") {
-          ev.viewTransition?.skipTransition();
-        }
-      });
     </script>
     <EmDashBodyEnd page={page} />
   </body>
