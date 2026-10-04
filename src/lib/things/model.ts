@@ -113,3 +113,25 @@ export function normalizedPoint(point: {x: number; y: number}, data: {width: num
   return { spawn_x: clamp((point.x - data.width / 2 - 5) / Math.max(1, size.width - data.width - 10)),
     spawn_y: clamp((point.y - data.height / 2 - 5) / Math.max(1, size.height - data.height - 32)) };
 }
+export function windowPoint(data: { window_x?: number | null; window_y?: number | null; window_width?: number; window_height?: number }, viewport: { width: number; height: number }) {
+  const w = data.window_width ?? 480;
+  const h = data.window_height ?? 380;
+  const availX = Math.max(0, viewport.width - w - 24);
+  const availY = Math.max(0, viewport.height - h - 30);
+  const x = typeof data.window_x === 'number' && Number.isFinite(data.window_x)
+    ? Math.round(12 + Math.max(0, Math.min(1, data.window_x)) * availX)
+    : null;
+  const y = typeof data.window_y === 'number' && Number.isFinite(data.window_y)
+    ? Math.round(18 + Math.max(0, Math.min(1, data.window_y)) * availY)
+    : null;
+  return { x, y };
+}
+export function normalizedWindowPoint(pixelPos: { x: number; y: number }, windowSize: { width: number; height: number }, viewport: { width: number; height: number }) {
+  const clamp = (n: number) => Math.max(0, Math.min(1, n));
+  const availX = Math.max(1, viewport.width - windowSize.width - 24);
+  const availY = Math.max(1, viewport.height - windowSize.height - 30);
+  return {
+    window_x: Math.round(clamp((pixelPos.x - 12) / availX) * 1000) / 1000,
+    window_y: Math.round(clamp((pixelPos.y - 18) / availY) * 1000) / 1000,
+  };
+}

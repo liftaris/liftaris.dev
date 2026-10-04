@@ -15,7 +15,7 @@ export function validMessage(event: MessageEvent, source: Window | null, session
   if (typeof d.id !== 'string') return false;
   if (d.type === 'select' || d.type === 'trash') return true;
   if (d.type === 'position') return [d.spawn_x, d.spawn_y].every(v => Number.isFinite(v) && v >= 0 && v <= 1);
-  if (d.type === 'window_position') return Number.isFinite(d.window_x) && Number.isFinite(d.window_y) && d.window_x >= -2000 && d.window_x <= 5000 && d.window_y >= -2000 && d.window_y <= 5000;
+  if (d.type === 'window_position') return [d.window_x, d.window_y].every(v => Number.isFinite(v) && v >= 0 && v <= 1);
   if (d.type === 'resize') return Number.isFinite(d.window_width) && Number.isFinite(d.window_height) && d.window_width >= 180 && d.window_width <= 2560 && d.window_height >= 100 && d.window_height <= 1800;
   return false;
 }

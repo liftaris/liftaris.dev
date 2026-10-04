@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import type WinBox from "winbox/src/js/winbox.js";
 import { isImageUrl } from "../clump/model";
 import { normalizeEmojiPresentation } from "../../lib/house/emoji";
+import { windowPoint, normalizedWindowPoint } from "../../lib/things/model";
 import "winbox/dist/css/winbox.min.css";
 
 type ObjectWindowProps = {
@@ -145,10 +146,14 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
   useLayoutEffect(() => {
     const win = windowInstance.current;
     if (!win || !body || !onAuthorMove || win.max || isAnimating.current) return;
-    if (typeof x === "number" && Number.isFinite(x) && typeof y === "number" && Number.isFinite(y)) {
+    const { x: px, y: py } = windowPoint(
+      { window_x: x, window_y: y, window_width: Number(win.width), window_height: Number(win.height) },
+      { width: innerWidth, height: innerHeight }
+    );
+    if (px !== null && py !== null) {
       win.move(
-        Math.max(Number(win.left), Math.min(x, innerWidth - Number(win.width) - Number(win.right))),
-        Math.max(Number(win.top), Math.min(y, innerHeight - Number(win.height) - Number(win.bottom)))
+        Math.max(Number(win.left), Math.min(px, innerWidth - Number(win.width) - Number(win.right))),
+        Math.max(Number(win.top), Math.min(py, innerHeight - Number(win.height) - Number(win.bottom)))
       );
     }
   }, [body, x, y, onAuthorMove]);
@@ -177,6 +182,10 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
         </div>
       </div><div class="wb-body"></div><div class="wb-n"></div><div class="wb-s"></div><div class="wb-e"></div><div class="wb-w"></div><div class="wb-ne"></div><div class="wb-nw"></div><div class="wb-se"></div><div class="wb-sw"></div>`;
       let closing = false;
+      const { x: initialPixelX, y: initialPixelY } = windowPoint(
+        { window_x: x, window_y: y, window_width: width, window_height: height },
+        { width: innerWidth, height: innerHeight }
+      );
       const options: WinBox.Params & { template: HTMLElement } = {
         root: document.body,
         template, index: 20, header: 18,
@@ -185,8 +194,8 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
         minwidth: Math.min(minWidth, width),
         minheight: Math.min(minHeight, height),
         top: 18, left: 12, right: 12, bottom: 12,
-        x: initialBounds?.left ?? (typeof x === "number" && Number.isFinite(x) ? x : origin.left + 24),
-        y: initialBounds?.top ?? (typeof y === "number" && Number.isFinite(y) ? y : origin.top + 16),
+        x: initialBounds?.left ?? (initialPixelX ?? origin.left + 24),
+        y: initialBounds?.top ?? (initialPixelY ?? origin.top + 16),
         onclose(force) {
           if (force) return false;
           if (!closeAllowed.current) return true;
@@ -233,7 +242,12 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
           const curX = Math.round(Number(win.x));
           const curY = Math.round(Number(win.y));
           if (curX !== Math.round(startPos.x) || curY !== Math.round(startPos.y)) {
-            moveCallback.current?.({ x: curX, y: curY });
+            const norm = normalizedWindowPoint(
+              { x: curX, y: curY },
+              { width: Number(win.width), height: Number(win.height) },
+              { width: innerWidth, height: innerHeight }
+            );
+            moveCallback.current?.({ x: norm.window_x, y: norm.window_y });
           }
         }
         moving = false;
@@ -516,7 +530,12 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
         const step = event.shiftKey ? 40 : 10;
         move(Number(win.x) + (event.key === "ArrowLeft" ? -step : event.key === "ArrowRight" ? step : 0),
           Number(win.y) + (event.key === "ArrowUp" ? -step : event.key === "ArrowDown" ? step : 0));
-        moveCallback.current?.({ x: Math.round(Number(win.x)), y: Math.round(Number(win.y)) });
+        const norm = normalizedWindowPoint(
+          { x: Number(win.x), y: Number(win.y) },
+          { width: Number(win.width), height: Number(win.height) },
+          { width: innerWidth, height: innerHeight }
+        );
+        moveCallback.current?.({ x: norm.window_x, y: norm.window_y });
       };
       const focus = () => { win.focus(); };
       // Disabling a focused action blurs to BODY without another focusin.

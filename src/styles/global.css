@@ -227,6 +227,7 @@ button { color: inherit; font: inherit; background: none; border: 0; padding: 0;
 .site-window .site-window-body {
   flex: 1 1 0;
   min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
@@ -541,6 +542,8 @@ body.embedded-post {
   max-width: 100%;
   padding: 16px 20px;
   min-height: auto;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .object-window-content:has(.article-content),
@@ -766,7 +769,8 @@ body.on-home .winbox.object-window.max:has(.folder) {
 }
 .winbox.github-window .wb-body,
 .winbox.object-window:has(.github-viewer) .wb-body {
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
   scrollbar-color: var(--color-blue) transparent;
