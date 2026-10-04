@@ -649,7 +649,7 @@ body.embedded-post {
   height: 100%;
   padding: 0;
   border: 0;
-  border-left: 1px solid color-mix(in srgb, var(--color-paper) 30%, transparent);
+  border-left: 1px solid color-mix(in srgb, var(--color-paper) 50%, transparent);
   border-radius: 0;
   color: inherit;
   background: none;
@@ -664,6 +664,10 @@ body.embedded-post {
 }
 .object-window .wb-control button.wb-close {
   border-radius: 0;
+}
+.object-window.no-max .wb-max,
+.object-window .wb-max {
+  display: inline-flex !important;
 }
 .object-window .wb-max .wb-restore-square {
   display: none;
@@ -705,15 +709,8 @@ body.on-home .winbox.object-window.max:has(.folder) {
   height: calc(var(--window-height, calc(100dvh - 20px)) - 18px) !important;
   border-radius: 0 !important;
 }
-.winbox.object-window.maximizing:not(.folder-window):not(:has(.folder)) .wb-header {
-  opacity: 0;
-  transition: opacity 160ms ease;
-  pointer-events: none;
-}
 .object-window.max .wb-max .wb-max-square,
-.object-window.maximizing .wb-max .wb-max-square,
-.object-window.max .wb-collapse,
-.object-window.maximizing .wb-collapse {
+.object-window.maximizing .wb-max .wb-max-square {
   display: none;
 }
 .object-window.max .wb-max .wb-restore-square,
@@ -1308,6 +1305,22 @@ li { margin: 8px 0; }
   height: 100%;
   object-fit: none;
   object-position: top left;
+}
+::view-transition-group(window-titlebar) {
+  z-index: 100;
+  overflow: clip;
+}
+::view-transition-old(window-titlebar),
+::view-transition-new(window-titlebar) {
+  height: 100%;
+  object-fit: none;
+  object-position: top left;
+}
+::view-transition-old(window-titlebar) {
+  animation: astroFadeOut 180ms ease forwards;
+}
+::view-transition-new(window-titlebar) {
+  animation: none;
 }
 html:not(.on-home) {
   scrollbar-width: thin;

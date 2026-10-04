@@ -188,5 +188,31 @@ describe("GitHub custom Thing", () => {
     expect(objectWindowCode).toContain('class="object-window-icon" tabindex="-1"');
     expect(objectWindowCode).not.toContain("iconButton.focus(");
   });
+
+  test("landing page windows remove minimize button, double-click titlebar to maximize, and seamlessly transition titlebar to full page", async () => {
+    const objectWindowCode = await Bun.file(new URL("../window/ObjectWindow.tsx", import.meta.url).pathname).text();
+    // Minimize button is removed
+    expect(objectWindowCode).not.toContain("wb-collapse");
+    expect(objectWindowCode).not.toContain("Minimize window");
+    // WinBox double-click native handler bypassed via no-max
+    expect(objectWindowCode).toContain('"no-max"');
+    // Double click handler triggers maximize
+    expect(objectWindowCode).toContain('header.addEventListener("dblclick"');
+    expect(objectWindowCode).toContain('triggerMaximize()');
+    // Titlebar view transition name is assigned on redirect
+    expect(objectWindowCode).toContain('header.style.setProperty("view-transition-name", "window-titlebar")');
+
+    const astroLayout = await Bun.file(new URL("../../layouts/Portfolio.astro", import.meta.url).pathname).text();
+    expect(astroLayout).toContain('transition:name="window-titlebar"');
+    expect(astroLayout).toContain('header.addEventListener("dblclick"');
+
+    const globalCss = await Bun.file(new URL("../../styles/global.css", import.meta.url).pathname).text();
+    // wb-header is not faded out on maximizing
+    expect(globalCss).not.toContain(".wb-header {\n  opacity: 0;");
+    expect(globalCss).toContain(".object-window.no-max .wb-max");
+    expect(globalCss).toContain("::view-transition-group(window-titlebar)");
+    expect(globalCss).toContain("::view-transition-new(window-titlebar)");
+  });
 });
+
 

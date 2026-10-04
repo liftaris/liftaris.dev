@@ -153,7 +153,6 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
       const template = document.createElement("div");
       template.innerHTML = `<div class="wb-header">
         <div class="wb-control">
-          <button type="button" class="wb-collapse" aria-label="Minimize window">−</button>
           <button type="button" class="wb-max" aria-label="Maximize window"><span class="wb-max-square" aria-hidden="true"></span><span class="wb-restore-square" aria-hidden="true"></span></button>
           <button type="button" class="wb-close">×</button>
         </div>
@@ -166,7 +165,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
       const options: WinBox.Params & { template: HTMLElement } = {
         root: document.body,
         template, index: 20, header: 18,
-        class: ["object-window", "@container", "no-full", !resizable && "no-resize", "no-animation", windowClass].filter(Boolean).join(" "),
+        class: ["object-window", "@container", "no-full", "no-max", !resizable && "no-resize", "no-animation", windowClass].filter(Boolean).join(" "),
         width, height,
         minwidth: Math.min(minWidth, width),
         minheight: Math.min(minHeight, height),
@@ -206,7 +205,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
       document.addEventListener('pointerup',resizeEnd);
 
       const iconButton = frame.querySelector<HTMLButtonElement>(".object-window-icon")!;
-      iconButton.title = "Drag to move; click to minimize";
+      iconButton.title = "Drag to move; click to close";
       // WinBox owns movement; the pointer gesture only distinguishes a click from a drag.
       let iconPress: { id: number; x: number; y: number; moved: boolean } | undefined;
       iconButton.onpointerdown = (event) => {
@@ -227,7 +226,6 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
       iconButton.onpointercancel = iconButton.onlostpointercapture = () => { iconPress = undefined; };
       iconButton.onclick = (event) => { if (event.detail === 0) win.close(); };
       const handle = frame.querySelector<HTMLElement>(".object-window-handle")!;
-      frame.querySelector<HTMLButtonElement>(".wb-collapse")!.onclick = () => { win.close(); };
       const maxButton = frame.querySelector<HTMLButtonElement>(".wb-max")!;
       const handleMaximize = () => {
         if (closing || isAnimating.current) return;
@@ -391,6 +389,10 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
 
         const redirect = () => {
           frame.style.setProperty("view-transition-name", "site-window");
+          const header = frame.querySelector<HTMLElement>(".wb-header");
+          if (header) {
+            header.style.setProperty("view-transition-name", "window-titlebar");
+          }
           if (typeof document !== "undefined" && "startViewTransition" in document && typeof (document as unknown as { startViewTransition?: (cb: () => void) => unknown }).startViewTransition === "function") {
             void import("astro:transitions/client")
               .then(({ navigate }) => navigate(url))
@@ -407,20 +409,52 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
         if (isReducedMotion) {
           redirect();
         } else {
-          setTimeout(redirect, 200);
+          setTimeout(redirect, 220);
         }
       };
+      let lastTriggerTime = 0;
+      const triggerMaximize = () => {
+        const now = Date.now();
+        if (now - lastTriggerTime < 500) return;
+        lastTriggerTime = now;
+        handleMaximize();
+      };
+
       maxButton.addEventListener("click", (event) => {
         event.stopPropagation();
         event.stopImmediatePropagation();
         event.preventDefault();
-        handleMaximize();
+        triggerMaximize();
       }, true);
-      handle.ondblclick = (event) => {
+
+      const header = frame.querySelector<HTMLElement>(".wb-header")!;
+      let lastHeaderClick = 0;
+      let lastHeaderX = 0;
+      let lastHeaderY = 0;
+
+      header.addEventListener("pointerdown", (event) => {
+        if ((event.target as HTMLElement).closest(".wb-control, .object-window-icon")) return;
+        const now = Date.now();
+        const diff = now - lastHeaderClick;
+        const dist = Math.hypot(event.clientX - lastHeaderX, event.clientY - lastHeaderY);
+        lastHeaderClick = now;
+        lastHeaderX = event.clientX;
+        lastHeaderY = event.clientY;
+        if (diff < 350 && dist < 10) {
+          lastHeaderClick = 0;
+          event.stopPropagation();
+          event.preventDefault();
+          triggerMaximize();
+        }
+      }, true);
+
+      header.addEventListener("dblclick", (event) => {
+        if ((event.target as HTMLElement).closest(".wb-control, .object-window-icon")) return;
         event.stopPropagation();
         event.stopImmediatePropagation();
-        handleMaximize();
-      };
+        event.preventDefault();
+        triggerMaximize();
+      });
 
       const move = (x: number, y: number) => win.move(
         Math.max(Number(win.left), Math.min(x, innerWidth - Number(win.width) - Number(win.right))),

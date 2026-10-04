@@ -148,7 +148,7 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
             data-unconstrained={isUnconstrained ? "true" : undefined}
             transition:name="site-window"
           >
-            <header class="site-window-header">
+            <header class="site-window-header" transition:name="window-titlebar">
               <div class="site-window-drag">
                 {displayIcon && (
                   <span class="site-window-icon">
@@ -202,6 +202,8 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
 
       const bindControls = () => {
         document.querySelectorAll<HTMLAnchorElement>(".site-window-max, .site-window-close").forEach((btn) => {
+          if (btn.dataset.bound) return;
+          btn.dataset.bound = "true";
           btn.addEventListener("click", (e) => {
             const href = btn.getAttribute("href");
             if (!href) return;
@@ -214,6 +216,16 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
             }
           });
         });
+
+        const header = document.querySelector<HTMLElement>(".site-window-header");
+        const maxBtn = document.querySelector<HTMLAnchorElement>(".site-window-max");
+        if (header && maxBtn && !header.dataset.dblBound) {
+          header.dataset.dblBound = "true";
+          header.addEventListener("dblclick", (e) => {
+            if ((e.target as HTMLElement).closest(".site-window-controls")) return;
+            maxBtn.click();
+          });
+        }
       };
 
       bindControls();
