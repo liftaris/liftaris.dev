@@ -16,6 +16,8 @@ type ObjectWindowProps = {
   closeLabel?: string;
   width?: number;
   height?: number;
+  x?: number | null;
+  y?: number | null;
   minWidth?: number;
   minHeight?: number;
   resizable?: boolean;
@@ -28,19 +30,21 @@ type ObjectWindowProps = {
   restoreAnimation?: boolean;
   onMaximize?: () => void;
   onAuthorResize?: (size: {width:number;height:number}) => void;
+  onAuthorMove?: (pos: {x:number;y:number}) => void;
   onReady?: () => void;
   onClose: () => void;
   children?: ReactNode;
 };
 
-export function ObjectWindow({ title, icon, source, fallbackSource, origin, monochrome = false, closeLabel = "Close window", width = 480, height = 380, minWidth = 180, minHeight = 100, resizable = true, className, autoFit = false, canClose = true, initialBounds, backgroundStyle, maximizeUrl, restoreAnimation = false, onMaximize, onReady, onAuthorResize, onClose, children }: ObjectWindowProps) {
+export function ObjectWindow({ title, icon, source, fallbackSource, origin, monochrome = false, closeLabel = "Close window", width = 480, height = 380, x, y, minWidth = 180, minHeight = 100, resizable = true, className, autoFit = false, canClose = true, initialBounds, backgroundStyle, maximizeUrl, restoreAnimation = false, onMaximize, onReady, onAuthorResize, onAuthorMove, onClose, children }: ObjectWindowProps) {
   const [body, setBody] = useState<HTMLElement | null>(null);
   const [error, setError] = useState(false);
-  const initial = useRef({ source, origin, width, height, minWidth, minHeight, resizable, initialBounds, className });
+  const initial = useRef({ source, origin, width, height, x, y, minWidth, minHeight, resizable, initialBounds, className });
   const windowInstance = useRef<WinBox | null>(null);
   const readyFired = useRef(false);
   const isAnimating = useRef(false);
   const resizeCallback = useRef(onAuthorResize); resizeCallback.current = onAuthorResize;
+  const moveCallback = useRef(onAuthorMove); moveCallback.current = onAuthorMove;
   const close = useRef(onClose);
   close.current = onClose;
   const closeAllowed = useRef(canClose);
@@ -138,10 +142,21 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
     win.resize(Math.min(width,innerWidth-24),Math.min(height,innerHeight-40));
   },[body,width,height,onAuthorResize]);
 
+  useLayoutEffect(() => {
+    const win = windowInstance.current;
+    if (!win || !body || !onAuthorMove || win.max || isAnimating.current) return;
+    if (typeof x === "number" && Number.isFinite(x) && typeof y === "number" && Number.isFinite(y)) {
+      win.move(
+        Math.max(Number(win.left), Math.min(x, innerWidth - Number(win.width) - Number(win.right))),
+        Math.max(Number(win.top), Math.min(y, innerHeight - Number(win.height) - Number(win.bottom)))
+      );
+    }
+  }, [body, x, y, onAuthorMove]);
+
   // Capture focus before React removes portal children on parent-driven close.
   useLayoutEffect(() => {
     // Geometry and source belong to this mounted window, not its changing content.
-    const { source, origin, width, height, minWidth = 180, minHeight = 100, resizable = true, initialBounds, className: windowClass } = initial.current;
+    const { source, origin, width, height, x, y, minWidth = 180, minHeight = 100, resizable = true, initialBounds, className: windowClass } = initial.current;
     let disposed = false;
     let instance: WinBox | undefined;
     let restoreFocus = false;
@@ -170,7 +185,8 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
         minwidth: Math.min(minWidth, width),
         minheight: Math.min(minHeight, height),
         top: 18, left: 12, right: 12, bottom: 12,
-        x: initialBounds?.left ?? origin.left + 24, y: initialBounds?.top ?? origin.top + 16,
+        x: initialBounds?.left ?? (typeof x === "number" && Number.isFinite(x) ? x : origin.left + 24),
+        y: initialBounds?.top ?? (typeof y === "number" && Number.isFinite(y) ? y : origin.top + 16),
         onclose(force) {
           if (force) return false;
           if (!closeAllowed.current) return true;
@@ -201,8 +217,31 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
         if(sizing && !win.max && !isAnimating.current) resizeCallback.current?.({width:Math.round(Number(win.width)),height:Math.round(Number(win.height))});
         sizing=false;
       };
-      frame.addEventListener('pointerdown',resizeStart);
-      document.addEventListener('pointerup',resizeEnd);
+      let moving = false;
+      let startPos = { x: 0, y: 0 };
+      const moveStart = (event: PointerEvent) => {
+        if (event.button !== 0) return;
+        const target = event.target as HTMLElement;
+        if (target.closest('.wb-control')) return;
+        if (target.closest('.wb-drag, .wb-header, .object-window-handle')) {
+          moving = true;
+          startPos = { x: Number(win.x), y: Number(win.y) };
+        }
+      };
+      const moveEnd = () => {
+        if (moving && !win.max && !isAnimating.current) {
+          const curX = Math.round(Number(win.x));
+          const curY = Math.round(Number(win.y));
+          if (curX !== Math.round(startPos.x) || curY !== Math.round(startPos.y)) {
+            moveCallback.current?.({ x: curX, y: curY });
+          }
+        }
+        moving = false;
+      };
+      frame.addEventListener('pointerdown', resizeStart);
+      document.addEventListener('pointerup', resizeEnd);
+      frame.addEventListener('pointerdown', moveStart);
+      document.addEventListener('pointerup', moveEnd);
 
       const iconButton = frame.querySelector<HTMLButtonElement>(".object-window-icon")!;
       iconButton.title = "Drag to move; click to close";
@@ -477,6 +516,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
         const step = event.shiftKey ? 40 : 10;
         move(Number(win.x) + (event.key === "ArrowLeft" ? -step : event.key === "ArrowRight" ? step : 0),
           Number(win.y) + (event.key === "ArrowUp" ? -step : event.key === "ArrowDown" ? step : 0));
+        moveCallback.current?.({ x: Math.round(Number(win.x)), y: Math.round(Number(win.y)) });
       };
       const focus = () => { win.focus(); };
       // Disabling a focused action blurs to BODY without another focusin.
@@ -550,7 +590,10 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
       }
       setBody(win.body);
       detach = () => {
-        frame.removeEventListener('pointerdown',resizeStart); document.removeEventListener('pointerup',resizeEnd);
+        frame.removeEventListener('pointerdown', resizeStart);
+        document.removeEventListener('pointerup', resizeEnd);
+        frame.removeEventListener('pointerdown', moveStart);
+        document.removeEventListener('pointerup', moveEnd);
         window.removeEventListener("resize", fit);
         document.removeEventListener("focusin", trackFocus);
         frame.removeEventListener("keydown", keyboard);

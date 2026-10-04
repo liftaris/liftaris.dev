@@ -14,6 +14,8 @@ export interface ThingSpec extends ObjectSpec {
   application?: 'leave-gift';
   window_width?: number;
   window_height?: number;
+  window_x?: number | null;
+  window_y?: number | null;
   spawn_x?: number;
   spawn_y?: number;
   previewUrl?: string;

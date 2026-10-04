@@ -5,6 +5,7 @@ export type ThingKind = 'page' | 'folder' | 'application';
 export type ThingData = {
   name: string; kind: ThingKind; icon_type: 'emoji' | 'image'; emoji: string; image: unknown;
   width: number; height: number; window_width: number; window_height: number;
+  window_x?: number | null; window_y?: number | null;
   desktop: boolean; default_open: boolean; sort_order: number; spawn_x: number; spawn_y: number;
   page_source: keyof typeof PAGE_SOURCES; body: unknown[]; date?: string | null;
   application: 'leave-gift'; path_override: string; background_image: unknown;
@@ -17,7 +18,9 @@ export interface ThingRecord {
 }
 export const DEFAULT_DATA: ThingData = {
   name: 'New Thing', kind: 'folder', icon_type: 'emoji', emoji: '📦', image: null,
-  width: 60, height: 60, window_width: 480, window_height: 380, desktop: true,
+  width: 60, height: 60, window_width: 480, window_height: 380,
+  window_x: null, window_y: null,
+  desktop: true,
   default_open: false, sort_order: 0, spawn_x: .5, spawn_y: .5,
   page_source: 'content', body: [], application: 'leave-gift', path_override: '',
   background_image: null, background_size: 'cover', background_position: 'center', background_repeat: 'no-repeat', legacy_paths: [],

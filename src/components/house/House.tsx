@@ -292,6 +292,7 @@ export function House({
     }));
   }, [effectiveThings,foldersById,editMode]);
   const geometry = (id: string) => authoring.session ? (size: {width:number;height:number}) => authoring.send({type:'resize',id,window_width:size.width,window_height:size.height}) : undefined;
+  const moveGeometry = (id: string) => authoring.session ? (pos: {x:number;y:number}) => authoring.send({type:'window_position',id,window_x:pos.x,window_y:pos.y}) : undefined;
   return (
     <AuthoringContext.Provider value={authoring}><ThingsToolbar />
     <div className="house flex flex-col size-full min-w-0 min-h-0 @container text-paper" data-ready={ready}>
@@ -320,7 +321,9 @@ export function House({
         if (folder) return <Folder key={item.object.id} folder={folder}
           origin={item.origin} source={item.source} fallbackSource={fallbackSource} monochrome openedIds={opened.map((entry) => entry.object.id)}
           thingsConfig={mergedThingsConfig}
-          width={spec?.window_width} height={spec?.window_height} onAuthorResize={geometry(item.object.id)}
+          width={spec?.window_width} height={spec?.window_height}
+          x={spec?.window_x} y={spec?.window_y}
+          onAuthorResize={geometry(item.object.id)} onAuthorMove={moveGeometry(item.object.id)}
           maximizeUrl={spec?.href ?? undefined}
           restoreAnimation={item.restoreAnimation}
           onOpen={open} onOpenFolder={open} onClose={() => close(item.object.id)} />;
@@ -332,7 +335,9 @@ export function House({
         return <ObjectWindow key={item.object.id} title={title} icon={icon} origin={item.origin} source={item.source} fallbackSource={fallbackSource}
           maximizeUrl={maximizeUrl}
           restoreAnimation={item.restoreAnimation}
-          width={spec?.window_width} height={spec?.window_height} onAuthorResize={geometry(item.object.id)} canClose={!composing || !savingGift}
+          width={spec?.window_width} height={spec?.window_height}
+          x={spec?.window_x} y={spec?.window_y}
+          onAuthorResize={geometry(item.object.id)} onAuthorMove={moveGeometry(item.object.id)} canClose={!composing || !savingGift}
           initialBounds={item.previewBounds} backgroundStyle={bgStyle} onReady={item.onReady}
           monochrome={!item.gift} closeLabel={item.gift ? "Close gift" : undefined} onClose={() => close(item.object.id)}>
           {item.gift ? <GiftDialog gift={item.gift} initialDetail={item.detail} onClose={() => close(item.object.id)} onDetail={refreshDetail} mutate={mutate} /> : composing ? <GiftComposer onGift={(gift, bounds, form) => receiveGift(item, gift, bounds, form)} mutate={mutate} onSavingChange={setSavingGift} /> : page ? <PageReader page={page} /> : null}
