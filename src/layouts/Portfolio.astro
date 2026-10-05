@@ -81,12 +81,13 @@ if (!actualRestoreSlug && !isHome) {
 }
 
 const isIconImage = displayIcon ? isImageUrl(displayIcon) : false;
+const isGuestbookPage = actualRestoreSlug === 'leave-gift' || pathname === '/leave-gift' || pathname === '/guestbook' || content?.id === 'leave-gift';
 const page = createPublicPageContext({ Astro, kind: content ? "content" : "custom", title,
   description: "Software engineer building BazaarGhost and Herm TUI.", content,
   canonical: new URL(canonicalPath || pathname, Astro.site).href, siteName: "Kaio Barbosa" });
 ---
 <!doctype html>
-<html lang="en" class:list={{ "on-home": isHome }}>
+<html lang="en" class:list={{ "on-home": isHome, "on-guestbook": isGuestbookPage }}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -94,13 +95,13 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
     <link rel="preload" href={youngSerifLatinUrl} as="font" type="font/woff2" crossorigin="anonymous" />
     <link rel="preload" href={geistMonoLatinUrl} as="font" type="font/woff2" crossorigin="anonymous" />
     <link rel="preload" href={notoEmojiSubset3Url} as="font" type="font/woff2" crossorigin="anonymous" />
-    {!embedded && <link rel="preload" href="/noise.webp?v=4" as="image" type="image/webp" />}
+    {!embedded && !isGuestbookPage && <link rel="preload" href="/noise.webp?v=4" as="image" type="image/webp" />}
     {embedded && <base href={Astro.url.href} target="_top" />}
     <EmDashHead page={page} />
     <link rel="icon" href="/favicon.ico" />
     {!embedded && <ClientRouter fallback="swap" />}
   </head>
-  <body class={embedded ? (isHome ? "embedded-post on-home" : "embedded-post object-window @container") : (isHome ? "on-home" : undefined)}>
+  <body class={embedded ? (isHome ? "embedded-post on-home" : isGuestbookPage ? "embedded-post object-window @container on-guestbook" : "embedded-post object-window @container") : (isHome ? "on-home" : isGuestbookPage ? "on-guestbook" : undefined)}>
     <EmDashBodyStart page={page} />
     <svg width="0" height="0" class="sr-only" style="position:absolute;width:0;height:0;overflow:hidden;pointer-events:none;" aria-hidden="true" focusable="false">
       <defs>
