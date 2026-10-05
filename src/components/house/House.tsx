@@ -328,9 +328,9 @@ export function House({
           maximizeUrl={spec?.href ?? undefined}
           restoreAnimation={item.restoreAnimation}
           onOpen={open} onOpenFolder={open} onClose={() => close(item.object.id)} />;
-        const isGuestbook = item.object.id === 'leave-gift' || spec?.id === 'leave-gift' || spec?.slug === 'guestbook' || (spec?.kind === 'application' && spec.application === 'leave-gift') || item.object.name === 'Guestbook';
-        const composing = !isGuestbook && spec?.kind === 'application' && spec.application === 'leave-gift';
-        const title = isGuestbook ? (item.object.name || 'Guestbook') : item.object.name;
+        const isGuestbook = item.object.id === 'leave-gift' || spec?.id === 'leave-gift' || spec?.slug === 'guestbook' || item.object.name === 'Guestbook';
+        const composing = false;
+        const title = isGuestbook ? 'Guestbook' : item.object.name;
         const icon = isGuestbook ? (item.object.image || item.object.emoji || '🎁') : (item.object.image || item.object.emoji);
         const bgStyle = isGuestbook
           ? { backgroundColor: "var(--color-blue)", backgroundImage: "none" }

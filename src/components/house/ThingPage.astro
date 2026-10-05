@@ -25,9 +25,9 @@ const date = post?.data.date;
 const content = post ? {collection:'posts', id:post.data.id, slug:post.id} : {collection:'things',id:thing.id,slug:thing.slug};
 let canonical: string | undefined;
 try { canonical = pathFor(thing, things) ?? undefined; } catch { /* Incomplete drafts are still previewable. */ }
-const isGuestbook = thing.id === 'leave-gift' || thing.slug === 'guestbook' || thing.slug === 'leave-gift' || thing.data.application === 'leave-gift';
+const isGuestbook = thing.id === 'leave-gift' || thing.slug === 'guestbook' || thing.slug === 'leave-gift';
 ---
-<Portfolio embedded={embedded} title={`${title} | Kaio Barbosa`} windowTitle={thing.data.name} windowIcon={icon || '📄'} restoreSlug={thing.id} canonicalPath={canonical} content={content}>
+<Portfolio embedded={embedded} title={`${isGuestbook ? 'Guestbook' : title} | Kaio Barbosa`} windowTitle={isGuestbook ? 'Guestbook' : thing.data.name} windowIcon={icon || '📄'} restoreSlug={thing.id} canonicalPath={canonical} content={content}>
   {thing.data.kind === 'folder' ? <House things={sceneThings(things)} initialFolderId={thing.id} editMode={Boolean(getRequestContext()?.editMode)} client:load /> :
   thing.data.page_source === 'projects' || thing.data.page_source === 'experience' ? <Stage view={thing.data.page_source} client:load /> :
   thing.data.page_source === 'github' ? <GitHubViewer client:load /> :

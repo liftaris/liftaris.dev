@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import type { FormEvent } from "react";
+import type { FormEvent, KeyboardEvent } from "react";
 import { createGift, ensureVisitor, getHouse, reclaimGift, updateGift } from "../../lib/house/client";
 import type { HouseMutation } from "../../lib/house/client";
-import { EMOJI_CATALOG, findEmoji, localSuggestions } from "../../lib/house/emoji";
+import { EMOJI_CATALOG, findEmoji, searchEmojiCatalog } from "../../lib/house/emoji";
 import type { EmojiOption, Gift, HouseSnapshot } from "../../lib/house/types";
 
 interface GuestbookProps {
@@ -70,7 +70,7 @@ export function Guestbook({ initialSnapshot, mutate, onGiftsChange }: GuestbookP
       })
       .catch((err) => {
         if (!active) return;
-        setError(err instanceof Error ? err.message : "Couldn’t load gifts.");
+        setError(err instanceof Error ? err.message : "Couldn’t load guestbook.");
         setLoading(false);
       });
 
@@ -87,6 +87,33 @@ export function Guestbook({ initialSnapshot, mutate, onGiftsChange }: GuestbookP
       setLoading(false);
     }
   }, [initialSnapshot]);
+
+  const handleMessageChange = (val: string) => {
+    const newlines = (val.match(/\n/g) || []).length;
+    if (newlines > 6) {
+      const parts = val.split("\n");
+      val = parts.slice(0, 7).join("\n");
+    }
+    setMessage(val);
+  };
+
+  const handleEditMessageChange = (val: string) => {
+    const newlines = (val.match(/\n/g) || []).length;
+    if (newlines > 6) {
+      const parts = val.split("\n");
+      val = parts.slice(0, 7).join("\n");
+    }
+    setEditMessage(val);
+  };
+
+  const handleTextareaKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>, currentText: string) => {
+    if (e.key === "Enter") {
+      const newlines = (currentText.match(/\n/g) || []).length;
+      if (newlines >= 6) {
+        e.preventDefault();
+      }
+    }
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -116,7 +143,7 @@ export function Guestbook({ initialSnapshot, mutate, onGiftsChange }: GuestbookP
       setLocation("");
       setShowPicker(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn’t leave your gift. Please try again.");
+      setError(err instanceof Error ? err.message : "Couldn’t sign the guestbook. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -154,14 +181,14 @@ export function Guestbook({ initialSnapshot, mutate, onGiftsChange }: GuestbookP
       onGiftsChange?.(snapshot.gifts);
       setEditingId(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn’t update gift. Please try again.");
+      setError(err instanceof Error ? err.message : "Couldn’t update message. Please try again.");
     } finally {
       setSavingEdit(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this gift?")) return;
+    if (!confirm("Are you sure you want to delete this message?")) return;
     setError("");
 
     try {
@@ -173,16 +200,16 @@ export function Guestbook({ initialSnapshot, mutate, onGiftsChange }: GuestbookP
       onGiftsChange?.(snapshot.gifts);
       if (editingId === id) setEditingId(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn’t delete gift. Please try again.");
+      setError(err instanceof Error ? err.message : "Couldn’t delete message. Please try again.");
     }
   };
 
   const filteredEmojis = pickerQuery.trim()
-    ? localSuggestions(pickerQuery.trim())
+    ? searchEmojiCatalog(pickerQuery.trim())
     : EMOJI_CATALOG;
 
   const editFilteredEmojis = editPickerQuery.trim()
-    ? localSuggestions(editPickerQuery.trim())
+    ? searchEmojiCatalog(editPickerQuery.trim())
     : EMOJI_CATALOG;
 
   return (
@@ -203,7 +230,7 @@ export function Guestbook({ initialSnapshot, mutate, onGiftsChange }: GuestbookP
         </div>
       )}
 
-      {/* Leave a Gift Form: looks like the first item in the list */}
+      {/* Guestbook Form: looks like the first item in the list */}
       <form
         onSubmit={(e) => void handleSubmit(e)}
         className="flex items-start gap-4 pb-6 border-b border-paper/20 shrink-0"
@@ -213,7 +240,8 @@ export function Guestbook({ initialSnapshot, mutate, onGiftsChange }: GuestbookP
           <button
             type="button"
             onClick={() => setShowPicker(!showPicker)}
-            className="w-16 h-16 flex items-center justify-center text-5xl font-emoji cursor-pointer hover:scale-105 active:scale-95 transition-transform"
+            className="w-16 h-16 flex items-center justify-center shrink-0 font-emoji select-none cursor-pointer hover:scale-105 active:scale-95 transition-transform"
+            style={{ fontSize: "52px", lineHeight: "1" }}
             aria-label={`Change icon. Current: ${selectedEmoji.name}`}
             title="Click to change icon"
           >
@@ -258,12 +286,14 @@ export function Guestbook({ initialSnapshot, mutate, onGiftsChange }: GuestbookP
         <div className="flex-1 min-w-0">
           <textarea
             required
-            rows={3}
+            rows={2}
             maxLength={400}
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            onChange={(e) => handleMessageChange(e.target.value)}
+            onKeyDown={(e) => handleTextareaKeyDown(e, message)}
             placeholder="Leave a message, an interesting link, a pun... anything you want!"
-            className="w-full bg-transparent border-0 border-b border-paper/30 focus:border-paper p-0 pb-1 text-sm font-mono text-paper placeholder:text-paper/40 focus:outline-none resize-none leading-relaxed"
+            className="w-full bg-transparent border-0 border-b border-paper/30 focus:border-paper p-0 pb-1 text-sm font-mono text-paper placeholder:text-paper/40 focus:outline-none leading-relaxed"
+            style={{ minHeight: "2.75rem", maxHeight: "10rem", resize: "vertical" }}
           />
 
           {/* Simple character count display under the textarea, not in it */}
@@ -303,19 +333,19 @@ export function Guestbook({ initialSnapshot, mutate, onGiftsChange }: GuestbookP
               disabled={submitting || !message.trim() || !authorName.trim()}
               className="ml-auto px-3.5 py-1 border border-paper bg-paper text-blue hover:bg-transparent hover:text-paper text-xs font-mono font-medium transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
             >
-              {submitting ? "Leaving gift…" : "Leave gift ↗"}
+              {submitting ? "Signing…" : "Sign guestbook ↗"}
             </button>
           </div>
         </div>
       </form>
 
-      {/* Gifts List */}
+      {/* Messages List */}
       <div className="flex flex-col flex-1 min-h-0">
         {loading ? (
           <p className="text-xs font-mono text-paper/60 py-6 text-center">Loading guestbook…</p>
         ) : gifts.length === 0 ? (
           <p className="text-xs font-mono text-paper/60 py-8 text-center">
-            No gifts left yet. Be the first to leave one!
+            No messages left yet. Be the first to leave one!
           </p>
         ) : (
           <div className="flex flex-col">
@@ -334,7 +364,8 @@ export function Guestbook({ initialSnapshot, mutate, onGiftsChange }: GuestbookP
                       <button
                         type="button"
                         onClick={() => setShowEditPicker(!showEditPicker)}
-                        className="w-16 h-16 flex items-center justify-center text-5xl font-emoji cursor-pointer hover:scale-105 active:scale-95 transition-transform"
+                        className="w-16 h-16 flex items-center justify-center shrink-0 font-emoji select-none cursor-pointer hover:scale-105 active:scale-95 transition-transform"
+                        style={{ fontSize: "52px", lineHeight: "1" }}
                         aria-label={`Change icon. Current: ${editEmoji.name}`}
                         title="Click to change icon"
                       >
@@ -380,8 +411,10 @@ export function Guestbook({ initialSnapshot, mutate, onGiftsChange }: GuestbookP
                         rows={2}
                         maxLength={400}
                         value={editMessage}
-                        onChange={(e) => setEditMessage(e.target.value)}
-                        className="w-full bg-transparent border-0 border-b border-paper/30 focus:border-paper p-0 pb-1 text-sm font-mono text-paper placeholder:text-paper/40 focus:outline-none resize-none leading-relaxed"
+                        onChange={(e) => handleEditMessageChange(e.target.value)}
+                        onKeyDown={(e) => handleTextareaKeyDown(e, editMessage)}
+                        className="w-full bg-transparent border-0 border-b border-paper/30 focus:border-paper p-0 pb-1 text-sm font-mono text-paper placeholder:text-paper/40 focus:outline-none leading-relaxed"
+                        style={{ minHeight: "2.75rem", maxHeight: "10rem", resize: "vertical" }}
                       />
                       <div className="flex justify-end mt-1 mb-2.5">
                         <span className="text-[11px] font-mono text-paper/60 tabular-nums select-none">
@@ -443,7 +476,8 @@ export function Guestbook({ initialSnapshot, mutate, onGiftsChange }: GuestbookP
                 >
                   {/* Icon first - as large as landing page icons */}
                   <div
-                    className="w-16 h-16 flex items-center justify-center shrink-0 text-5xl font-emoji select-none"
+                    className="w-16 h-16 flex items-center justify-center shrink-0 font-emoji select-none"
+                    style={{ fontSize: "52px", lineHeight: "1" }}
                     aria-hidden="true"
                   >
                     {gift.emoji}
@@ -463,8 +497,8 @@ export function Guestbook({ initialSnapshot, mutate, onGiftsChange }: GuestbookP
                             type="button"
                             onClick={() => startEditing(gift)}
                             className="p-1 text-paper/60 hover:text-paper cursor-pointer rounded hover:bg-paper/10 transition-colors"
-                            title="Edit gift"
-                            aria-label="Edit gift"
+                            title="Edit message"
+                            aria-label="Edit message"
                           >
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                               <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
@@ -475,8 +509,8 @@ export function Guestbook({ initialSnapshot, mutate, onGiftsChange }: GuestbookP
                             type="button"
                             onClick={() => handleDelete(gift.id)}
                             className="p-1 text-paper/60 hover:text-red-300 cursor-pointer rounded hover:bg-paper/10 transition-colors"
-                            title="Delete gift"
-                            aria-label="Delete gift"
+                            title="Delete message"
+                            aria-label="Delete message"
                           >
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                               <path d="M3 6h18"/>
