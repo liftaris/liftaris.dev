@@ -5,10 +5,11 @@ import '@fontsource-variable/noto-emoji';
 import './emoji-search.css';
 
 /** Shared by the public guestbook and the native Things inspector. */
-export function EmojiSearch({ value, onSelect, disabled = false }: {
+export function EmojiSearch({ value, onSelect, disabled = false, active = true }: {
   value?: string;
   onSelect: (emoji: EmojiOption) => void;
   disabled?: boolean;
+  active?: boolean;
 }) {
   const [query, setQuery] = useState('');
   const [remote, setRemote] = useState<{ query: string; ids: string[]; source: 'clef' | 'local' }>();
@@ -18,7 +19,7 @@ export function EmojiSearch({ value, onSelect, disabled = false }: {
   const current = remote?.query === text ? remote : undefined;
 
   useEffect(() => {
-    if (!text || disabled) return;
+    if (!text || disabled || !active) return;
     const controller = new AbortController();
     const timer = setTimeout(() => {
       void fetch('/api/house/suggest', {
@@ -34,7 +35,7 @@ export function EmojiSearch({ value, onSelect, disabled = false }: {
       });
     }, 300);
     return () => { clearTimeout(timer); controller.abort(); };
-  }, [text, disabled]);
+  }, [text, disabled, active]);
 
   const exact = local.filter(emoji => [emoji.id, emoji.name.toLowerCase(), normalizeEmojiPresentation(emoji.emoji)].includes(normalizeEmojiPresentation(text.toLowerCase())));
   const ids = new Set<string>();

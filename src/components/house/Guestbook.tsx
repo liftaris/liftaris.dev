@@ -13,6 +13,7 @@ function EmojiPicker({ value, onChange }: { value: string; onChange: (id: string
   const id = useId();
   const popover = useRef<HTMLDivElement>(null);
   const selected = findEmoji(value) ?? findEmoji("gift")!;
+  useEffect(() => { setOpen(Boolean(popover.current?.matches(":popover-open"))); }, []);
 
   return <div className="shrink-0">
     <button type="button" popoverTarget={id} className="flex size-16 cursor-pointer items-center justify-center font-emoji text-[52px] leading-none" aria-label={`Change icon. Current: ${selected.name}`}>
@@ -25,10 +26,10 @@ function EmojiPicker({ value, onChange }: { value: string; onChange: (id: string
         popover.current?.hidePopover();
       }
     }} className="fixed inset-0 m-auto w-72 max-w-[calc(100%-2rem)] border border-ink bg-paper p-3 text-ink shadow-2xl backdrop:bg-ink/30">
-      {open && <EmojiSearch value={selected.emoji} onSelect={option => {
+      <EmojiSearch active={open} value={selected.emoji} onSelect={option => {
         onChange(option.id);
         popover.current?.hidePopover();
-      }} />}
+      }} />
     </div>
   </div>;
 }
