@@ -1,12 +1,6 @@
 import { AuthoringContext, useThingPreview, ThingsToolbar } from './ThingAuthoring';
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { flushSync } from "react-dom";
-import { ensureViewer, getHouse, houseMutations, reclaimGift } from "../../lib/house/client";
-import type { Gift, GiftDetail, HouseSnapshot } from "../../lib/house/types";
-import { giftObjects } from "../../lib/house/emoji";
-import { GiftDialog } from "./GiftDialog";
 import { HouseClump } from "./HouseClump";
-import { getBackgroundStyle } from "../clump/model";
 import { ObjectWindow } from "../window/ObjectWindow";
 import { Folder, type FolderSpec } from "../folder/Folder";
 import {
@@ -18,105 +12,29 @@ import {
 } from "./folders";
 import { PageReader } from "./PageReader";
 
-const EMPTY_GIFTS: readonly Gift[] = [];
-type OpenedThing = { object: HouseThing | FolderSpec<HouseThing>; gift?: Gift; detail?: GiftDetail; origin: DOMRect; source: HTMLButtonElement; previewBounds?: DOMRect; restoreAnimation?: boolean; onReady?: () => void };
-
-
-const SENT_GIFTS_STORAGE_KEY = "liftaris:sent_gifts";
-
-function loadSentGiftIds(): Set<string> {
-  if (typeof window === "undefined") return new Set();
-  try {
-    const raw = localStorage.getItem(SENT_GIFTS_STORAGE_KEY);
-    if (!raw) return new Set();
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? new Set(parsed) : new Set();
-  } catch {
-    return new Set();
-  }
-}
-
-function saveSentGiftIds(ids: ReadonlySet<string>): void {
-  try {
-    localStorage.setItem(SENT_GIFTS_STORAGE_KEY, JSON.stringify([...ids]));
-  } catch {
-    // Ignore quota/security errors
-  }
-}
-
-function isFolderObject(_id: string, kind?: string): boolean {
-  return kind === "folder";
-}
+type OpenedThing = { object: HouseThing | FolderSpec<HouseThing>; origin: DOMRect; source: HTMLButtonElement; restoreAnimation?: boolean; };
 
 export function House({
   things = [],
   editMode = false,
   initialFolderId,
-  thingsConfig,
 }: {
   things?: readonly ThingSpec[];
   editMode?: boolean;
   initialFolderId?: string;
-  thingsConfig?: Record<string, { default_open?: boolean }>;
 }) {
   const { things: effectiveThings, authoring } = useThingPreview(things, editMode);
   const foldersById = useMemo(() => new Map(effectiveThings.filter(t=>t.kind==='folder').map(t=>[t.id,buildFolder(t,effectiveThings)])),[effectiveThings]);
   const desktopThings = useMemo(() => effectiveThings.filter(t=>t.desktop),[effectiveThings]);
-  const mergedThingsConfig = useMemo(() => {
-    const config: Record<string, { default_open?: boolean }> = {};
-    for (const thing of effectiveThings) {
-      config[thing.id] = { default_open: thing.default_open };
-    }
-    if (thingsConfig) {
-      for (const [id, cfg] of Object.entries(thingsConfig)) {
-        config[id] = { ...config[id], ...cfg };
-      }
-    }
-    return config;
-  }, [effectiveThings, thingsConfig]);
-
-  const [sentGiftIds, setSentGiftIds] = useState<Set<string>>(() => loadSentGiftIds());
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [snapshot, setSnapshot] = useState<HouseSnapshot | null>(null);
-  const accepted = useRef<HouseSnapshot | null>(null);
-  // Open cards retain their contents until this browser edits or closes them.
   const [opened, setOpened] = useState<OpenedThing[]>([]);
-  const [loadError, setLoadError] = useState("");
-  const [sessionError, setSessionError] = useState("");
   const [ready, setReady] = useState(false);
-  const initialRead = useRef<AbortController | null>(null);
-  const accept = useCallback((next: HouseSnapshot) => {
-    // A slow initial GET must never replace the result of this tab's mutation.
-    initialRead.current?.abort();
-    initialRead.current = null;
-    accepted.current = next;
-    setSnapshot(next);
-    setOpened((current) => current.map((item) => {
-      const gift = item.gift && next.gifts.find((entry) => entry.id === item.gift!.id);
-      return gift ? { ...item, gift, object: giftObjects([gift])[0] } : item;
-    }));
-    setLoadError("");
-  }, []);
-  const [mutate] = useState(() => houseMutations((next) => flushSync(() => accept(next))));
-  const refreshDetail = useCallback((gift: GiftDetail) => {
-    if (gift.canReclaim) {
-      setSentGiftIds((current) => {
-        if (current.has(gift.id)) return current;
-        const next = new Set(current);
-        next.add(gift.id);
-        saveSentGiftIds(next);
-        return next;
-      });
-    }
-    setOpened((current) => current.map((item) => item.object.id === gift.id
-      ? { ...item, gift, object: giftObjects([gift])[0] } : item));
-  }, []);
+  useEffect(() => setReady(true), []);
   const close = (id: string) => setOpened((current) => current.filter((item) => item.object.id !== id));
-  const open = useCallback((object: HouseThing | FolderSpec<HouseThing>, source: HTMLButtonElement, gift?: Gift) => {
-    const isFolder = isFolderObject(object.id, "kind" in object ? object.kind : undefined);
+  const open = useCallback((object: HouseThing | FolderSpec<HouseThing>, source: HTMLButtonElement) => {
+    const isFolder = "kind" in object && object.kind === "folder";
     const resolvedObject = foldersById.get(object.id) ?? object;
     const parentRect = source.getBoundingClientRect();
-    const item = { object: resolvedObject, source, gift, origin: parentRect };
+    const item = { object: resolvedObject, source, origin: parentRect };
 
     setOpened((current) => {
       const next = [...current];
@@ -145,41 +63,6 @@ export function House({
       return next;
     });
   }, [foldersById, effectiveThings]);
-  const trashGift = useCallback(async (id: string) => {
-    try {
-      await mutate(() => reclaimGift(id));
-      close(id);
-      setSentGiftIds((current) => {
-        if (!current.has(id)) return current;
-        const next = new Set(current);
-        next.delete(id);
-        saveSentGiftIds(next);
-        return next;
-      });
-    } catch (error) {
-      // Re-throw so caller knows deletion failed and can revert UI
-      throw error;
-    }
-  }, [mutate]);
-  useEffect(() => {
-    setReady(true);
-    if(authoring.session)return;
-    let active = true;
-    const controller = new AbortController();
-    initialRead.current = controller;
-    void ensureViewer().then((viewer) => {
-      if (active && viewer?.owner) setIsAdmin(true);
-    }).catch((reason: unknown) => {
-      if (active) setSessionError(reason instanceof Error ? reason.message : "Couldn’t start your visitor session. Reload to try again.");
-    });
-    void getHouse(controller.signal).then((next) => {
-      if (!controller.signal.aborted) accept(next);
-    }).catch(() => {
-      if (!controller.signal.aborted) setLoadError("The gifts couldn’t load. Reload to try again.");
-    });
-    return () => { active = false; controller.abort(); };
-  }, [accept]);
-
   const initialOpenDone = useRef(false);
   useEffect(() => {
     if (initialOpenDone.current) return;
@@ -228,7 +111,7 @@ export function House({
         const domSource = typeof document !== "undefined" ? (
           document.querySelector<HTMLButtonElement>(`[data-object="${CSS.escape(thing.id)}"]`) ??
           document.querySelector<HTMLButtonElement>(`[data-folder-entry="${CSS.escape(thing.id)}"]`) ??
-          (thing.parent_id ? document.querySelector<HTMLButtonElement>(`[data-object="${CSS.escape(thing.parent_id)}"]`) : null)
+          (thing.primaryFolder ? document.querySelector<HTMLButtonElement>(`[data-object="${CSS.escape(thing.primaryFolder)}"]`) : null)
         ) : null;
 
         const source = domSource ?? (typeof document !== "undefined" ? document.createElement("button") : (null as unknown as HTMLButtonElement));
@@ -247,7 +130,6 @@ export function House({
   useEffect(() => {
     if (!editMode) return;
     setOpened(items => items.flatMap(item => {
-      if(item.gift) return [item];
       const updated = foldersById.get(item.object.id) ?? effectiveThings.find(t=>t.id===item.object.id);
       return updated ? [{...item,object:updated}] : [];
     }));
@@ -258,29 +140,20 @@ export function House({
     <AuthoringContext.Provider value={authoring}><ThingsToolbar />
     <div className="house flex flex-col size-full min-w-0 min-h-0 @container text-paper" data-ready={ready}>
       <HouseClump
-        gifts={authoring.session ? EMPTY_GIFTS : snapshot?.gifts ?? EMPTY_GIFTS}
         inspectedIds={opened.map((item) => item.object.id)}
-        thingsConfig={mergedThingsConfig}
         desktopObjects={desktopThings}
-        isAdmin={isAdmin}
-        sentGiftIds={sentGiftIds}
         onOpen={open}
-        onTrash={trashGift}
       />
-      {loadError && <p className="house-connection shrink-0 max-h-[30%] overflow-auto mt-2 px-4 text-center text-xs" role="status">{loadError}</p>}
-      {sessionError && <p className="house-connection shrink-0 max-h-[30%] overflow-auto mt-2 px-4 text-center text-xs" role="status">{sessionError}</p>}
-
       {opened.map((item) => {
         const spec = effectiveThings.find(t=>t.id===item.object.id);
         const folder = "kind" in item.object && item.object.kind === "folder" && "items" in item.object ? (item.object as FolderSpec<HouseThing>) : undefined;
-        const page = "kind" in item.object && (item.object.kind === "page" || item.object.kind === "post") ? (item.object as ThingSpec) : undefined;
-        const parentFolderId = "parent_id" in item.object && item.object.parent_id ? item.object.parent_id : undefined;
+        const page = "kind" in item.object && item.object.kind === "page" ? (item.object as ThingSpec) : undefined;
+        const parentFolderId = spec?.primaryFolder;
         const fallbackSource = () => document.querySelector<HTMLButtonElement>(`[data-folder-entry="${CSS.escape(item.object.id)}"]`)
-          ?? document.querySelector<HTMLButtonElement>(`[data-object="${CSS.escape(item.object.id)}"]:not([data-removing="true"])`)
+          ?? document.querySelector<HTMLButtonElement>(`[data-object="${CSS.escape(item.object.id)}"]`)
           ?? (parentFolderId ? document.querySelector<HTMLButtonElement>(`[data-object="${CSS.escape(parentFolderId)}"]`) : null);
         if (folder) return <Folder key={item.object.id} folder={folder}
           origin={item.origin} source={item.source} fallbackSource={fallbackSource} monochrome openedIds={opened.map((entry) => entry.object.id)}
-          thingsConfig={mergedThingsConfig}
           width={spec?.window_width} height={spec?.window_height}
           x={spec?.window_x} y={spec?.window_y}
           onAuthorResize={geometry(item.object.id)} onAuthorMove={moveGeometry(item.object.id)}
@@ -289,8 +162,7 @@ export function House({
           onOpen={open} onOpenFolder={open} onClose={() => close(item.object.id)} />;
         const title = item.object.name;
         const icon = item.object.image || item.object.emoji;
-        const bgStyle = spec?.kind === 'folder' ? getBackgroundStyle(spec) : undefined;
-        const isGuestbook = item.object.id === 'leave-gift' || ('slug' in item.object && item.object.slug === 'guestbook') || ('page_source' in item.object && item.object.page_source === 'guestbook') || ('action' in item.object && item.object.action === 'leave-gift');
+        const isGuestbook = spec?.page_source === 'guestbook';
         const winClass = isGuestbook ? "guestbook-window" : undefined;
         return <ObjectWindow key={item.object.id} title={title} icon={icon} origin={item.origin} source={item.source} fallbackSource={fallbackSource}
           className={winClass}
@@ -299,13 +171,8 @@ export function House({
           width={spec?.window_width} height={spec?.window_height}
           x={spec?.window_x} y={spec?.window_y}
           onAuthorResize={geometry(item.object.id)} onAuthorMove={moveGeometry(item.object.id)}
-          initialBounds={item.previewBounds} backgroundStyle={bgStyle} onReady={item.onReady}
-          monochrome={!item.gift} closeLabel={item.gift ? "Close gift" : undefined} onClose={() => close(item.object.id)}>
-          {item.gift ? (
-            <GiftDialog gift={item.gift} initialDetail={item.detail} onClose={() => close(item.object.id)} onDetail={refreshDetail} mutate={mutate} />
-          ) : page ? (
-            <PageReader page={page} />
-          ) : null}
+          monochrome onClose={() => close(item.object.id)}>
+          {page && <PageReader page={page} />}
         </ObjectWindow>;
       })}
     </div></AuthoringContext.Provider>

@@ -3,7 +3,7 @@ import { findEmoji } from "../../lib/house/emoji";
 
 const EmojiId = Schema.String.check(Schema.makeFilter(value => Boolean(findEmoji(value))));
 
-export const Identifier = Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(100), Schema.isPattern(/^[a-zA-Z0-9_-]+$/));
+const Identifier = Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(100), Schema.isPattern(/^[a-zA-Z0-9_-]+$/));
 
 const messageFields = {
   emojiId: EmojiId,

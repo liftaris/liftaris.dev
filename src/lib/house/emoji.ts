@@ -1,5 +1,4 @@
-import type { ObjectSpec, Size } from "../../components/clump/model";
-import type { EmojiOption, Gift } from "./types";
+import type { EmojiOption } from "./types";
 
 import catalog from "./emoji-catalog.json";
 
@@ -9,7 +8,7 @@ export const EMOJI_CATALOG: readonly EmojiOption[] = catalog;
 const byId = new Map<string, EmojiOption>(EMOJI_CATALOG.map((item) => [item.id, item]));
 
 /** Convert any raw emoji string into a valid, decodeable EmojiOption. */
-export function emojiToOption(char: string, name = "Icon"): EmojiOption {
+function emojiToOption(char: string, name = "Icon"): EmojiOption {
   const actualPoints = Array.from(char).map((c) => c.codePointAt(0)!);
   const id = "u_" + actualPoints.map((cp) => cp.toString(16)).join("_");
   return { id, emoji: char, name, keywords: "" };
@@ -102,16 +101,4 @@ export function searchEmojiCatalog(text: string): EmojiOption[] {
   }
 
   return result;
-}
-
-export function giftObjects(gifts: readonly Gift[]): ObjectSpec[] {
-  return gifts.flatMap((gift) => {
-    const emoji = findEmoji(gift.emojiId);
-    return emoji ? [{ id: gift.id, name: emoji.name, emoji: emoji.emoji, width: 48, height: 48, isGift: true }] : [];
-  });
-}
-
-export function worldSize(giftCount: number): Size {
-  const growth = Math.max(1, Math.sqrt((10 + giftCount) / 16));
-  return { width: Math.ceil(500 * growth), height: Math.ceil(600 * growth) };
 }

@@ -63,3 +63,6 @@ dist/
 # Private migration snapshots
 .local-backups/
 .worktrees/
+
+# Local notes and archived development tooling
+/.ignore/

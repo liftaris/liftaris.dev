@@ -1,7 +1,8 @@
 ---
 import Portfolio from '../layouts/Portfolio.astro';
 import { House } from '../components/house/House';
-import { readThings, sceneThings } from '../server/things/read';
+import { readThings } from '../server/things/read';
+import { sceneThings } from '../lib/things/scene';
 import { getRequestContext } from 'emdash/request-context';
 const editMode = getRequestContext()?.editMode === true;
 const things = sceneThings(await readThings());

@@ -1,12 +1,10 @@
 import { PAGE_SOURCES } from '../things/model';
 
 type Target = {
-  id?: string;
   href?: string | null;
   kind?: string;
   page_source?: keyof typeof PAGE_SOURCES;
   previewUrl?: string;
-  items?: readonly unknown[];
 };
 let prefetchFn: ((url: string) => void) | undefined;
 
@@ -17,16 +15,16 @@ export function windowPageUrl(href: string): string {
   return `${url.pathname}${url.search}${url.hash}`;
 }
 
-export function getThingPrefetchUrls(thing?: Target | null): string[] {
+function getThingPrefetchUrls(thing?: Target | null): string[] {
   // Folders already render from the scene data. Warming every descendant here
   // makes the page the visitor actually chooses compete with unrelated renders.
   if (!thing || thing.previewUrl || thing.kind === 'folder') return [];
   const url = thing.href || (thing.page_source ? PAGE_SOURCES[thing.page_source] : null);
   if (!url?.startsWith('/') || url.startsWith('//')) return [];
-  return [thing.kind === 'page' || thing.kind === 'post' ? windowPageUrl(url) : url];
+  return [thing.kind === 'page' ? windowPageUrl(url) : url];
 }
 
-export function prefetchUrl(url?: string | null) {
+function prefetchUrl(url?: string | null) {
   if (!url || typeof window === 'undefined') return;
   if (prefetchFn) { prefetchFn(url); return; }
   void import('astro:prefetch').then(mod => {

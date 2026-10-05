@@ -5,7 +5,7 @@ import { normalizeData, pathFor, type ThingRecord } from '../../lib/things/model
 /** Read independent entries concurrently instead of paying a D1 round trip per Thing.
  * Select only relevant relations and consume every contents cursor.
  */
-export async function readThings(mode: 'request' | 'published' | 'editor' = 'request', options: { includeContents?: boolean } = {}): Promise<ThingRecord[]> {
+export async function readThings(mode: 'request' | 'published' = 'request', options: { includeContents?: boolean } = {}): Promise<ThingRecord[]> {
   const read = async () => {
     const rows: ThingRecord[] = [];
     let cursor: string | undefined;
@@ -42,9 +42,8 @@ export async function readThings(mode: 'request' | 'published' | 'editor' = 'req
     return rows;
   };
   if (mode === 'request') return read();
-  return runWithContext({ ...getRequestContext(), editMode: mode === 'editor', preview: undefined }, read);
+  return runWithContext({ ...getRequestContext(), editMode: false, preview: undefined }, read);
 }
-export { sceneThings } from '../../lib/things/scene';
 
 /** Resolve a normal page in O(primary-folder depth), not O(all Things).
  * Native slugs are unique within the collection; validate the full canonical

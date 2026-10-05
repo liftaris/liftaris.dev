@@ -1,7 +1,7 @@
 /** Shared authoring/rendering contract. CMS references stay separate from field data. */
 export const STUDIO_PATH = '/_emdash/admin/plugins/liftaris-things/workspace';
 export const PAGE_SOURCES = { content: null, post: null, projects: '/projects', experience: '/experience', github: '/github', clump: '/lab/clump', guestbook: '/guestbook' } as const;
-export type ThingKind = 'page' | 'folder' | 'application';
+type ThingKind = 'page' | 'folder' | 'application';
 export type ThingData = {
   name: string; kind: ThingKind; icon_type: 'emoji' | 'image'; emoji: string; image: unknown;
   width: number; height: number; window_width: number; window_height: number;
@@ -52,7 +52,7 @@ export function pathFor(thing: ThingRecord, all: readonly ThingRecord[], seen = 
   if (!parent || parent.data.kind !== 'folder') throw new Error(`${thing.data.name} needs an available primary folder.`);
   return `${pathFor(parent, all, seen)}/${segment}`;
 }
-export function validPath(path: string): string {
+function validPath(path: string): string {
   if (!/^\/(?:[a-z0-9][a-z0-9_-]*)(?:\/[a-z0-9][a-z0-9_-]*)*$/.test(path)) throw new Error('Use a site path such as /writing/my-post, with lowercase URL segments.');
   return path;
 }

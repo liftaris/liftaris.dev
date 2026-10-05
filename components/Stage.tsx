@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { EXPERIENCE, PROJECTS } from "@/data/portfolio";
 import type { ProjectLinkKind } from "@/data/portfolio";
 
-export type StageView = "projects" | "experience";
+type StageView = "projects" | "experience";
 
 interface StageProps {
   view?: StageView;

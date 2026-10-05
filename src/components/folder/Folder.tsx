@@ -14,29 +14,24 @@ type FolderIcon = BackgroundProps & {
   height?: number;
 };
 export type FolderSpec<T> = FolderIcon & { kind: "folder"; items: readonly FolderEntry<T>[] };
-export type FolderEntry<T> = FolderSpec<T> | (FolderIcon & (
-  | { kind: "item"; value: T }
-  | { kind: "link"; href: string }
-));
+type FolderEntry<T> = FolderSpec<T> | (FolderIcon & { kind: "item"; value: T });
 
 type FolderProps<T> = Omit<ComponentProps<typeof ObjectWindow>, "title" | "icon" | "children"> & {
   folder: FolderSpec<T>;
   openedIds?: readonly string[];
-  thingsConfig?: Record<string, { default_open?: boolean }>;
   onOpen: (item: T, source: HTMLButtonElement) => void;
   onOpenFolder: (folder: FolderSpec<T>, source: HTMLButtonElement) => void;
 };
 
-export type FolderContentProps<T> = {
+type FolderContentProps<T> = {
   folder: FolderSpec<T>;
   openedIds?: readonly string[];
-  thingsConfig?: Record<string, { default_open?: boolean }>;
   monochrome?: boolean;
   onOpen?: (item: T, source: HTMLButtonElement) => void;
   onOpenFolder?: (folder: FolderSpec<T>, source: HTMLButtonElement) => void;
 };
 
-export function FolderContent<T>({
+function FolderContent<T>({
   folder,
   openedIds = [],
   monochrome,
@@ -81,17 +76,6 @@ export function FolderContent<T>({
           return (
             <li key={entry.id} className="min-w-0">
               <ThingControls id={entry.id} name={entry.name} />
-              {entry.kind === "link" ? (
-                <a
-                  className="folder-entry group flex flex-col items-center gap-2 w-full min-h-24 px-1.5 py-2.5 border border-transparent bg-transparent text-inherit font-inherit text-xs leading-[1.4] text-center no-underline [overflow-wrap:anywhere] cursor-pointer touch-manipulation outline-none hover:no-underline hover:bg-blue/7 focus-visible:no-underline focus-visible:outline-none focus-visible:border-transparent aria-disabled:cursor-default aria-disabled:opacity-65"
-                  href={entry.href}
-                  onPointerEnter={() => prefetchThing(entry)}
-                  onFocus={() => prefetchThing(entry)}
-                  onPointerDown={() => prefetchThing(entry)}
-                >
-                  {artwork}
-                </a>
-              ) : (
                 <button
                   type="button"
                   className="folder-entry group flex flex-col items-center gap-2 w-full min-h-24 px-1.5 py-2.5 border border-transparent bg-transparent text-inherit font-inherit text-xs leading-[1.4] text-center no-underline [overflow-wrap:anywhere] cursor-pointer touch-manipulation outline-none hover:no-underline hover:bg-blue/7 focus-visible:no-underline focus-visible:outline-none focus-visible:border-transparent aria-disabled:cursor-default aria-disabled:opacity-65"
@@ -100,9 +84,9 @@ export function FolderContent<T>({
                   aria-expanded={openedIds.includes(entry.id)}
                   aria-disabled={openedIds.includes(entry.id) || undefined}
                   tabIndex={openedIds.includes(entry.id) ? -1 : 0}
-                  onPointerEnter={() => prefetchThing(entry.kind === "item" ? (entry.value as { id?: string; action?: string; href?: string | null; kind?: string }) : entry)}
-                  onFocus={() => prefetchThing(entry.kind === "item" ? (entry.value as { id?: string; action?: string; href?: string | null; kind?: string }) : entry)}
-                  onPointerDown={() => prefetchThing(entry.kind === "item" ? (entry.value as { id?: string; action?: string; href?: string | null; kind?: string }) : entry)}
+                  onPointerEnter={() => prefetchThing(entry.kind === "item" ? (entry.value as { id?: string; href?: string | null; kind?: string }) : entry)}
+                  onFocus={() => prefetchThing(entry.kind === "item" ? (entry.value as { id?: string; href?: string | null; kind?: string }) : entry)}
+                  onPointerDown={() => prefetchThing(entry.kind === "item" ? (entry.value as { id?: string; href?: string | null; kind?: string }) : entry)}
                   onClick={(event) => {
                     if (openedIds.includes(entry.id)) return;
                     if (entry.kind === "folder") onOpenFolder?.(entry, event.currentTarget);
@@ -113,7 +97,6 @@ export function FolderContent<T>({
                 >
                   {artwork}
                 </button>
-              )}
             </li>
           );
         })}
@@ -124,8 +107,8 @@ export function FolderContent<T>({
 }
 
 /** The caller owns folder and item windows as independent peers. */
-export function Folder<T>({ folder, openedIds = [], thingsConfig, onOpen, onOpenFolder, className, ...windowProps }: FolderProps<T>) {
-  const folderIcon = folder.image || (isImageUrl(folder.emoji) ? folder.emoji : folder.emoji);
+export function Folder<T>({ folder, openedIds = [], onOpen, onOpenFolder, className, ...windowProps }: FolderProps<T>) {
+  const folderIcon = folder.image || folder.emoji;
   const folderBg = getBackgroundStyle(folder);
   return (
     <ObjectWindow
@@ -138,7 +121,6 @@ export function Folder<T>({ folder, openedIds = [], thingsConfig, onOpen, onOpen
       <FolderContent
         folder={folder}
         openedIds={openedIds}
-        thingsConfig={thingsConfig}
         monochrome={windowProps.monochrome}
         onOpen={onOpen}
         onOpenFolder={onOpenFolder}

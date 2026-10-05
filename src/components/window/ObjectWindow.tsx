@@ -25,24 +25,21 @@ type ObjectWindowProps = {
   className?: string;
   autoFit?: boolean;
   canClose?: boolean;
-  initialBounds?: DOMRect;
   backgroundStyle?: CSSProperties;
   maximizeUrl?: string;
   restoreAnimation?: boolean;
   onMaximize?: () => void;
   onAuthorResize?: (size: {width:number;height:number}) => void;
   onAuthorMove?: (pos: {x:number;y:number}) => void;
-  onReady?: () => void;
   onClose: () => void;
   children?: ReactNode;
 };
 
-export function ObjectWindow({ title, icon, source, fallbackSource, origin, monochrome = false, closeLabel = "Close window", width = 480, height = 380, x, y, minWidth = 180, minHeight = 100, resizable = true, className, autoFit = false, canClose = true, initialBounds, backgroundStyle, maximizeUrl, restoreAnimation = false, onMaximize, onReady, onAuthorResize, onAuthorMove, onClose, children }: ObjectWindowProps) {
+export function ObjectWindow({ title, icon, source, fallbackSource, origin, monochrome = false, closeLabel = "Close window", width = 480, height = 380, x, y, minWidth = 180, minHeight = 100, resizable = true, className, autoFit = false, canClose = true, backgroundStyle, maximizeUrl, restoreAnimation = false, onMaximize, onAuthorResize, onAuthorMove, onClose, children }: ObjectWindowProps) {
   const [body, setBody] = useState<HTMLElement | null>(null);
   const [error, setError] = useState(false);
-  const initial = useRef({ source, origin, width, height, x, y, minWidth, minHeight, resizable, initialBounds, className });
+  const initial = useRef({ source, origin, width, height, x, y, minWidth, minHeight, resizable, className });
   const windowInstance = useRef<WinBox | null>(null);
-  const readyFired = useRef(false);
   const isAnimating = useRef(false);
   const resizeCallback = useRef(onAuthorResize); resizeCallback.current = onAuthorResize;
   const moveCallback = useRef(onAuthorMove); moveCallback.current = onAuthorMove;
@@ -82,9 +79,6 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
     frame.querySelector(".wb-close")!.setAttribute("aria-label", closeLabel);
     frame.querySelector(".object-window-handle")!.setAttribute("aria-label", `Move ${title} window. Use arrow keys; Escape collapses.`);
   }, [body, title, icon, monochrome, closeLabel, className]);
-  useLayoutEffect(() => {
-    if (body && onReady && !readyFired.current) { readyFired.current = true; onReady(); }
-  }, [body, onReady]);
 
   useLayoutEffect(() => {
     const button = body?.closest(".object-window")?.querySelector(".wb-max");
@@ -161,7 +155,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
   // Capture focus before React removes portal children on parent-driven close.
   useLayoutEffect(() => {
     // Geometry and source belong to this mounted window, not its changing content.
-    const { source, origin, width, height, x, y, minWidth = 180, minHeight = 100, resizable = true, initialBounds, className: windowClass } = initial.current;
+    const { source, origin, width, height, x, y, minWidth = 180, minHeight = 100, resizable = true, className: windowClass } = initial.current;
     let disposed = false;
     let instance: WinBox | undefined;
     let restoreFocus = false;
@@ -194,8 +188,8 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
         minwidth: Math.min(minWidth, width),
         minheight: Math.min(minHeight, height),
         top: 18, left: 12, right: 12, bottom: 12,
-        x: initialBounds?.left ?? (initialPixelX ?? origin.left + 24),
-        y: initialBounds?.top ?? (initialPixelY ?? origin.top + 16),
+        x: initialPixelX ?? origin.left + 24,
+        y: initialPixelY ?? origin.top + 16,
         onclose(force) {
           if (force) return false;
           if (!closeAllowed.current) return true;
@@ -508,8 +502,8 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
       );
       // WinBox bounds dragging but does not resize open windows on viewport changes.
       const fit = () => {
-        const currentW = Number(win.width) || (initialBounds?.width ?? width);
-        const currentH = Number(win.height) || (initialBounds?.height ?? height);
+        const currentW = Number(win.width) || width;
+        const currentH = Number(win.height) || height;
         win.resize(
           Math.min(currentW, innerWidth - Number(win.left) - Number(win.right)),
           Math.min(currentH, innerHeight - Number(win.top) - Number(win.bottom))

@@ -12,7 +12,7 @@ export interface Project {
 
 export type ProjectLinkKind = "site" | "github" | "npm" | "blog";
 
-export interface ProjectLink {
+interface ProjectLink {
   kind: ProjectLinkKind;
   label: string;
   href: string;

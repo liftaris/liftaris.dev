@@ -547,7 +547,6 @@ body.embedded-post {
 }
 .folder-entry-art,
 .house-object-art,
-.house-trash-icon,
 .site-window-icon,
 .object-window-icon {
   font-family: var(--font-emoji);
@@ -781,20 +780,6 @@ body.on-guestbook .object-window-content {
 @media (forced-colors: active) {
   .winbox.object-window { border-color: CanvasText; }
   .object-window :focus-visible { outline-color: Highlight; }
-}
-
-@keyframes house-arrive { from { opacity: 0; } to { opacity: 1; } }
-@keyframes house-depart { from { opacity: 1; } to { opacity: 0; } }
-@keyframes house-trash-gobble {
-  0% { transform: scale(1); }
-  40% { transform: scale(1.35) rotate(6deg); background: rgb(255 80 80 / .4); }
-  70% { transform: scale(.92) rotate(-3deg); }
-  100% { transform: scale(1) rotate(0); }
-}
-@keyframes house-trash-shake {
-  0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-6px) rotate(-4deg); }
-  40%, 80% { transform: translateX(6px) rotate(4deg); }
 }
 
 .site-window .card,

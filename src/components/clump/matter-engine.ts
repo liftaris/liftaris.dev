@@ -2,10 +2,6 @@ import { spawnPoint } from '../../lib/things/model';
 import Matter from "matter-js";
 import { createCollider } from "./colliders";
 import {
-  initialPoses,
-  isFixed,
-  isGift,
-  OBJECTS,
   type EngineOptions,
   type ObjectSpec,
   type Point,
@@ -22,24 +18,20 @@ function bounded(value: number, low: number, high: number): number {
   return low > high ? (low + high) / 2 : Math.max(low, Math.min(high, value));
 }
 
-/** Constrain the artwork, including the overhang of a small peg collider. */
+/** Constrain the artwork, including the overhang beyond its collider. */
 function contain(pose: Pose, object: ObjectSpec, size: Size): Pose {
-  const angle = isGift(object) ? pose.angle : 0;
-  const cos = Math.abs(Math.cos(angle));
-  const sin = Math.abs(Math.sin(angle));
-  const halfWidth = (object.width * cos + object.height * sin) / 2 + EDGE_PADDING;
-  const labelHeight = isGift(object) ? 0 : 22;
-  const halfHeight = (object.width * sin + object.height * cos) / 2 + EDGE_PADDING;
+  const halfWidth = object.width / 2 + EDGE_PADDING;
+  const halfHeight = object.height / 2 + EDGE_PADDING;
   return {
     ...pose,
-    angle,
+    angle: 0,
     x: bounded(pose.x, halfWidth, size.width - halfWidth),
-    y: bounded(pose.y, halfHeight, size.height - halfHeight - labelHeight),
+    y: bounded(pose.y, halfHeight, size.height - halfHeight - 22),
   };
 }
 
-function poseOf(id: string, body: Matter.Body, isGiftItem = false): Pose {
-  return { id, x: body.position.x, y: body.position.y, angle: isGiftItem ? body.angle : 0 };
+function poseOf(id: string, body: Matter.Body): Pose {
+  return { id, x: body.position.x, y: body.position.y, angle: 0 };
 }
 
 type Item = {
@@ -64,8 +56,7 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
   let size = { ...options.size };
   let disposed = false;
   let drag: Drag | null = null;
-  const frozenBefore = new Map<string, Pose>();
-  const apartment = options.scene === "apartment";
+  const layoutEditing = options.layoutEditing;
   const engine = Engine.create({
     enableSleeping: true,
     gravity: { x: 0, y: 0, scale: 0 },
@@ -73,46 +64,22 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
     velocityIterations: 6,
     constraintIterations: 4,
   });
-  const seeds = initialPoses(options.scene, size);
   function makeItem(object: ObjectSpec, index: number, poseOverride?: Pose): Item {
-    const supplied = options.poses?.find((pose) => pose.id === object.id);
-    const seed = seeds.find((pose) => pose.id === object.id) ?? (
-      isGift(object)
-        ? {
-            id: object.id,
-            x: size.width / 2 + Math.cos(index * 2.39996) * Math.min(size.width * 0.35, 140),
-            y: size.height - (object.height / 2 + EDGE_PADDING + 8),
-            angle: 0,
-          }
-        : {
-            id: object.id,
-            x: size.width / 2 + Math.cos(index * 2.39996) * 60,
-            y: size.height / 2 + Math.sin(index * 2.39996) * 90,
-            angle: 0,
-          }
-    );
-    // Start the poster experiment with tighter artwork overlap. Only fresh
-    // seeds are compressed; switching back to a saved arrangement preserves it.
-    const initial = options.scene === "clump" && options.collision === "peg"
-      ? { ...seed, x: size.width / 2 + (seed.x - size.width / 2) * 0.76,
-        y: size.height / 2 + (seed.y - size.height / 2) * 0.82 }
-      : seed;
+    const seed = {
+      id: object.id,
+      x: size.width / 2 + Math.cos(index * 2.39996) * 60,
+      y: size.height / 2 + Math.sin(index * 2.39996) * 90,
+      angle: 0,
+    };
     const authored = object.spawn_x !== undefined && object.spawn_y !== undefined
       ? {id:object.id,angle:0,...spawnPoint({width:object.width,height:object.height,spawn_x:object.spawn_x,spawn_y:object.spawn_y},size)} : undefined;
-    const pose = contain(poseOverride ?? supplied ?? authored ?? initial, object, size);
-    const body = createCollider(object, pose, options.collision, isFixed(object, options.scene));
-    if (isGift(object)) {
-      body.frictionAir = 0.012;
-      body.restitution = 0.45;
-      body.sleepThreshold = 42;
-    } else {
-      body.frictionAir = options.reducedMotion ? 0.25 : 0.12;
-      body.sleepThreshold = options.reducedMotion ? 24 : 40;
-      Body.setInertia(body, Infinity);
-    }
+    const pose = contain(poseOverride ?? authored ?? seed, object, size);
+    const body = createCollider(object, pose);
+    body.frictionAir = options.reducedMotion ? 0.25 : 0.12;
+    body.sleepThreshold = options.reducedMotion ? 24 : 40;
     return { object, body, quietFrames: 0 };
   }
-  let items: Item[] = (options.objects ?? OBJECTS).map((object, index) => makeItem(object, index));
+  let items: Item[] = options.objects.map((object, index) => makeItem(object, index));
   const byId = new Map(items.map((item) => [item.object.id, item]));
   Composite.add(engine.world, items.map((item) => item.body));
 
@@ -124,7 +91,7 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
   function setPose(item: Item, pose: Pose): void {
     const next = contain(pose, item.object, size);
     Body.setPosition(item.body, next);
-    Body.setAngle(item.body, isGift(item.object) ? next.angle : 0);
+    Body.setAngle(item.body, 0);
     Body.setVelocity(item.body, { x: 0, y: 0 });
     Body.setAngularVelocity(item.body, 0);
     wake(item);
@@ -139,39 +106,10 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
     const velocity = { ...body.velocity };
     Body.setPosition(body, next);
 
-    if (isGift(object)) {
-      let newVx = velocity.x;
-      let newVy = velocity.y;
-
-      // Vertical bounce against floor
-      if (before.y > next.y && velocity.y > 0) {
-        if (velocity.y > 1.2) {
-          const bounceRestitution = body.restitution || 0.45;
-          newVy = -velocity.y * bounceRestitution;
-          newVx = velocity.x * 0.9;
-        } else {
-          newVy = 0;
-          newVx = velocity.x * 0.82;
-          Body.setAngularVelocity(body, body.angularVelocity * 0.8);
-        }
-      } else if (before.y < next.y && velocity.y < 0) {
-        newVy = 0;
-      }
-
-      // Horizontal bounce against side walls
-      if (before.x > next.x && velocity.x > 0) {
-        newVx = velocity.x > 1.2 ? -velocity.x * 0.35 : 0;
-      } else if (before.x < next.x && velocity.x < 0) {
-        newVx = velocity.x < -1.2 ? -velocity.x * 0.35 : 0;
-      }
-
-      Body.setVelocity(body, { x: newVx, y: newVy });
-    } else {
-      Body.setVelocity(body, {
-        x: next.x === before.x ? velocity.x : 0,
-        y: next.y === before.y ? velocity.y : 0,
-      });
-    }
+    Body.setVelocity(body, {
+      x: next.x === before.x ? velocity.x : 0,
+      y: next.y === before.y ? velocity.y : 0,
+    });
   }
 
   function endDrag(cancel = false): void {
@@ -180,7 +118,7 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
     drag = null;
     if (previous.constraint) Composite.remove(engine.world, previous.constraint);
     if (cancel) setPose(previous.item, previous.before);
-    else if (apartment || options.reducedMotion) {
+    else if (layoutEditing || options.reducedMotion) {
       Body.setVelocity(previous.item.body, { x: 0, y: 0 });
       Body.setAngularVelocity(previous.item.body, 0);
     }
@@ -189,7 +127,7 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
 
   return {
     getPoses() {
-      return items.map(({ object, body }) => poseOf(object.id, body, isGift(object)));
+      return items.map(({ object, body }) => poseOf(object.id, body));
     },
 
     syncObjects(objects, poses = []) {
@@ -200,7 +138,6 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
         if (!ids.has(item.object.id)) {
           Composite.remove(engine.world, item.body);
           byId.delete(item.object.id);
-          frozenBefore.delete(item.object.id);
         }
       }
       items = objects.map((object, index) => {
@@ -222,7 +159,7 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
     },
 
     step(deltaMs) {
-      if (disposed || apartment) return false;
+      if (disposed || layoutEditing) return false;
       if (deltaMs <= 0 || !Number.isFinite(deltaMs)) {
         return Boolean(drag) || items.some(({ body }) => !body.isStatic && !body.isSleeping);
       }
@@ -239,32 +176,16 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
         wake(drag.item);
       }
 
-      const before = items.map(({ object, body }) => ({ ...body.position, angle: isGift(object) ? body.angle : 0 }));
-      for (const item of items) {
-        const { body, object } = item;
-        if (body.isStatic || body.isSleeping || item === drag?.item) continue;
-        if (isGift(object)) {
-          const gravityStrength = 0.0024;
-          Body.applyForce(body, body.position, {
-            x: 0,
-            y: body.mass * gravityStrength,
-          });
-        }
-        // Things have no forces pulling them - they remain where dragged/pushed.
-      }
-
+      const before = items.map(({ body }) => ({ ...body.position }));
       Engine.update(engine, delta);
       items.forEach((item, index) => {
-        const { body, object } = item;
+        const { body } = item;
         if (body.isStatic) return;
-        if (!isGift(object)) {
-          Body.setAngle(body, 0);
-          Body.setAngularVelocity(body, 0);
-        }
+        Body.setAngle(body, 0);
+        Body.setAngularVelocity(body, 0);
         keepArtworkInside(item);
         const old = before[index];
-        const motion = Math.hypot(body.position.x - old.x, body.position.y - old.y)
-          + (isGift(object) ? Math.abs(body.angle - old.angle) * 20 : 0);
+        const motion = Math.hypot(body.position.x - old.x, body.position.y - old.y);
         item.quietFrames = motion < 0.035 ? item.quietFrames + 1 : 0;
         // Contact can stop an outward object at the envelope. Sleeping here
         // prevents attraction into a packed neighbor from keeping RAF alive.
@@ -277,9 +198,9 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
       const item = byId.get(id);
       if (disposed || !item || item.body.isStatic) return false;
       endDrag();
-      const before = poseOf(id, item.body, isGift(item.object));
+      const before = poseOf(id, item.body);
       const offset = { x: point.x - before.x, y: point.y - before.y };
-      const constraint = apartment ? null : Constraint.create({
+      const constraint = layoutEditing ? null : Constraint.create({
         pointA: { ...point },
         bodyB: item.body,
         pointB: { ...offset },
@@ -296,12 +217,12 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
     moveDrag(point) {
       if (disposed || !drag) return;
       // Keep the handle within the stage even when pointer capture takes the
-      // pointer outside it. The artwork's rotated extents get a second clamp.
+      // pointer outside it. The artwork's extents get a second clamp.
       drag.target = {
         x: bounded(point.x, 0, size.width),
         y: bounded(point.y, 0, size.height),
       };
-      if (apartment) {
+      if (layoutEditing) {
         setPose(drag.item, {
           ...poseOf(drag.item.object.id, drag.item.body),
           x: drag.target.x - drag.offset.x,
@@ -312,81 +233,13 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
 
     endDrag,
 
-    freeze(id, targetPoint) {
-      const item = byId.get(id);
-      if (!item) return;
-      if (drag?.item === item) {
-        if (drag.constraint) Composite.remove(engine.world, drag.constraint);
-        frozenBefore.set(id, drag.before);
-        const finalX = targetPoint ? targetPoint.x : (drag.target.x - drag.offset.x);
-        const finalY = targetPoint ? targetPoint.y : (drag.target.y - drag.offset.y);
-        const currentAngle = isGift(item.object) ? item.body.angle : 0;
-        drag = null;
-        if (targetPoint) {
-          Body.setPosition(item.body, { x: finalX, y: finalY });
-          Body.setAngle(item.body, currentAngle);
-          wake(item);
-        } else {
-          setPose(item, { id, x: finalX, y: finalY, angle: currentAngle });
-        }
-      } else {
-        if (!frozenBefore.has(id)) {
-          frozenBefore.set(id, poseOf(id, item.body, isGift(item.object)));
-        }
-        if (targetPoint) {
-          Body.setPosition(item.body, { x: targetPoint.x, y: targetPoint.y });
-          wake(item);
-        }
-      }
-      Body.setVelocity(item.body, { x: 0, y: 0 });
-      Body.setAngularVelocity(item.body, 0);
-      Body.setStatic(item.body, true);
-    },
-
-    unfreeze(id, resetToBefore = false) {
-      const item = byId.get(id);
-      if (!item) return;
-      Body.setStatic(item.body, isFixed(item.object, options.scene));
-      const before = frozenBefore.get(id);
-      frozenBefore.delete(id);
-      if (resetToBefore && before) {
-        setPose(item, before);
-      } else {
-        Body.setVelocity(item.body, { x: 0, y: 0 });
-        Body.setAngularVelocity(item.body, 0);
-        wake(item);
-      }
-    },
-
-    nudge(id, dx, dy, angle = 0) {
-      const item = byId.get(id);
-      if (disposed || !item || item.body.isStatic) return;
-      const pose = poseOf(id, item.body, isGift(item.object));
-      setPose(item, {
-        ...pose,
-        x: pose.x + dx,
-        y: pose.y + dy,
-        angle: isGift(item.object) ? pose.angle + angle : 0,
-      });
-    },
-
-    resize(nextSize, preservePositions = false) {
+    resize(nextSize) {
       if (disposed || nextSize.width <= 0 || nextSize.height <= 0) return;
-      if (preservePositions) {
-        const heightChanged = nextSize.height !== size.height;
-        size = { ...nextSize };
-        if (heightChanged) {
-          for (const item of items) {
-            if (isGift(item.object)) wake(item);
-          }
-        }
-        return;
-      }
       endDrag();
       const previousSize = size;
       size = { ...nextSize };
       for (const item of items) {
-        const pose = poseOf(item.object.id, item.body, isGift(item.object));
+        const pose = poseOf(item.object.id, item.body);
         setPose(item, {
           ...pose,
           x: pose.x / previousSize.width * size.width,
@@ -395,21 +248,10 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
       }
     },
 
-    getDebugShapes() {
-      return items.flatMap(({ object, body }) => {
-        const parts = body.parts.length > 1 ? body.parts.slice(1) : [body];
-        return parts.map((part, index) => ({
-          id: index === 0 ? object.id : `${object.id}-${index}`,
-          vertices: part.vertices.map(({ x, y }) => ({ x, y })),
-        }));
-      });
-    },
-
     dispose() {
       if (disposed) return;
       endDrag();
       disposed = true;
-      frozenBefore.clear();
       Composite.clear(engine.world, false);
       Engine.clear(engine);
     },

@@ -8,14 +8,14 @@ import { failure, HouseError } from "./errors";
 import { takeQuota } from "./rate-limit";
 import { isHouseOwner } from "./owner-policy";
 
-export interface VisitorSession {
+interface VisitorSession {
   get(key: "user"): Promise<unknown>;
   set(key: "user", value: { id: string; lastRenewedAt?: number }, options?: { ttl?: number }): void;
   regenerate(): Promise<void>;
 }
 
 const ANIMALS = ["Capybara", "Otter", "Puffin", "Axolotl", "Panda", "Wombat", "Quokka", "Badger", "Hedgehog", "Octopus", "Fox", "Koala", "Raccoon", "Manta", "Kiwi", "Lemur"];
-export const VISITOR_SESSION_SECONDS = 34_560_000; // Browsers cap cookies at 400 days.
+const VISITOR_SESSION_SECONDS = 34_560_000; // Browsers cap cookies at 400 days.
 const VISITOR_RENEWAL_MS = 86_400_000;
 
 const decodeIdentity = Schema.decodeUnknownSync(Schema.Struct({
@@ -53,11 +53,11 @@ export async function resolveCmsViewer(db: Kysely<Database>, id: string | undefi
   return viewerFor(id ? await activeUser(db, id) : null, ownerId);
 }
 
-export async function resolveViewer(db: Kysely<Database>, session: VisitorSession | undefined, ownerId: string | undefined): Promise<Viewer> {
+async function resolveViewer(db: Kysely<Database>, session: VisitorSession | undefined, ownerId: string | undefined): Promise<Viewer> {
   return viewerFor(await sessionUser(db, session), ownerId);
 }
 
-export async function ensureCmsVisitor(db: Kysely<Database>, session: VisitorSession, ownerId: string | undefined, clientKey = "unknown"): Promise<Viewer> {
+async function ensureCmsVisitor(db: Kysely<Database>, session: VisitorSession, ownerId: string | undefined, clientKey = "unknown"): Promise<Viewer> {
   const existing = await sessionUser(db, session);
   if (existing) {
     const viewer = viewerFor(existing, ownerId);
@@ -92,7 +92,7 @@ export async function visitorDb(context: APIContext): Promise<Kysely<Database>> 
 }
 
 /** Native cookie identity only; bearer credentials never grant gift ownership. */
-export async function getViewer(context: APIContext, ownerId?: string): Promise<Viewer> {
+async function getViewer(context: APIContext, ownerId?: string): Promise<Viewer> {
   if (arguments.length < 2) ownerId = (await import("cloudflare:workers")).env.HOUSE_OWNER_ID;
   return resolveViewer(await visitorDb(context), context.session, ownerId);
 }

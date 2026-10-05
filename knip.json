@@ -1,35 +1,32 @@
 {
   "$schema": "https://unpkg.com/knip@6.23.0/schema.json",
   "project": [
-    "src/**/*.{astro,ts,tsx}",
+    "src/**/*.{astro,ts,tsx,css}",
     "components/**/*.{ts,tsx}",
-    "data/**/*.ts"
+    "data/**/*.ts",
+    "tools/**/*.ts"
   ],
   "entry": [
     "src/pages/**/*.{astro,ts}",
-    "src/plugins/*.ts",
-    "src/plugins/*/admin.tsx",
-    "tools/**/*.{ts,mjs}"
-  ],
-  "ignore": [
-    "**/*.config.{js,mjs,ts}"
+    "src/live.config.ts",
+    "src/plugins/things.ts",
+    "src/plugins/gifts.ts",
+    "src/plugins/theme-image.ts",
+    "src/plugins/things/admin.tsx"
   ],
   "ignoreDependencies": [
-    "shadcn",
-    "tw-animate-css",
-    "tailwindcss",
     "cloudflare"
   ],
   "ignoreBinaries": [],
-  "ignoreExportsUsedInFile": true,
+  "ignoreExportsUsedInFile": false,
   "rules": {
-    "files": "warn",
-    "dependencies": "warn",
-    "devDependencies": "warn",
+    "files": "error",
+    "dependencies": "error",
+    "devDependencies": "error",
     "unlisted": "error",
-    "exports": "warn",
-    "types": "warn",
-    "nsExports": "warn",
-    "duplicates": "warn"
+    "exports": "error",
+    "types": "error",
+    "nsExports": "error",
+    "duplicates": "error"
   }
 }

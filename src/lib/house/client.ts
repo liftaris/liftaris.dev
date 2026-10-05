@@ -1,11 +1,11 @@
-import type { CreateGift, CreatedGift, GiftDetail, HouseSnapshot, UpdateGift, Viewer, Visitor } from "./types";
+import type { CreateGift, CreatedGift, HouseSnapshot, UpdateGift, Viewer, Visitor } from "./types";
 
 import { GIFT_API, type GIFT_METHODS } from "./gift-api";
 
 let viewerPromise: Promise<Viewer> | undefined;
 let visitorPromise: Promise<Visitor> | undefined;
 
-export class HouseError extends Error {
+class HouseError extends Error {
   constructor(message: string, readonly status: number) {
     super(message);
     this.name = "HouseError";
@@ -34,7 +34,7 @@ async function restoreOrCreateViewer(): Promise<Viewer> {
   return persisted;
 }
 
-export function ensureViewer(): Promise<Viewer> {
+function ensureViewer(): Promise<Viewer> {
   if (!viewerPromise) {
     viewerPromise = (typeof navigator !== "undefined" && navigator.locks
       ? navigator.locks.request("kaio.house.visitor", restoreOrCreateViewer)
@@ -54,9 +54,9 @@ export function ensureVisitor(): Promise<Visitor> {
   return visitorPromise;
 }
 
-export type HouseMutation = <T extends HouseSnapshot>(request: () => Promise<T>) => Promise<T>;
+type HouseMutation = <T extends HouseSnapshot>(request: () => Promise<T>) => Promise<T>;
 
-/** One queue per mounted House; accepting the snapshot is part of the mutation. */
+/** One queue per guestbook; accepting the snapshot is part of the mutation. */
 export function houseMutations(accept: (snapshot: HouseSnapshot) => void): HouseMutation {
   let pending = Promise.resolve();
   return (request) => {
@@ -78,15 +78,6 @@ export async function getHouse(signal?: AbortSignal): Promise<HouseSnapshot> {
   catch (error) {
     if (!(error instanceof HouseError) || error.status !== 401) throw error;
     return giftRequest<HouseSnapshot>("snapshot", { signal });
-  }
-}
-export async function getGift(id: string, signal?: AbortSignal): Promise<GiftDetail> {
-  try { return await giftRequest<GiftDetail>("gift", { signal }, id); }
-  catch (error) {
-    // A new browser can read public gifts without creating a CMS identity.
-    // Never retry mutations or conceal permission, conflict or server failures.
-    if (!(error instanceof HouseError) || error.status !== 401) throw error;
-    return giftRequest<GiftDetail>("public-gift", { signal }, id);
   }
 }
 export const createGift = (gift: CreateGift) => giftRequest<CreatedGift>("create", { method: "POST", body: JSON.stringify(gift) });
