@@ -777,6 +777,21 @@ body.on-home .winbox.object-window.max:has(.folder) {
 }
 
 /* Guestbook Window Interior: blue background without noise texture, paper text */
+.site-window:has(.guestbook-view),
+.winbox.guestbook-window,
+.winbox:has(.guestbook-view),
+.object-window:has(.guestbook-view) {
+  background: var(--color-blue) !important;
+  background-image: none !important;
+}
+
+html:has(.guestbook-view),
+body:has(.guestbook-view),
+body:has(.guestbook-view) .desktop-viewport {
+  background: var(--color-blue) !important;
+  background-image: none !important;
+}
+
 .winbox.guestbook-window .wb-body,
 .winbox.object-window:has(.guestbook-view) .wb-body,
 .object-window:has(.guestbook-view) .wb-body,

@@ -57,5 +57,5 @@ export function PageReader({ page }: { page: ThingSpec }) {
     return () => { frame.removeEventListener("load", connect); listeners?.abort(); };
   }, [src]);
 
-  return <iframe ref={iframe} className="post-reader block size-full border-0 bg-paper" src={direct || (current && !current.html) ? src : undefined} srcDoc={!direct ? current?.html : undefined} title={page.name} />;
+  return <iframe ref={iframe} className="post-reader block size-full border-0 bg-transparent" src={direct || (current && !current.html) ? src : undefined} srcDoc={!direct ? current?.html : undefined} title={page.name} />;
 }

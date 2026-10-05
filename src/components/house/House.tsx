@@ -4,9 +4,7 @@ import { flushSync } from "react-dom";
 import { ensureViewer, getHouse, houseMutations, reclaimGift } from "../../lib/house/client";
 import type { Gift, GiftDetail, HouseSnapshot } from "../../lib/house/types";
 import { giftObjects } from "../../lib/house/emoji";
-import { GiftComposer } from "./GiftComposer";
 import { GiftDialog } from "./GiftDialog";
-import { Guestbook } from "./Guestbook";
 import { HouseClump } from "./HouseClump";
 import { getBackgroundStyle } from "../clump/model";
 import { ObjectWindow } from "../window/ObjectWindow";
@@ -90,7 +88,6 @@ export function House({
   const [loadError, setLoadError] = useState("");
   const [sessionError, setSessionError] = useState("");
   const [ready, setReady] = useState(false);
-  const [savingGift, setSavingGift] = useState(false);
   const initialRead = useRef<AbortController | null>(null);
   const accept = useCallback((next: HouseSnapshot) => {
     // A slow initial GET must never replace the result of this tab's mutation.
@@ -152,39 +149,6 @@ export function House({
       return next;
     });
   }, [foldersById, effectiveThings]);
-  const receiveGift = (composer: OpenedThing, gift: GiftDetail, previewBounds: DOMRect, form: HTMLFormElement) => {
-    // Membership was committed on POST; don't reapply its snapshot after this GET.
-    const source = document.querySelector<HTMLButtonElement>(`[data-object="${gift.id}"]`)
-      ?? document.querySelector<HTMLButtonElement>('[data-object="leave-gift"]')!;
-    const frame = form.closest<HTMLElement>(".object-window");
-    let finished = false;
-    const finishComposer = () => {
-      if (finished) return;
-      finished = true;
-      // Only retire the composer that submitted this gift, never a newer draft.
-      const retire = () => setOpened((current) => current.filter((item) => item !== composer)
-        .map((item) => item.onReady === finishComposer ? { ...item, onReady: undefined, previewBounds: undefined } : item));
-      if (!frame?.isConnected || matchMedia("(prefers-reduced-motion: reduce)").matches) { retire(); return; }
-      frame.style.pointerEvents = "none";
-      void frame.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 180, easing: "ease-out", fill: "forwards" })
-        .finished.then(retire, retire);
-    };
-    setSentGiftIds((current) => {
-      if (current.has(gift.id)) return current;
-      const next = new Set(current);
-      next.add(gift.id);
-      saveSentGiftIds(next);
-      return next;
-    });
-    const visible = accepted.current?.gifts.find((item) => item.id === gift.id);
-    if (!visible) { finishComposer(); return; }
-    setOpened((current) => current.some((item) => item.object.id === gift.id)
-      ? current.map((item) => item.object.id === gift.id ? { ...item, onReady: finishComposer } : item)
-      : [...current, {
-        object: giftObjects([visible])[0], gift: visible, detail: gift, source,
-        origin: source.getBoundingClientRect(), previewBounds, onReady: finishComposer,
-      }]);
-  };
   const trashGift = useCallback(async (id: string) => {
     try {
       await mutate(() => reclaimGift(id));
@@ -317,8 +281,7 @@ export function House({
         const parentFolderId = "parent_id" in item.object && item.object.parent_id ? item.object.parent_id : undefined;
         const fallbackSource = () => document.querySelector<HTMLButtonElement>(`[data-folder-entry="${CSS.escape(item.object.id)}"]`)
           ?? document.querySelector<HTMLButtonElement>(`[data-object="${CSS.escape(item.object.id)}"]:not([data-removing="true"])`)
-          ?? (parentFolderId ? document.querySelector<HTMLButtonElement>(`[data-object="${CSS.escape(parentFolderId)}"]`) : null)
-          ?? document.querySelector<HTMLButtonElement>('[data-object="leave-gift"]');
+          ?? (parentFolderId ? document.querySelector<HTMLButtonElement>(`[data-object="${CSS.escape(parentFolderId)}"]`) : null);
         if (folder) return <Folder key={item.object.id} folder={folder}
           origin={item.origin} source={item.source} fallbackSource={fallbackSource} monochrome openedIds={opened.map((entry) => entry.object.id)}
           thingsConfig={mergedThingsConfig}
@@ -328,34 +291,19 @@ export function House({
           maximizeUrl={spec?.href ?? undefined}
           restoreAnimation={item.restoreAnimation}
           onOpen={open} onOpenFolder={open} onClose={() => close(item.object.id)} />;
-        const isGuestbook = item.object.id === 'leave-gift' || spec?.id === 'leave-gift' || spec?.slug === 'guestbook' || item.object.name === 'Guestbook';
-        const composing = false;
-        const title = isGuestbook ? 'Guestbook' : item.object.name;
-        const icon = isGuestbook ? (item.object.image || item.object.emoji || '🎁') : (item.object.image || item.object.emoji);
-        const bgStyle = isGuestbook
-          ? { backgroundColor: "var(--color-blue)", backgroundImage: "none" }
-          : spec?.kind === 'folder'
-            ? getBackgroundStyle(spec)
-            : undefined;
-        const windowClass = isGuestbook ? "guestbook-window" : undefined;
-        const maximizeUrl = spec?.href ?? (isGuestbook ? "/leave-gift" : undefined);
-        const winWidth = spec?.window_width ?? (isGuestbook ? 560 : undefined);
-        const winHeight = spec?.window_height ?? (isGuestbook ? 480 : undefined);
+        const title = item.object.name;
+        const icon = item.object.image || item.object.emoji;
+        const bgStyle = spec?.kind === 'folder' ? getBackgroundStyle(spec) : undefined;
         return <ObjectWindow key={item.object.id} title={title} icon={icon} origin={item.origin} source={item.source} fallbackSource={fallbackSource}
-          maximizeUrl={maximizeUrl}
+          maximizeUrl={spec?.href ?? undefined}
           restoreAnimation={item.restoreAnimation}
-          className={windowClass}
-          width={winWidth} height={winHeight}
+          width={spec?.window_width} height={spec?.window_height}
           x={spec?.window_x} y={spec?.window_y}
-          onAuthorResize={geometry(item.object.id)} onAuthorMove={moveGeometry(item.object.id)} canClose={!composing || !savingGift}
+          onAuthorResize={geometry(item.object.id)} onAuthorMove={moveGeometry(item.object.id)}
           initialBounds={item.previewBounds} backgroundStyle={bgStyle} onReady={item.onReady}
-          monochrome={!item.gift && !isGuestbook} closeLabel={item.gift ? "Close gift" : undefined} onClose={() => close(item.object.id)}>
+          monochrome={!item.gift} closeLabel={item.gift ? "Close gift" : undefined} onClose={() => close(item.object.id)}>
           {item.gift ? (
             <GiftDialog gift={item.gift} initialDetail={item.detail} onClose={() => close(item.object.id)} onDetail={refreshDetail} mutate={mutate} />
-          ) : isGuestbook ? (
-            <Guestbook initialSnapshot={snapshot} mutate={mutate} onGiftsChange={(gifts) => accept({ gifts })} />
-          ) : composing ? (
-            <GiftComposer onGift={(gift, bounds, form) => receiveGift(item, gift, bounds, form)} mutate={mutate} onSavingChange={setSavingGift} />
           ) : page ? (
             <PageReader page={page} />
           ) : null}

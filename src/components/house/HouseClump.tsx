@@ -455,7 +455,7 @@ export function HouseClump({
 
             return (
               <Fragment key={object.id}>
-              {!isGiftItem && <ThingControls id={object.id} name={object.id === 'leave-gift' || object.id === 'guestbook' ? 'Guestbook' : object.name} floating />}
+              {!isGiftItem && <ThingControls id={object.id} name={object.name} floating />}
               <button
                 type="button"
                 className="house-object group absolute top-0 left-0 flex flex-col items-center m-0 p-0 border-0 bg-transparent cursor-grab touch-none select-none [-webkit-tap-highlight-color:transparent] leading-none no-underline hover:no-underline focus:no-underline focus-visible:no-underline overflow-visible invisible data-[has-bg=true]:overflow-hidden data-[grabbed=true]:z-[3] data-[grabbed=true]:cursor-grabbing data-[window-open=true]:opacity-0 data-[window-open=true]:pointer-events-none data-[trashing=true]:pointer-events-none outline-none hover:outline-none focus:outline-none focus-visible:outline-none data-[gift=true]:[animation:house-arrive_220ms_ease-out] motion-reduce:data-[gift=true]:[animation-duration:1ms] data-[removing=true]:pointer-events-none data-[removing=true]:[animation:house-depart_260ms_ease-in_forwards]"
@@ -477,7 +477,7 @@ export function HouseClump({
                 tabIndex={disabled || opened ? -1 : 0}
                 aria-expanded={opened}
                 aria-haspopup="dialog"
-                aria-label={gift ? `${object.name}, gift${gift.authorName === null ? "" : ` from ${gift.authorName}`}. Open gift or use arrow keys to move.` : `${object.id === 'leave-gift' || object.id === 'guestbook' ? 'Guestbook' : object.name}. Open window or use arrow keys to move.`}
+                aria-label={gift ? `${object.name}, gift${gift.authorName === null ? "" : ` from ${gift.authorName}`}. Open gift or use arrow keys to move.` : `${object.name}. Open window or use arrow keys to move.`}
                 aria-describedby="house-movement-help"
                 onAnimationEnd={(event) => {
                   if (event.target !== event.currentTarget || event.animationName !== "house-depart" || !removing) return;
@@ -539,7 +539,7 @@ export function HouseClump({
                 </span>
                 {!isGiftItem && (
                   <ThingLabel
-                    name={object.id === 'leave-gift' || object.id === 'guestbook' ? 'Guestbook' : object.name}
+                    name={object.name}
                     className="absolute top-full left-1/2 -translate-x-1/2 mt-[1px] w-max max-w-[100px] pointer-events-none text-paper [text-shadow:0_1px_2px_rgba(0,0,0,0.7)]"
                   />
                 )}
