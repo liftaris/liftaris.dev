@@ -42,7 +42,7 @@ const pathname = Astro.url.pathname.replace(/\/$/, "") || "/";
 const onBlog = pathname.startsWith("/blog/");
 const isHome = pathname === "/";
 const isBlogPost = onBlog || content?.collection === "posts";
-const isWritingPage = pathname.startsWith("/p/") || (content?.collection === "things" && Boolean(content?.id));
+const isWritingPage = (content?.collection === "things" && Boolean(content?.id));
 const isUnconstrained = isBlogPost || isWritingPage;
 
 let displayTitle = windowTitle;
@@ -78,7 +78,6 @@ if (!actualRestoreSlug && !isHome) {
   else if (pathname === "/experience") actualRestoreSlug = "experience";
   else if (pathname === "/github") actualRestoreSlug = "github";
   else if (onBlog) actualRestoreSlug = pathname.replace(/^\/blog\//, "").split("?")[0];
-  else if (pathname.startsWith("/p/")) actualRestoreSlug = pathname.replace(/^\/p\//, "").split("?")[0];
   else actualRestoreSlug = pathname.replace(/^\//, "").split("?")[0];
 }
 

@@ -1,21 +1,12 @@
 ---
 import { readThings, readThingAtPath } from '../server/things/read';
-import { pathFor } from '../lib/things/model';
-import { getDb } from 'emdash/runtime';
-import { formerRoute } from '../server/things/routes';
 import { getRequestContext } from 'emdash/request-context';
 import ThingPage from '../components/house/ThingPage.astro';
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 const resolved = await readThingAtPath(path);
-let things = resolved?.things ?? await readThings('published', { includeContents: false });
-const thing = resolved?.thing ?? things.find(t => pathFor(t,things) === path);
-if (!thing) {
-  const previous = things.find(t => t.data.legacy_paths?.includes(path));
-  if (previous) return Astro.redirect(pathFor(previous,things)!,301);
-  const former=await formerRoute(await getDb(),path,things);
-  if(former && former!==path) return Astro.redirect(former,301);
-  return Astro.rewrite('/404');
-}
+if (!resolved) return Astro.rewrite('/404');
+const { thing } = resolved;
+let { things } = resolved;
 // Page windows need routing and Post visibility, not every folder's contents.
 if (thing.data.kind === 'folder') things = await readThings('published');
 if (getRequestContext()?.editMode || getRequestContext()?.preview) Astro.cache.set(false);

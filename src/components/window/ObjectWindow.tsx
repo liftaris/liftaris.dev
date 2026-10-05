@@ -13,44 +13,32 @@ type ObjectWindowProps = {
   source: HTMLButtonElement;
   fallbackSource?: () => HTMLButtonElement | null;
   origin: DOMRect;
-  monochrome?: boolean;
-  closeLabel?: string;
   width?: number;
   height?: number;
   x?: number | null;
   y?: number | null;
-  minWidth?: number;
-  minHeight?: number;
-  resizable?: boolean;
   className?: string;
-  autoFit?: boolean;
-  canClose?: boolean;
   backgroundStyle?: CSSProperties;
   maximizeUrl?: string;
   restoreAnimation?: boolean;
-  onMaximize?: () => void;
   onAuthorResize?: (size: {width:number;height:number}) => void;
   onAuthorMove?: (pos: {x:number;y:number}) => void;
   onClose: () => void;
   children?: ReactNode;
 };
 
-export function ObjectWindow({ title, icon, source, fallbackSource, origin, monochrome = false, closeLabel = "Close window", width = 480, height = 380, x, y, minWidth = 180, minHeight = 100, resizable = true, className, autoFit = false, canClose = true, backgroundStyle, maximizeUrl, restoreAnimation = false, onMaximize, onAuthorResize, onAuthorMove, onClose, children }: ObjectWindowProps) {
+export function ObjectWindow({ title, icon, source, fallbackSource, origin, width = 480, height = 380, x, y, className, backgroundStyle, maximizeUrl, restoreAnimation = false, onAuthorResize, onAuthorMove, onClose, children }: ObjectWindowProps) {
   const [body, setBody] = useState<HTMLElement | null>(null);
   const [error, setError] = useState(false);
-  const initial = useRef({ source, origin, width, height, x, y, minWidth, minHeight, resizable, className });
+  const initial = useRef({ source, origin, width, height, x, y, className });
   const windowInstance = useRef<WinBox | null>(null);
   const isAnimating = useRef(false);
   const resizeCallback = useRef(onAuthorResize); resizeCallback.current = onAuthorResize;
   const moveCallback = useRef(onAuthorMove); moveCallback.current = onAuthorMove;
   const close = useRef(onClose);
   close.current = onClose;
-  const closeAllowed = useRef(canClose);
-  closeAllowed.current = canClose;
   const maxUrl = useRef(maximizeUrl);
   maxUrl.current = maximizeUrl;
-  const maxHandler = useRef(onMaximize);
-  maxHandler.current = onMaximize;
 
   const fallback = useRef(fallbackSource);
   fallback.current = fallbackSource;
@@ -60,7 +48,6 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
     win.setTitle(title);
     const frame = win.window as HTMLElement;
     frame.setAttribute("aria-label", title);
-    frame.dataset.monochrome = String(monochrome);
     if (className) frame.classList.add(className);
     const iconButton = frame.querySelector<HTMLButtonElement>(".object-window-icon")!;
     if (isImageUrl(icon)) {
@@ -76,9 +63,9 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
     iconButton.setAttribute("aria-label", `Collapse ${title} window`);
     const maxBtn = frame.querySelector<HTMLButtonElement>(".wb-max");
     if (maxBtn) maxBtn.setAttribute("aria-label", `Maximize ${title} window`);
-    frame.querySelector(".wb-close")!.setAttribute("aria-label", closeLabel);
+    frame.querySelector(".wb-close")!.setAttribute("aria-label", "Close window");
     frame.querySelector(".object-window-handle")!.setAttribute("aria-label", `Move ${title} window. Use arrow keys; Escape collapses.`);
-  }, [body, title, icon, monochrome, closeLabel, className]);
+  }, [body, title, icon, className]);
 
   useLayoutEffect(() => {
     const button = body?.closest(".object-window")?.querySelector(".wb-max");
@@ -93,43 +80,6 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
       button.removeEventListener("focus", prefetch);
     };
   }, [body, maximizeUrl]);
-
-  useLayoutEffect(() => {
-    const win = windowInstance.current;
-    if (!body || !win || !autoFit) return;
-    const content = body.firstElementChild as HTMLElement | null;
-    if (!content) return;
-
-    const measureAndResize = () => {
-      if (win.max || isAnimating.current) return;
-      const target = (content.firstElementChild as HTMLElement) || content;
-      const rect = target.getBoundingClientRect();
-      if (!rect.width || !rect.height) return;
-      const style = window.getComputedStyle(content);
-      const padX = parseFloat(style.paddingLeft || "0") + parseFloat(style.paddingRight || "0");
-      const padY = parseFloat(style.paddingTop || "0") + parseFloat(style.paddingBottom || "0");
-
-      const targetWidth = Math.ceil(rect.width + padX + 6);
-      const targetHeight = Math.ceil(rect.height + padY + 18 + 6);
-
-      const maxWidth = innerWidth - Number(win.left) - Number(win.right);
-      const maxHeight = innerHeight - Number(win.top) - Number(win.bottom);
-
-      win.resize(Math.min(targetWidth, maxWidth), Math.min(targetHeight, maxHeight));
-      win.move(
-        Math.max(Number(win.left), Math.min(Number(win.x), innerWidth - Number(win.width) - Number(win.right))),
-        Math.max(Number(win.top), Math.min(Number(win.y), innerHeight - Number(win.height) - Number(win.bottom))),
-      );
-    };
-
-    measureAndResize();
-    if (typeof ResizeObserver !== "undefined") {
-      const ro = new ResizeObserver(measureAndResize);
-      ro.observe(content);
-      if (content.firstElementChild) ro.observe(content.firstElementChild);
-      return () => ro.disconnect();
-    }
-  }, [body, autoFit]);
 
   useLayoutEffect(() => {
     const win = windowInstance.current;
@@ -155,12 +105,12 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
   // Capture focus before React removes portal children on parent-driven close.
   useLayoutEffect(() => {
     // Geometry and source belong to this mounted window, not its changing content.
-    const { source, origin, width, height, x, y, minWidth = 180, minHeight = 100, resizable = true, className: windowClass } = initial.current;
+    const { source, origin, width, height, x, y, className: windowClass } = initial.current;
     let disposed = false;
     let instance: WinBox | undefined;
     let restoreFocus = false;
     let detach = () => {};
-    const returnTarget = () => source.isConnected && source.dataset.removing !== "true" ? source : fallback.current?.();
+    const returnTarget = () => source.isConnected ? source : fallback.current?.();
     // WinBox's template accesses document when the module loads.
     void import("winbox/src/js/winbox.js").then(({ default: WinBox }) => {
       if (disposed) return;
@@ -183,16 +133,15 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
       const options: WinBox.Params & { template: HTMLElement } = {
         root: document.body,
         template, index: 20, header: 18,
-        class: ["object-window", "@container", "no-full", "no-max", !resizable && "no-resize", "no-animation", windowClass].filter(Boolean).join(" "),
+        class: ["object-window", "@container", "no-full", "no-max", "no-animation", windowClass].filter(Boolean).join(" "),
         width, height,
-        minwidth: Math.min(minWidth, width),
-        minheight: Math.min(minHeight, height),
+        minwidth: Math.min(180, width),
+        minheight: Math.min(100, height),
         top: 18, left: 12, right: 12, bottom: 12,
         x: initialPixelX ?? origin.left + 24,
         y: initialPixelY ?? origin.top + 16,
         onclose(force) {
           if (force) return false;
-          if (!closeAllowed.current) return true;
           if (closing) return true;
           closing = true;
           restoreFocus = frame.contains(document.activeElement);
@@ -276,11 +225,6 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
       const maxButton = frame.querySelector<HTMLButtonElement>(".wb-max")!;
       const handleMaximize = () => {
         if (closing || isAnimating.current) return;
-        if (maxHandler.current) {
-          maxHandler.current();
-          return;
-        }
-
         const isReducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
         if (win.max) {
@@ -409,7 +353,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
           frame.style.height = "100vh";
         }
         frame.style.boxShadow = "none";
-        frame.style.border = "4px double var(--ink)";
+        frame.style.border = "4px double var(--color-ink)";
 
         const outerDrag = document.querySelector<HTMLElement>(".site-window-drag");
         if (outerDrag && !outerDrag.textContent?.trim()) {
@@ -565,7 +509,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
           frame.style.height = "100vh";
         }
         frame.style.boxShadow = "none";
-        frame.style.border = "4px double var(--ink)";
+        frame.style.border = "4px double var(--color-ink)";
 
         requestAnimationFrame(() => {
           if (disposed) return;

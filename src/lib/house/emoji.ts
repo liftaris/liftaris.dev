@@ -7,33 +7,12 @@ export const EMOJI_CATALOG: readonly EmojiOption[] = catalog;
 
 const byId = new Map<string, EmojiOption>(EMOJI_CATALOG.map((item) => [item.id, item]));
 
-/** Convert any raw emoji string into a valid, decodeable EmojiOption. */
-function emojiToOption(char: string, name = "Icon"): EmojiOption {
-  const actualPoints = Array.from(char).map((c) => c.codePointAt(0)!);
-  const id = "u_" + actualPoints.map((cp) => cp.toString(16)).join("_");
-  return { id, emoji: char, name, keywords: "" };
-}
-
-/** Looks up an emoji by registered ID or decodes any unicode hex ID (e.g. 'u_1f600'). */
-export const findEmoji = (id: string): EmojiOption | undefined => {
-  const found = byId.get(id);
-  if (found) return found;
-  if (id.length <= 100 && /^u_[0-9a-f]{1,6}(?:_[0-9a-f]{1,6})*$/i.test(id)) {
-    const points = id.slice(2).split("_").map(hex => Number.parseInt(hex, 16));
-    if (points.every(cp => cp <= 0x10ffff && (cp < 0xd800 || cp > 0xdfff))) {
-      const emoji = String.fromCodePoint(...points);
-      const graphemes = [...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(emoji)];
-      if (graphemes.length === 1 && /\p{Extended_Pictographic}|\p{Regional_Indicator}|\u20e3/u.test(emoji)) {
-        return { id, emoji, name: "Icon", keywords: "" };
-      }
-    }
-  }
-  return undefined;
-};
+export const findEmoji = (id: string): EmojiOption | undefined => byId.get(id);
+export const DEFAULT_EMOJI = byId.get('u_1f381')!;
 
 /**
  * Searches the emoji catalog efficiently.
- * - Supports direct emoji input (e.g. pasted emojis or emoji keyboard).
+ * - Matches pasted emojis within the catalog.
  * - Matches by exact id, name, keywords, prefix, and substrings.
  * - Does NOT impose arbitrary small caps (e.g. 5 items).
  */
@@ -45,27 +24,7 @@ export function searchEmojiCatalog(text: string): EmojiOption[] {
   const normalizedInput = normalizeEmojiPresentation(input);
   const words = lower.split(/\s+/).filter(Boolean);
 
-  // Check if query contains any raw emoji characters directly
-  const customEmojis: EmojiOption[] = [];
-  const emojiMatches = [...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(input)]
-    .map(part => part.segment).filter(char => /\p{Extended_Pictographic}|\p{Regional_Indicator}|\u20e3/u.test(char));
-  for (const char of emojiMatches) {
-    const existing = EMOJI_CATALOG.find(
-      (e) => e.emoji === char || normalizeEmojiPresentation(e.emoji) === normalizeEmojiPresentation(char)
-    );
-    if (existing) {
-      if (!customEmojis.some((e) => e.id === existing.id)) {
-        customEmojis.push(existing);
-      }
-    } else {
-      const opt = emojiToOption(char);
-      if (!customEmojis.some((e) => e.id === opt.id)) {
-        customEmojis.push(opt);
-      }
-    }
-  }
-
-  const scored = EMOJI_CATALOG.map((item, index) => {
+  return EMOJI_CATALOG.map((item, index) => {
     const lowerName = item.name.toLowerCase();
     const lowerKeywords = item.keywords.toLowerCase();
     const tokens = `${lowerName} ${lowerKeywords}`.split(/\s+/);
@@ -90,15 +49,4 @@ export function searchEmojiCatalog(text: string): EmojiOption[] {
     .sort((a, b) => b.score - a.score || a.index - b.index)
     .map(({ item }) => item);
 
-  // Deduplicate items that might be in customEmojis already
-  const seen = new Set(customEmojis.map((e) => e.id));
-  const result = [...customEmojis];
-  for (const item of scored) {
-    if (!seen.has(item.id)) {
-      seen.add(item.id);
-      result.push(item);
-    }
-  }
-
-  return result;
 }

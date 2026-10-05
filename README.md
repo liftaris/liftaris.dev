@@ -8,6 +8,8 @@ bun install --frozen-lockfile
 bun run dev
 ```
 
+Worker declarations are generated before development, build, and type checking.
+
 Use `.dev.vars` for local `EMDASH_SETUP_KEY` and `HOUSE_OWNER_ID`. Native EmDash
 Dev bypass is available locally. Hosted administration requires the configured
 owner's passkey.
@@ -24,11 +26,11 @@ bun run knip
 bun run build
 ```
 
-`bun run emoji:generate` rebuilds the 255-icon catalog from Emojibase while
-preserving saved icon IDs. `things-preview/[id]` is the signed CMS preview route.
+`bun run emoji:generate` rebuilds the 255-icon catalog from Emojibase using
+Unicode IDs. `things-preview/[id]` is the signed CMS preview route.
 
 Wrangler owns deployments. `interactive-stuff` uses isolated preview bindings;
 merging `main` deploys production through Workers Builds. `bun run deploy` also
 targets production. Deploying code does not migrate preview content to production.
-Retain the historical `house-v1` migration and inert `House` export to preserve
-its remote storage. Local notes and retired tooling live under ignored `.ignore/`.
+The `House` deletion declaration retires the unused Durable Object store on
+deployment. Local notes live under ignored `.ignore/`.

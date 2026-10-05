@@ -2,8 +2,8 @@ import { ContentRepository, type Database } from 'emdash';
 import type { Kysely } from 'kysely';
 import { normalizeData, type ThingRecord } from '../../lib/things/model';
 
-/** Server policy snapshot. Only the candidate's draft is overlaid for publication. */
-export async function policyGraph(db: Kysely<Database>, draftId?: string, allDrafts = false): Promise<ThingRecord[]> {
+/** Things save live. Include unpublished entries only for the workspace or initial publication. */
+export async function policyGraph(db: Kysely<Database>, draftId?: string, includeUnpublished = false): Promise<ThingRecord[]> {
   const repo = new ContentRepository(db);
   const entries = [];
   let cursor: string | undefined;
@@ -18,30 +18,15 @@ export async function policyGraph(db: Kysely<Database>, draftId?: string, allDra
     .orderBy('edge.sort_order')
     .execute();
 
-  const neededRevisionIds = entries
-    .filter(e => (allDrafts || e.id === draftId) && Boolean(e.draftRevisionId))
-    .map(e => e.draftRevisionId as string);
-
-  const revisionMap = new Map<string, { _slug?: string; _references?: Record<string, string[]>; [key: string]: unknown }>();
-  if (neededRevisionIds.length > 0) {
-    const revRows = await db.selectFrom('revisions')
-      .select(['id', 'data'])
-      .where('id', 'in', neededRevisionIds)
-      .execute();
-    for (const row of revRows) {
-      revisionMap.set(row.id, JSON.parse(row.data));
-    }
-  }
-
   const groupToId = new Map(entries.map(e => [e.translationGroup ?? e.id, e.id]));
   const rows: ThingRecord[] = [];
   for (const e of entries) {
-    if (!allDrafts && e.status !== 'published' && e.id !== draftId) continue;
-    const revisionData = (allDrafts || e.id === draftId) && e.draftRevisionId ? revisionMap.get(e.draftRevisionId) : null;
-    const staged = revisionData?._references as Record<string, string[]> | undefined;
-    const refs = (field: string) => (staged?.[field] ?? links.filter(l => l.slug === `things_${field}` && l.parent_group === (e.translationGroup ?? e.id)).map(l => l.child_group)).map(g => groupToId.get(g) ?? g);
-    rows.push({ id: e.id, slug: typeof revisionData?._slug === 'string' ? revisionData._slug : e.slug ?? '', status: e.status,
-      data: normalizeData({ ...e.data, ...revisionData }), contents: refs('contents'), primaryFolder: refs('primary_folder')[0] ?? null, postId: refs('post')[0] ?? null });
+    if (!includeUnpublished && e.status !== 'published' && e.id !== draftId) continue;
+    const refs = (field: string) => links
+      .filter(l => l.slug === `things_${field}` && l.parent_group === (e.translationGroup ?? e.id))
+      .map(l => groupToId.get(l.child_group) ?? l.child_group);
+    rows.push({ id: e.id, slug: e.slug ?? '', status: e.status,
+      data: normalizeData(e.data), contents: refs('contents'), primaryFolder: refs('primary_folder')[0] ?? null, postId: refs('post')[0] ?? null });
   }
   return rows;
 }

@@ -1,18 +1,18 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { SubmitEvent } from "react";
 import { createGift, ensureVisitor, getHouse, houseMutations, reclaimGift, updateGift } from "../../lib/house/client";
-import { findEmoji, normalizeEmojiPresentation } from "../../lib/house/emoji";
+import { DEFAULT_EMOJI, EMOJI_CATALOG, findEmoji, normalizeEmojiPresentation } from "../../lib/house/emoji";
 import { EmojiSearch } from "../EmojiSearch";
 import type { CreateGift, Gift, UpdateGift } from "../../lib/house/types";
 
-const emptyMessage: UpdateGift = { emojiId: "gift", message: "", authorName: "", location: "" };
+const emptyMessage: UpdateGift = { emojiId: DEFAULT_EMOJI.id, message: "", authorName: "", location: "" };
 const inputClass = "w-full min-w-0 border-0 border-b border-paper/30 bg-transparent pb-0.5 text-paper placeholder:text-paper/60 focus:border-paper";
 
 function EmojiPicker({ value, onChange }: { value: string; onChange: (id: string) => void }) {
   const [open, setOpen] = useState(false);
   const id = useId();
   const popover = useRef<HTMLDivElement>(null);
-  const selected = findEmoji(value) ?? findEmoji("gift")!;
+  const selected = findEmoji(value) ?? DEFAULT_EMOJI;
   useEffect(() => { setOpen(Boolean(popover.current?.matches(":popover-open"))); }, []);
 
   return <div className="shrink-0">
@@ -40,7 +40,7 @@ function MessageForm({ gift, onSave, onCancel }: {
   onSave: (message: CreateGift) => Promise<void>;
   onCancel?: () => void;
 }) {
-  const [draft, setDraft] = useState<UpdateGift>(() => gift ? { emojiId: gift.emojiId, message: gift.message, authorName: gift.authorName, location: gift.location ?? "", updatedAt: gift.updatedAt } : emptyMessage);
+  const [draft, setDraft] = useState<UpdateGift>(() => gift ? { emojiId: EMOJI_CATALOG.find(e => e.emoji === normalizeEmojiPresentation(gift.emoji))?.id ?? DEFAULT_EMOJI.id, message: gift.message, authorName: gift.authorName, location: gift.location ?? "", updatedAt: gift.updatedAt } : emptyMessage);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const pending = useRef<{ payload: string; id: string } | null>(null);

@@ -6,7 +6,6 @@ import { readThings } from '../../server/things/read';
 import { pathFor } from '../../lib/things/model';
 import Portfolio from '../../layouts/Portfolio.astro';
 import ThemeImage from '../../components/ThemeImage.astro';
-import ContentImage from '../../components/ContentImage.astro';
 const {entry:post,error}=await getEmDashEntry('posts',Astro.params.slug!);
 if(error && error.name!=='LiveEntryNotFoundError')throw error;
 if(!post)return Astro.rewrite('/404');
@@ -20,6 +19,6 @@ if (getRequestContext()?.editMode || getRequestContext()?.preview) Astro.cache.s
   <article class="article-content">
     {post.data.date && <p class="meta">{new Date(post.data.date).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric',timeZone:'UTC'})}</p>}
     <h1 {...post.edit.title}>{post.data.title}</h1>
-    <PortableText value={post.data.content} components={{type:{themeImage:ThemeImage,image:ContentImage}}}/>
+    <PortableText value={post.data.content} components={{type:{themeImage:ThemeImage}}}/>
   </article>
 </Portfolio>

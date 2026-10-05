@@ -26,7 +26,6 @@ type FolderProps<T> = Omit<ComponentProps<typeof ObjectWindow>, "title" | "icon"
 type FolderContentProps<T> = {
   folder: FolderSpec<T>;
   openedIds?: readonly string[];
-  monochrome?: boolean;
   onOpen?: (item: T, source: HTMLButtonElement) => void;
   onOpenFolder?: (folder: FolderSpec<T>, source: HTMLButtonElement) => void;
 };
@@ -34,7 +33,6 @@ type FolderContentProps<T> = {
 function FolderContent<T>({
   folder,
   openedIds = [],
-  monochrome,
   onOpen,
   onOpenFolder,
 }: FolderContentProps<T>) {
@@ -45,7 +43,6 @@ function FolderContent<T>({
         className="folder grid [grid-template-columns:repeat(auto-fill,minmax(min(100%,96px),1fr))] content-start gap-x-3 gap-y-4 m-0 p-0 list-none w-full box-border data-[has-bg=true]:rounded"
         data-has-bg={folderBg ? true : undefined}
         aria-label={`${folder.name} contents`}
-        data-monochrome={monochrome}
       >
         {folder.items.map((entry) => {
           const iconImage = entry.image || (isImageUrl(entry.emoji) ? entry.emoji : null);
@@ -53,7 +50,7 @@ function FolderContent<T>({
           const artwork = (
             <>
               <span
-                className="folder-entry-art grid place-items-center size-14 text-5xl font-emoji leading-none pointer-events-none select-none [transform:translateZ(0)] data-[has-bg=true]:rounded-lg data-[has-bg=true]:overflow-hidden"
+                className="folder-entry-art grid place-items-center size-14 text-5xl font-emoji leading-none pointer-events-none select-none [transform:translateZ(0)]"
                 style={{width:entry.width ?? 60,height:entry.height ?? 60,fontSize:Math.min(entry.width ?? 60,entry.height ?? 60)*.85}}
                 data-is-emoji={!iconImage ? "true" : undefined}
                 aria-hidden="true"
@@ -121,7 +118,6 @@ export function Folder<T>({ folder, openedIds = [], onOpen, onOpenFolder, classN
       <FolderContent
         folder={folder}
         openedIds={openedIds}
-        monochrome={windowProps.monochrome}
         onOpen={onOpen}
         onOpenFolder={onOpenFolder}
       />

@@ -1,7 +1,7 @@
 import { invalidateCommentObjectCache, type Database } from "emdash";
 import { sql, type Kysely, type Selectable } from "kysely";
 import { Schema } from "effect";
-import type { CreatedGift, Gift, GiftDetail, HouseSnapshot, Viewer } from "../../lib/house/types";
+import type { CreatedGift, Gift, HouseSnapshot, Viewer } from "../../lib/house/types";
 import { findEmoji } from "../../lib/house/emoji";
 import { CreateGiftSchema, UpdateGiftSchema } from "./schemas";
 import { failure } from "./errors";
@@ -18,8 +18,8 @@ export class CmsHouseStore {
 
   private comments() {
     return this.db.selectFrom("_emdash_comments").selectAll()
-      .where("collection", "in", ["things", "gifts"])
-      .where("content_id", "in", ["leave-gift", "guestbook"])
+      .where("collection", "=", "things")
+      .where("content_id", "=", "leave-gift")
       .where("status", "in", ["approved", "pending"]);
   }
 
@@ -134,22 +134,6 @@ export class CmsHouseStore {
     }
 
     return { ...(await this.snapshot(viewer)), createdGiftId: id };
-  }
-
-  async detail(id: string, viewer: Viewer): Promise<GiftDetail> {
-    const row = await this.comments().where("id", "=", id).executeTakeFirst();
-    if (!row || (row.status !== "approved" && !viewer.owner && row.author_user_id !== viewer.visitor?.id)) {
-      throw failure(404, "This gift is no longer here.");
-    }
-    const gift = commentToGift(row, viewer);
-    const owns = Boolean(viewer.visitor?.id && row.author_user_id === viewer.visitor.id);
-
-    return {
-      ...gift,
-      canEdit: owns || viewer.owner,
-      canReclaim: owns || viewer.owner,
-      canRemove: owns || viewer.owner,
-    };
   }
 
   async update(id: string, input: unknown, viewer: Viewer): Promise<HouseSnapshot> {

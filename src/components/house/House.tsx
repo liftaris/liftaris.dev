@@ -153,7 +153,7 @@ export function House({
           ?? document.querySelector<HTMLButtonElement>(`[data-object="${CSS.escape(item.object.id)}"]`)
           ?? (parentFolderId ? document.querySelector<HTMLButtonElement>(`[data-object="${CSS.escape(parentFolderId)}"]`) : null);
         if (folder) return <Folder key={item.object.id} folder={folder}
-          origin={item.origin} source={item.source} fallbackSource={fallbackSource} monochrome openedIds={opened.map((entry) => entry.object.id)}
+          origin={item.origin} source={item.source} fallbackSource={fallbackSource} openedIds={opened.map((entry) => entry.object.id)}
           width={spec?.window_width} height={spec?.window_height}
           x={spec?.window_x} y={spec?.window_y}
           onAuthorResize={geometry(item.object.id)} onAuthorMove={moveGeometry(item.object.id)}
@@ -171,7 +171,7 @@ export function House({
           width={spec?.window_width} height={spec?.window_height}
           x={spec?.window_x} y={spec?.window_y}
           onAuthorResize={geometry(item.object.id)} onAuthorMove={moveGeometry(item.object.id)}
-          monochrome onClose={() => close(item.object.id)}>
+          onClose={() => close(item.object.id)}>
           {page && <PageReader page={page} />}
         </ObjectWindow>;
       })}

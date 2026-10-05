@@ -30,12 +30,6 @@ export interface Viewer {
   owner: boolean;
 }
 
-export interface GiftDetail extends Gift {
-  canEdit: boolean;
-  canReclaim: boolean;
-  canRemove: boolean;
-}
-
 export interface CreateGift {
   requestId: string;
   emojiId: string;

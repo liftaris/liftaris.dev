@@ -1,8 +1,7 @@
 import { writeFile } from 'node:fs/promises';
 import data from 'emojibase-data/en/data.json';
-import legacyIds from './emoji-legacy-ids.json';
 
-// Keep saved IDs and familiar choices; metadata comes entirely from CLDR.
+// Labels and search metadata come from CLDR; IDs are Unicode code points.
 const normalize = (emoji: string) => emoji.replace(/\uFE0F/g, '');
 const available = data.filter(emoji => emoji.group !== undefined && emoji.group !== 2)
   .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
@@ -14,11 +13,7 @@ function add(emoji: typeof data[number], id = `u_${emoji.hexcode.toLowerCase().r
     id, emoji: key, name: emoji.label, keywords: (emoji.tags ?? []).join(' '),
   });
 }
-for (const [id, char] of Object.entries(legacyIds)) {
-  const emoji = byEmoji.get(normalize(char));
-  if (!emoji) throw new Error(`Missing legacy emoji: ${id}`);
-  add(emoji, id);
-}
+add(byEmoji.get('🎁')!); // Default guestbook icon.
 
 // Fill remaining places across Unicode subgroups, rather than only smileys.
 const groups = Map.groupBy(available, emoji => emoji.subgroup);
@@ -34,4 +29,4 @@ while (selected.size < 255) {
 if (new Set([...selected.values()].map(emoji => emoji.id)).size !== 255) throw new Error('Duplicate emoji ID');
 const output = '[\n' + [...selected.values()].map(emoji => '  ' + JSON.stringify(emoji)).join(',\n') + '\n]\n';
 await writeFile(new URL('../src/lib/house/emoji-catalog.json', import.meta.url), output);
-console.log(`Generated ${selected.size} emojis from emojibase-data; legacy IDs preserved.`);
+console.log(`Generated ${selected.size} emojis from emojibase-data.`);

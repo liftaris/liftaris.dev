@@ -1,7 +1,6 @@
 import { definePlugin, ContentSaveRejectedError, PluginRouteError } from 'emdash';
 import { getDb } from 'emdash/runtime';
 import { policyGraph, postChoices } from '../server/things/graph';
-import { rememberRoutes, routeChanges } from '../server/things/routes';
 import { dependentNames, validateGraph, normalizeData, type ThingRecord } from '../lib/things/model';
 
 export function createPlugin() {
@@ -25,7 +24,7 @@ export function createPlugin() {
             const after=[...before.filter(t=>t.id!==candidate.id),{...candidate,status:'published',data:normalizeData(candidate.data)}];
             validateGraph(after);
             if(candidate.data.page_source==='post' && !(await postChoices(db)).some(p=>p.id===candidate.postId)) throw new Error('Choose a Post to display.');
-            return {valid:true,changes:routeChanges(before,after)};
+            return {valid:true};
           } catch(error) {throw new PluginRouteError('INVALID_THING',error instanceof Error ? error.message : String(error),400);}
         } },
     },
@@ -42,12 +41,8 @@ export function createPlugin() {
         }
         try {
           const db = await getDb();
-          const [after, before] = await Promise.all([
-            policyGraph(db, String(event.content.id)),
-            policyGraph(db),
-          ]);
+          const after = await policyGraph(db, String(event.content.id));
           validateGraph(after);
-          await rememberRoutes(db, before, after);
         }
         catch (error) { return { cancel: true, reason: error instanceof Error ? error.message : 'Invalid Thing relationships.' }; }
       },

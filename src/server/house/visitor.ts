@@ -65,8 +65,8 @@ async function ensureCmsVisitor(db: Kysely<Database>, session: VisitorSession, o
     if (existing.anonymous) {
       const now = DateTime.toEpochMillis(DateTime.nowUnsafe());
       // Keep recent boots read-only: Astro persists the whole session to KV,
-      // which permits only one write per key per second. Upgrade legacy values
-      // once; keep renewal metadata inside EmDash's native user session key.
+      // which permits only one write per key per second. Renewal metadata lives
+      // alongside the identity in EmDash's native user session key.
       if (existing.lastRenewedAt === undefined || now - existing.lastRenewedAt >= VISITOR_RENEWAL_MS) {
         session.set("user", { id: existing.id, lastRenewedAt: now }, { ttl: VISITOR_SESSION_SECONDS });
       }
@@ -199,7 +199,7 @@ export async function cmsVisitorGuard(context: APIContext, ownerId: string | und
   const giftRoute = Object.entries(GIFT_METHODS).find(([route, methods]) =>
     exactPath && path === `${GIFT_API}/${route}` && (methods as readonly string[]).includes(method))?.[0];
   // Public routes cannot receive a caller from EmDash and always redact secrets.
-  if (giftRoute === "snapshot" || giftRoute === "public-gift") return null;
+  if (giftRoute === "snapshot") return null;
   try {
     const db = await visitorDb(context);
     const cookieUser = await sessionUser(db, context.session);

@@ -1,9 +1,0 @@
----
-import { readThings } from '../../server/things/read';
-import { pathFor } from '../../lib/things/model';
-const things = await readThings('published');
-const path = Astro.url.pathname.replace(/\/$/,'');
-const thing = things.find(t => t.data.legacy_paths?.includes(path));
-if (!thing) return Astro.rewrite('/404');
-return Astro.redirect(pathFor(thing,things)! + (Astro.url.searchParams.get('window') === '1' ? '?window=1' : ''),301);
----

@@ -5,7 +5,6 @@ import type { PortableTextBlock } from 'emdash';
 import { getRequestContext } from 'emdash/request-context';
 import Portfolio from '../../layouts/Portfolio.astro';
 import ThemeImage from '../ThemeImage.astro';
-import ContentImage from '../ContentImage.astro';
 import { Stage } from '../../../components/Stage';
 import { GitHubViewer } from './GitHubViewer';
 import { Guestbook } from './Guestbook';
@@ -35,6 +34,6 @@ try { canonical = pathFor(thing, things) ?? undefined; } catch { /* Incomplete d
   <article class="page-content">
     {post && <h1>{title}</h1>}
     {date && <p class="meta">{new Date(date).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric',timeZone:'UTC'})}</p>}
-    <PortableText value={body as PortableTextBlock[]} components={{type:{themeImage:ThemeImage,image:ContentImage}}} />
+    <PortableText value={body as PortableTextBlock[]} components={{type:{themeImage:ThemeImage}}} />
   </article>}
 </Portfolio>

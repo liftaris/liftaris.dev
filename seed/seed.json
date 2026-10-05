@@ -28,7 +28,7 @@
           "label": "Icon",
           "type": "string",
           "required": true,
-          "defaultValue": "📄"
+          "defaultValue": "\ud83d\udcc4"
         },
         {
           "slug": "date",
@@ -82,8 +82,7 @@
           "validation": {
             "options": [
               "page",
-              "folder",
-              "application"
+              "folder"
             ]
           }
         },
@@ -103,7 +102,7 @@
           "slug": "emoji",
           "label": "Emoji",
           "type": "string",
-          "defaultValue": "📦"
+          "defaultValue": "\ud83d\udce6"
         },
         {
           "slug": "image",
@@ -152,7 +151,7 @@
         },
         {
           "slug": "window_x",
-          "label": "Initial window X (0–1)",
+          "label": "Initial window X (0\u20131)",
           "type": "number",
           "validation": {
             "min": 0,
@@ -161,7 +160,7 @@
         },
         {
           "slug": "window_y",
-          "label": "Initial window Y (0–1)",
+          "label": "Initial window Y (0\u20131)",
           "type": "number",
           "validation": {
             "min": 0,
@@ -245,7 +244,6 @@
               "projects",
               "experience",
               "github",
-              "clump",
               "guestbook"
             ]
           }
@@ -260,26 +258,10 @@
           }
         },
         {
-          "slug": "application",
-          "label": "Application",
-          "type": "select",
-          "defaultValue": "leave-gift",
-          "validation": {
-            "options": [
-              "leave-gift"
-            ]
-          }
-        },
-        {
           "slug": "body",
           "label": "Content",
           "type": "portableText",
           "searchable": true
-        },
-        {
-          "slug": "date",
-          "label": "Article date",
-          "type": "datetime"
         },
         {
           "slug": "background_image",
@@ -338,12 +320,6 @@
               "space"
             ]
           }
-        },
-        {
-          "slug": "legacy_paths",
-          "label": "Former paths",
-          "type": "json",
-          "defaultValue": []
         }
       ]
     }

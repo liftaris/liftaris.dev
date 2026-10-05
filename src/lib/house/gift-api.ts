@@ -3,8 +3,7 @@ export const GIFT_API = "/_emdash/api/plugins/liftaris-gifts";
 export const GIFT_METHODS = {
   mine: ["GET"],
   snapshot: ["GET"],
-  "public-gift": ["GET"],
   create: ["POST"],
-  gift: ["GET", "DELETE"],
+  gift: ["DELETE"],
   update: ["PATCH"],
 } as const;

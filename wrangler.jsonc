@@ -24,11 +24,9 @@
       "database_id": "0e886ca8-384e-4090-8035-c187268c7da7"
     }
   ],
-  // Applied namespace history. Keep the inert House export; it is not used by the app.
-  // A deleted_classes migration would delete remote storage.
-  "migrations": [
-    { "tag": "house-v1", "new_sqlite_classes": ["House"] }
-  ],
+  "exports": {
+    "House": { "type": "durable-object", "state": "deleted" }
+  },
   "vars": {
     "HOUSE_OWNER_ID": "01M366VZ20X87M0WMW2Y846Z0Y"
   },

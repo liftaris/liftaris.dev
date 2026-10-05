@@ -245,19 +245,6 @@ export function HouseClump({
   };
 
   return <div className="house-clump-area relative flex-1 w-full min-w-0 min-h-0 flex flex-col">
-    <svg width="0" height="0" className="sr-only absolute w-0 h-0 overflow-hidden pointer-events-none" aria-hidden="true" focusable="false">
-      <defs>
-        <filter id="thing-outline" x="-40%" y="-40%" width="180%" height="180%">
-          <feMorphology in="SourceAlpha" operator="dilate" radius="2" result="dilated" />
-          <feFlood floodColor="#ffffff" result="white" />
-          <feComposite in="white" in2="dilated" operator="in" result="outline" />
-          <feMerge>
-            <feMergeNode in="outline" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-      </defs>
-    </svg>
     <div ref={viewport} className="house-viewport relative flex-1 w-full min-w-0 min-h-0 overflow-auto overscroll-contain [scrollbar-width:thin] [scrollbar-color:color-mix(in_srgb,var(--color-paper)_35%,transparent)_transparent]" role="group" aria-label="Kaio’s things" aria-describedby="house-movement-help">
       <div className="house-world-space relative mx-auto overflow-clip" style={{ width: size.width * scale, height: size.height * scale }}>
         <div ref={world} className="house-world relative origin-top-left" style={{ width: size.width, height: size.height, transform: `scale(${scale})` }}>

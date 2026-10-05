@@ -1,16 +1,15 @@
 /** Shared authoring/rendering contract. CMS references stay separate from field data. */
 export const STUDIO_PATH = '/_emdash/admin/plugins/liftaris-things/workspace';
-export const PAGE_SOURCES = { content: null, post: null, projects: '/projects', experience: '/experience', github: '/github', clump: '/lab/clump', guestbook: '/guestbook' } as const;
-type ThingKind = 'page' | 'folder' | 'application';
+export const PAGE_SOURCES = { content: null, post: null, projects: '/projects', experience: '/experience', github: '/github', guestbook: '/guestbook' } as const;
+type ThingKind = 'page' | 'folder';
 export type ThingData = {
   name: string; kind: ThingKind; icon_type: 'emoji' | 'image'; emoji: string; image: unknown;
   width: number; height: number; window_width: number; window_height: number;
   window_x?: number | null; window_y?: number | null;
   desktop: boolean; default_open: boolean; sort_order: number; spawn_x: number; spawn_y: number;
-  page_source: keyof typeof PAGE_SOURCES; body: unknown[]; date?: string | null;
-  application: 'leave-gift'; path_override: string; background_image: unknown;
+  page_source: keyof typeof PAGE_SOURCES; body: unknown[];
+  path_override: string; background_image: unknown;
   background_size: string; background_position: string; background_repeat: string;
-  legacy_paths: string[];
 };
 export interface ThingRecord {
   id: string; slug: string; status: string; data: ThingData;
@@ -22,8 +21,8 @@ export const DEFAULT_DATA: ThingData = {
   window_x: null, window_y: null,
   desktop: true,
   default_open: false, sort_order: 0, spawn_x: .5, spawn_y: .5,
-  page_source: 'content', body: [], application: 'leave-gift', path_override: '',
-  background_image: null, background_size: 'cover', background_position: 'center', background_repeat: 'no-repeat', legacy_paths: [],
+  page_source: 'content', body: [], path_override: '',
+  background_image: null, background_size: 'cover', background_position: 'center', background_repeat: 'no-repeat',
 };
 export function slugFromName(name: string): string {
   return name.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'thing';
@@ -41,7 +40,6 @@ export function normalizeData(data: Record<string, unknown>): ThingData {
 export function pathFor(thing: ThingRecord, all: readonly ThingRecord[], seen = new Set<string>()): string | null {
   if (seen.has(thing.id)) throw new Error('Primary folders cannot form a cycle.');
   seen.add(thing.id);
-  if (thing.data.kind === 'application') return null;
   const builtin = thing.data.kind === 'page' ? PAGE_SOURCES[thing.data.page_source] : null;
   if (builtin) return builtin;
   if (thing.data.path_override) return validPath(thing.data.path_override);
@@ -56,7 +54,7 @@ function validPath(path: string): string {
   if (!/^\/(?:[a-z0-9][a-z0-9_-]*)(?:\/[a-z0-9][a-z0-9_-]*)*$/.test(path)) throw new Error('Use a site path such as /writing/my-post, with lowercase URL segments.');
   return path;
 }
-const RESERVED = new Set(['api', '_emdash', '_astro', '_image', 'admin', 'p', 'blog', 'things-preview', '404', 'work', 'posts', 'lab']);
+const RESERVED = new Set(['api', '_emdash', '_astro', '_image', 'admin', 'blog', 'things-preview', '404']);
 export function validateGraph(all: readonly ThingRecord[]): void {
   const routes = new Map<string, string>();
   const visit = (thing: ThingRecord, seen: Set<string>) => {
@@ -68,7 +66,7 @@ export function validateGraph(all: readonly ThingRecord[]): void {
     }
   };
   for (const thing of all) {
-    if (!['page','folder','application'].includes(thing.data.kind)) throw new Error(`Choose a valid kind for ${thing.data.name}.`);
+    if (!['page','folder'].includes(thing.data.kind)) throw new Error(`Choose a valid kind for ${thing.data.name}.`);
     if (!thing.data.name?.trim()) throw new Error('Every Thing needs a name.');
     // Validate ancestry independently of URL generation: overrides and built-in
     // routes must not hide a cycle or an unavailable parent.

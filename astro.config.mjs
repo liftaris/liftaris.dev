@@ -25,8 +25,6 @@ export default defineConfig({
     cookie: { name: "astro-session", path: "/", sameSite: "lax" },
   },
   redirects: {
-    "/work": { destination: "/experience", status: 307 },
-    "/posts": { destination: "/", status: 307 },
     "/admin": { destination: "/_emdash/admin", status: 302 },
   },
   integrations: [react(), emdash({
