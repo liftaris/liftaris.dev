@@ -1,3 +1,4 @@
+import { imageUrl, imageSources } from '../../lib/images';
 import { useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -80,7 +81,8 @@ export function ObjectWindow({ root, thingId, activation, open, title, icon, sou
     if (isImageUrl(icon)) {
       iconButton.replaceChildren();
       const img = document.createElement("img");
-      img.src = icon;
+      img.src = imageUrl(icon, 20);
+      img.srcset = imageSources(icon, 20) ?? '';
       img.alt = "";
       img.className = "object-window-image";
       iconButton.appendChild(img);
@@ -389,7 +391,8 @@ export function ObjectWindow({ root, thingId, activation, open, title, icon, sou
           iconSpan.className = "site-window-icon";
           if (isImageUrl(icon)) {
             const img = document.createElement("img");
-            img.src = icon;
+            img.src = imageUrl(icon, 20);
+            img.srcset = imageSources(icon, 20) ?? '';
             img.alt = "";
             img.className = "site-window-image";
             iconSpan.appendChild(img);

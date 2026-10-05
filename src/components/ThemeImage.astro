@@ -1,4 +1,5 @@
 ---
+import { imageUrl, imageSources } from "../lib/images";
 interface ThemeImageProps {
   lightSrc: string; darkSrc: string; alt?: string; width?: number; height?: number;
 }
@@ -11,6 +12,6 @@ const width = node.width;
 const height = node.height;
 ---
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset={darkSrc} />
-  <img src={lightSrc} alt={alt} width={width} height={height} loading="lazy" decoding="async" />
+  <source media="(prefers-color-scheme: dark)" srcset={imageSources(darkSrc, 960) ?? darkSrc} />
+  <img src={imageUrl(lightSrc, 960)} srcset={imageSources(lightSrc, 960)} alt={alt} width={width} height={height} loading="lazy" decoding="async" />
 </picture>

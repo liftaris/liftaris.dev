@@ -1,3 +1,4 @@
+import { imageUrl, imageSources } from '../../lib/images';
 import type { ThingSpec } from '../../lib/things/scene';
 import { normalizeEmojiPresentation } from '../../lib/house/emoji';
 
@@ -8,7 +9,7 @@ export function ThingArtwork({ thing, className, imageClassName }: {
   return <span className={`${className} grid place-items-center font-emoji leading-none pointer-events-none select-none [transform:translateZ(0)]`}
     style={{ width: thing.width, height: thing.height, fontSize: Math.min(thing.width, thing.height) * .85 }}
     data-is-emoji={!thing.image ? 'true' : undefined} aria-hidden="true">
-    {thing.image ? <img src={thing.image} alt="" width={thing.width} height={thing.height}
+    {thing.image ? <img src={imageUrl(thing.image, thing.width)} srcSet={imageSources(thing.image, thing.width)} alt="" width={thing.width} height={thing.height}
       className={`${imageClassName} block size-full max-w-full max-h-full object-contain`} loading="lazy" decoding="async" />
       : normalizeEmojiPresentation(thing.emoji)}
   </span>;
