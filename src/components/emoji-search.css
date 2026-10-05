@@ -1,10 +1,10 @@
 /* Scoped styles also work inside EmDash's independently built admin app. */
-.emoji-search { min-width:0; color:inherit; }
-.emoji-search label { display:block; font-size:12px; margin-bottom:6px; }
+.emoji-search { display:grid; grid-template-rows:auto auto minmax(0,1fr); gap:8px; height:min(320px,calc(100dvh - 4rem)); min-width:0; color:inherit; }
+.emoji-search label { display:block; font-size:12px; margin:0; }
 .emoji-search input { width:100%; min-width:0; box-sizing:border-box; border:1px solid currentColor; border-radius:4px; background:transparent; color:inherit; font:inherit; font-size:12px; padding:8px; }
 .emoji-search input::placeholder { color:inherit; opacity:.65; }
-.emoji-search > p { font-size:11px; margin:8px 0; }
-.emoji-search-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(36px,1fr)); gap:4px; max-height:240px; overflow-y:auto; overscroll-behavior:contain; }
+.emoji-search .emoji-search-status { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+.emoji-search-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(36px,1fr)); align-content:start; gap:4px; min-height:0; overflow-y:auto; overscroll-behavior:contain; scrollbar-gutter:stable; }
 .emoji-search-grid button { display:grid; place-items:center; aspect-ratio:1; min-width:0; border:1px solid transparent; border-radius:4px; padding:3px; background:transparent; color:inherit; font-family:"Noto Emoji Variable","Noto Emoji",sans-serif; font-size:24px; line-height:1; cursor:pointer; }
 .emoji-search-grid button:hover,.emoji-search-grid button[aria-pressed="true"] { border-color:currentColor; background:color-mix(in srgb,currentColor 12%,transparent); }
 .emoji-search-grid button:focus-visible { outline:2px solid currentColor; outline-offset:-2px; }

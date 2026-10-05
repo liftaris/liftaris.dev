@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useState } from 'react';
-import { EMOJI_CATALOG, findEmoji, normalizeEmojiPresentation, searchEmojiCatalog } from '../lib/house/emoji';
+import { findEmoji, normalizeEmojiPresentation, searchEmojiCatalog } from '../lib/house/emoji';
 import type { EmojiOption } from '../lib/house/types';
 import '@fontsource-variable/noto-emoji';
 import './emoji-search.css';
@@ -45,12 +45,12 @@ export function EmojiSearch({ value, onSelect, disabled = false, active = true }
       ids.add(emoji.id);
       return true;
     });
-  const status = !text ? `${EMOJI_CATALOG.length} icons` : !current ? 'Finding related icons…' : current.source === 'clef' ? 'Related icons first' : 'Showing name matches; smart search unavailable.';
+  const status = text && !current ? 'Finding related icons…' : `${options.length} icons${text && current?.source === 'local' ? '. Showing name matches; smart search unavailable.' : ''}`;
 
   return <div className="emoji-search">
     <label htmlFor={id}>Search icons</label>
     <input id={id} type="search" maxLength={200} value={query} disabled={disabled} placeholder="An object, a feeling, an idea…" onChange={event => setQuery(event.target.value)} />
-    <p role="status">{status}</p>
+    <p className="emoji-search-status" role="status">{status}</p>
     <div className="emoji-search-grid">
       {options.map(emoji => <button key={emoji.id} type="button" disabled={disabled} title={emoji.name} aria-label={emoji.name} aria-pressed={normalizeEmojiPresentation(value ?? '') === normalizeEmojiPresentation(emoji.emoji)} onClick={() => onSelect(emoji)}>{normalizeEmojiPresentation(emoji.emoji)}</button>)}
       {!options.length && <p>No matching icons.</p>}

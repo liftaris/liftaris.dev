@@ -70,15 +70,15 @@ function MessageForm({ gift, onSave, onCancel }: {
     }
   };
 
-  return <form onSubmit={event => void submit(event)} className="border-b border-paper/20 py-5">
-    <fieldset disabled={saving} className="flex min-w-0 gap-3 border-0 p-0 @sm:gap-4">
+  return <form onSubmit={event => void submit(event)} className="border-b border-paper/20 py-3">
+    <fieldset disabled={saving} className="flex min-w-0 gap-2 border-0 p-0 @sm:gap-3">
       <legend className="sr-only">{gift ? "Edit message" : "Sign guestbook"}</legend>
       <EmojiPicker value={draft.emojiId} onChange={emojiId => change({ emojiId })} />
       <div className="min-w-0 flex-1">
         <label htmlFor={`${id}-message`} className="sr-only">Message</label>
         <textarea id={`${id}-message`} required rows={2} maxLength={400} value={draft.message} onChange={event => change({ message: event.target.value.split("\n").slice(0, 7).join("\n") })} placeholder="Leave a message, an interesting link, a pun... anything you want!" className={`${inputClass} min-h-11 max-h-40 resize-y text-sm leading-relaxed`} />
-        <p className="mt-1 mb-3 text-right text-[11px] text-paper/70 tabular-nums">{draft.message.length}/400</p>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-3 text-xs">
+        <p className="my-1 text-right text-[11px] text-paper/70 tabular-nums">{draft.message.length}/400</p>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs">
           <label className="flex min-w-0 flex-1 basis-40 items-center gap-1.5">
             <span className="shrink-0 font-semibold text-paper/70">By:</span>
             <input required maxLength={60} value={draft.authorName} onChange={event => change({ authorName: event.target.value })} placeholder="Your name, or Anonymous" className={inputClass} />
@@ -92,7 +92,7 @@ function MessageForm({ gift, onSave, onCancel }: {
             <button type="submit" disabled={saving || !draft.message.trim() || !draft.authorName.trim()} className="cursor-pointer border border-paper bg-paper px-3 py-1 font-medium text-blue hover:bg-transparent hover:text-paper disabled:opacity-50">{saving ? "Saving…" : gift ? "Save" : "Sign guestbook ↗"}</button>
           </div>
         </div>
-        {error && <p role="alert" className="mt-3 text-paper">{error}</p>}
+        {error && <p role="alert" className="mt-2 text-paper">{error}</p>}
       </div>
     </fieldset>
   </form>;
@@ -146,8 +146,8 @@ export function Guestbook() {
     }
   };
 
-  return <div className="guestbook-view @container flex min-h-full flex-col bg-blue p-4 font-mono text-sm leading-relaxed text-paper @sm:p-6">
-    <p className="mb-1 shrink-0 border border-ink/20 bg-paper p-3.5 text-xs text-ink shadow-sm">Choose an icon and leave a message. If you want, tell me who and where you&apos;re from! Authorship is tied to your device.</p>
+  return <div className="guestbook-view @container flex min-h-full flex-col p-4 font-mono text-sm leading-relaxed text-paper @sm:p-6">
+    <p className="shrink-0 border border-ink/20 bg-paper p-3 text-xs text-ink shadow-sm">Choose an icon and leave a message. If you want, tell me who and where you&apos;re from! Authorship is tied to your device.</p>
     {error && <p role="alert" className="my-3 border border-paper/40 p-3">{error}</p>}
     <MessageForm onSave={draft => save(draft)} />
     {loading ? <p role="status" className="py-6 text-center text-xs text-paper/70">Loading guestbook…</p> : gifts.length === 0 ? <p className="py-8 text-center text-xs text-paper/70">No messages left yet. Be the first to leave one!</p> : gifts.map(gift => editingId === gift.id ?

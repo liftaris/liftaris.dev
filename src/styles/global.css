@@ -693,14 +693,16 @@ body.on-home .winbox.object-window.max:has(.folder) {
 }
 
 /* The double-border gap stays paper; only the guestbook content is blue. */
-html:has(> body.on-guestbook),
+html:has(> body.on-guestbook) {
+  background: var(--blue-background);
+}
 body.on-guestbook,
 body.on-guestbook .desktop-viewport {
-  background: var(--color-blue);
+  background: transparent;
 }
 .winbox.guestbook-window .wb-body,
 body.on-guestbook .site-window-body {
-  background: var(--color-blue);
+  background: var(--blue-background);
   color: var(--color-paper);
   scrollbar-color: var(--color-paper) var(--color-blue);
 }
@@ -769,7 +771,7 @@ body.on-guestbook .object-window-content {
   outline: 2px solid currentColor !important;
   outline-offset: -4px;
 }
-.object-window button:disabled { opacity: .65; cursor: wait; }
+.object-window button:disabled { opacity: .65; }
 @media (hover: hover) {
   .object-window .wb-control button:hover { background: color-mix(in srgb, var(--color-paper) 16%, transparent); }
 }
