@@ -8,6 +8,7 @@ import { windowPoint, normalizedWindowPoint } from "../../lib/things/model";
 import "winbox/dist/css/winbox.min.css";
 
 type ObjectWindowProps = {
+  open: boolean;
   title: string;
   icon: string;
   source: HTMLButtonElement;
@@ -27,7 +28,9 @@ type ObjectWindowProps = {
   children?: ReactNode;
 };
 
-export function ObjectWindow({ title, icon, source, fallbackSource, origin, width = 480, height = 380, x, y, className, backgroundStyle, maximizeUrl, restoreAnimation = false, onAuthorResize, onAuthorMove, onClose, children }: ObjectWindowProps) {
+export function ObjectWindow({ open, title, icon, source, fallbackSource, origin, width = 480, height = 380, x, y, className, backgroundStyle, maximizeUrl, restoreAnimation = false, onAuthorResize, onAuthorMove, onClose, children }: ObjectWindowProps) {
+  const visible = useRef(open); visible.current = open;
+  const closing = useRef(false);
   const [body, setBody] = useState<HTMLElement | null>(null);
   const [error, setError] = useState(false);
   const initial = useRef({ source, origin, width, height, x, y, className });
@@ -42,6 +45,27 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, widt
 
   const fallback = useRef(fallbackSource);
   fallback.current = fallbackSource;
+  useLayoutEffect(() => {
+    const win = windowInstance.current;
+    if (!body || !win) return;
+    const frame = win.window as HTMLElement;
+    const hadFocus = frame.contains(document.activeElement);
+    frame.inert = !open;
+    frame.setAttribute('aria-hidden', String(!open));
+    if (open) {
+      closing.current = false;
+      frame.getAnimations().forEach(animation => animation.cancel());
+      frame.style.pointerEvents = '';
+      win.show();
+      win.focus();
+      frame.querySelector<HTMLElement>('.object-window-handle')?.focus({ preventScroll: true });
+    } else {
+      win.hide();
+      win.blur();
+      if (hadFocus) (source.isConnected ? source : fallback.current?.())?.focus({ preventScroll: true });
+    }
+  }, [body, open, source]);
+
   useLayoutEffect(() => {
     const win = windowInstance.current;
     if (!body || !win) return;
@@ -125,13 +149,12 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, widt
           <div class="object-window-handle" tabindex="0" role="button"><div class="wb-title"></div></div>
         </div>
       </div><div class="wb-body"></div><div class="wb-n"></div><div class="wb-s"></div><div class="wb-e"></div><div class="wb-w"></div><div class="wb-ne"></div><div class="wb-nw"></div><div class="wb-se"></div><div class="wb-sw"></div>`;
-      let closing = false;
       const { x: initialPixelX, y: initialPixelY } = windowPoint(
         { window_x: x, window_y: y, window_width: width, window_height: height },
         { width: innerWidth, height: innerHeight }
       );
       const options: WinBox.Params & { template: HTMLElement } = {
-        root: document.body,
+        root: document.body, hidden: true,
         template, index: 20, header: 18,
         class: ["object-window", "@container", "no-full", "no-max", "no-animation", windowClass].filter(Boolean).join(" "),
         width, height,
@@ -142,8 +165,8 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, widt
         y: initialPixelY ?? origin.top + 16,
         onclose(force) {
           if (force) return false;
-          if (closing) return true;
-          closing = true;
+          if (closing.current) return true;
+          closing.current = true;
           restoreFocus = frame.contains(document.activeElement);
           const finish = () => { if (!disposed) close.current(); };
           if (matchMedia("(prefers-reduced-motion: reduce)").matches) finish();
@@ -163,6 +186,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, widt
       windowInstance.current = win;
       const frame = win.window as HTMLElement;
       frame.setAttribute("role", "dialog");
+      frame.inert = !visible.current;
       let sizing = false;
       const resizeStart = (event: PointerEvent) => { sizing = event.target instanceof HTMLElement && /^wb-(n|s|e|w|ne|nw|se|sw)$/.test(event.target.className); };
       const resizeEnd = () => {
@@ -224,7 +248,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, widt
       const handle = frame.querySelector<HTMLElement>(".object-window-handle")!;
       const maxButton = frame.querySelector<HTMLButtonElement>(".wb-max")!;
       const handleMaximize = () => {
-        if (closing || isAnimating.current) return;
+        if (closing.current || isAnimating.current) return;
         const isReducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
         if (win.max) {
@@ -274,7 +298,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, widt
             frame.style.borderRadius = "";
             frame.classList.remove("restoring");
             win.restore();
-            win.focus();
+            if (visible.current) win.focus();
             isAnimating.current = false;
           }, 220);
           return;
@@ -379,7 +403,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, widt
         }
 
         const redirect = () => {
-          if (disposed) return;
+          if (disposed || !visible.current) return;
           frame.style.setProperty("view-transition-name", "site-window");
           const header = frame.querySelector<HTMLElement>(".wb-header");
           if (header) {
@@ -468,7 +492,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, widt
         );
         moveCallback.current?.({ x: norm.window_x, y: norm.window_y });
       };
-      const focus = () => { win.focus(); };
+      const focus = () => { if (visible.current) win.focus(); };
       // Disabling a focused action blurs to BODY without another focusin.
       const trackFocus = () => { restoreFocus = frame.contains(document.activeElement); };
       document.addEventListener("focusin", trackFocus);
@@ -477,7 +501,7 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, widt
       frame.addEventListener("pointerdown", focus);
       window.addEventListener("resize", fit);
       fit();
-      if (restoreAnimation && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      if (visible.current && restoreAnimation && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
         isAnimating.current = true;
         const targetX = Number(win.x);
         const targetY = Number(win.y);
@@ -529,12 +553,14 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, widt
             frame.style.borderRadius = "";
             frame.classList.remove("restoring");
             isAnimating.current = false;
-            win.focus();
-            handle.focus({ preventScroll: true });
+            if (visible.current) {
+              win.focus();
+              handle.focus({ preventScroll: true });
+            }
           }, 240);
         });
       }
-      if (!restoreAnimation || matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      if (visible.current && (!restoreAnimation || matchMedia("(prefers-reduced-motion: reduce)").matches)) {
         win.focus();
         handle.focus({ preventScroll: true });
       }

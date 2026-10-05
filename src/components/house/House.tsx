@@ -12,7 +12,13 @@ import { PageReader } from "./PageReader";
 
 import type { ThingSpec } from '../../lib/things/scene';
 
-type OpenedThing = { id: string; origin: DOMRect; source: HTMLButtonElement; restoreAnimation?: boolean; };
+type WindowState = { id: string; open: boolean; origin: DOMRect; source: HTMLButtonElement; restoreAnimation?: boolean; };
+
+// Keep only a few inactive windows. Open windows are never evicted.
+function retain(items: WindowState[]) {
+  const inactive = items.filter(item => !item.open).slice(-4);
+  return items.filter(item => item.open || inactive.includes(item));
+}
 
 export function House({
   things = [],
@@ -26,24 +32,31 @@ export function House({
   const { things: effectiveThings, authoring } = useThingPreview(things, editMode);
   const thingsById = useMemo(() => new Map(effectiveThings.map(t => [t.id, t])), [effectiveThings]);
   const desktopThings = useMemo(() => effectiveThings.filter(t=>t.desktop),[effectiveThings]);
-  const [opened, setOpened] = useState<OpenedThing[]>([]);
+  const [windows, setWindows] = useState<WindowState[]>([]);
   const [ready, setReady] = useState(false);
   useEffect(() => setReady(true), []);
-  const close = (id: string) => setOpened((current) => current.filter((item) => item.id !== id));
+  const close = (id: string) => setWindows(current => editMode
+    ? current.filter(item => item.id !== id)
+    : retain(current.map(item => item.id === id ? { ...item, open: false } : item)));
+  const warm = (thing: ThingSpec, source: HTMLButtonElement) => {
+    if (editMode || thing.kind !== 'page' || !thing.href || thing.previewUrl) return;
+    const connection = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
+    if (connection?.saveData || /(^|-)2g$/.test(connection?.effectiveType ?? '')) return;
+    const item = { id: thing.id, open: false, source, origin: source.getBoundingClientRect() };
+    setWindows(current => current.some(entry => entry.id === thing.id) ? current : retain([...current, item]));
+  };
+  const openedIds = windows.filter(item => item.open).map(item => item.id);
   const open = useCallback((object: ThingSpec, source: HTMLButtonElement) => {
     const isFolder = object.kind === "folder";
     const parentRect = source.getBoundingClientRect();
-    const item = { id: object.id, source, origin: parentRect };
+    const item = { id: object.id, open: true, source, origin: parentRect };
 
-    setOpened((current) => {
-      const next = [...current];
-      if (!next.some((entry) => entry.id === object.id)) {
-        next.push(item);
-      }
+    setWindows((current) => {
+      const next = [...current.filter(entry => entry.id !== object.id).map(entry => ({ ...entry })), item];
       if (isFolder) {
         const defaultChildren = getDefaultOpenChildren(object.id, effectiveThings);
         defaultChildren.forEach((child, idx) => {
-          if (!next.some((entry) => entry.id === child.id)) {
+          if (!next.some((entry) => entry.id === child.id && entry.open)) {
             const childSource = (typeof document !== "undefined" && (
               document.querySelector<HTMLButtonElement>(`[data-folder-entry="${CSS.escape(child.id)}"]`) ??
               document.querySelector<HTMLButtonElement>(`[data-object="${CSS.escape(child.id)}"]`)
@@ -54,7 +67,9 @@ export function House({
               parentRect.width,
               parentRect.height
             );
-            next.push({ id: child.id, source: childSource, origin });
+            const cached = next.find(entry => entry.id === child.id);
+            if (cached) cached.open = true;
+            else next.push({ id: child.id, open: true, source: childSource, origin });
           }
         });
       }
@@ -101,8 +116,8 @@ export function House({
       48
     );
 
-    setOpened((current) => {
-      const next = [...current];
+    setWindows((current) => {
+      const next = current.map(entry => ({ ...entry }));
       toOpen.forEach((thing, idx) => {
         if (next.some((entry) => entry.id === thing.id)) return;
         const domSource = typeof document !== "undefined" ? (
@@ -118,7 +133,7 @@ export function House({
           : new DOMRect(defaultOrigin.left + idx * 32, defaultOrigin.top + idx * 32, defaultOrigin.width, defaultOrigin.height);
 
         const isRestored = Boolean(restoreSlug && (thing.id === restoreSlug || (restoredId && thing.id === restoredId)));
-        next.push({ id: thing.id, source, origin, restoreAnimation: isRestored });
+        next.push({ id: thing.id, open: true, source, origin, restoreAnimation: isRestored });
       });
       return next;
     });
@@ -130,11 +145,12 @@ export function House({
     <AuthoringContext.Provider value={authoring}><ThingsToolbar />
     <div className="house flex flex-col size-full min-w-0 min-h-0 @container text-paper" data-ready={ready}>
       <HouseClump
-        inspectedIds={opened.map((item) => item.id)}
+        inspectedIds={openedIds}
         desktopObjects={desktopThings}
         onOpen={open}
+        onWarm={warm}
       />
-      {opened.map((item) => {
+      {windows.map((item) => {
         const spec = thingsById.get(item.id);
         if (!spec) return null;
         const folder = spec.kind === 'folder' ? spec : undefined;
@@ -142,7 +158,7 @@ export function House({
         const fallbackSource = () => document.querySelector<HTMLButtonElement>(`[data-folder-entry="${CSS.escape(item.id)}"]`)
           ?? document.querySelector<HTMLButtonElement>(`[data-object="${CSS.escape(item.id)}"]`)
           ?? (parentFolderId ? document.querySelector<HTMLButtonElement>(`[data-object="${CSS.escape(parentFolderId)}"]`) : null);
-        return <ObjectWindow key={item.id} title={spec.name} icon={spec.image || spec.emoji} origin={item.origin} source={item.source} fallbackSource={fallbackSource}
+        return <ObjectWindow key={item.id} open={item.open} title={spec.name} icon={spec.image || spec.emoji} origin={item.origin} source={item.source} fallbackSource={fallbackSource}
           className={folder ? "folder-window" : spec.page_source === "guestbook" ? "guestbook-window" : undefined}
           backgroundStyle={folder ? getBackgroundStyle(folder) : undefined}
           maximizeUrl={spec.href ?? undefined}
@@ -151,7 +167,7 @@ export function House({
           x={spec.window_x} y={spec.window_y}
           onAuthorResize={geometry(item.id)} onAuthorMove={moveGeometry(item.id)}
           onClose={() => close(item.id)}>
-          {folder ? <Folder folder={folder} contents={folder.contents.flatMap(id => thingsById.get(id) ?? [])} openedIds={opened.map(entry => entry.id)} onOpen={open} /> : <PageReader page={spec} />}
+          {folder ? <Folder folder={folder} contents={folder.contents.flatMap(id => thingsById.get(id) ?? [])} openedIds={openedIds} onOpen={open} onWarm={warm} /> : <PageReader page={spec} />}
         </ObjectWindow>;
       })}
     </div></AuthoringContext.Provider>

@@ -1,4 +1,4 @@
-import { getEmDashCollection, getEmDashEntry, getEmDashReferences } from 'emdash';
+import { getEmDashCollection, getEmDashEntry, getEmDashReferences, type ContentEntry, type InferCollectionData } from 'emdash';
 import { getRequestContext, runWithContext } from 'emdash/request-context';
 import { normalizeData, pathFor, PAGE_SOURCES, type ThingRecord } from '../../lib/things/model';
 
@@ -12,20 +12,28 @@ export async function readThing(id: string, includeContents = false): Promise<Th
   if (result.error) throw result.error;
   if (!result.entry) return null;
   const entry = result.entry;
-  const refs = entry.references as Record<string, { entries: { data: { id: string } }[]; nextCursor?: string }> | undefined;
-  const data = normalizeData(entry.data as unknown as Record<string, unknown>);
-  const postId = refs?.post?.entries[0]?.data.id ?? null;
-  if (data.page_source === 'post' && !postId) return null;
-  const contents = refs?.contents?.entries.map(r => r.data.id) ?? [];
-  let cursor = refs?.contents?.nextCursor;
+  const thing = thingRecord(entry);
+  if (thing.data.page_source === 'post' && !thing.postId) return null;
+  const contents = thing.contents;
+  let cursor = entry.references?.contents?.nextCursor;
   while (cursor) {
     const page = await getEmDashReferences('things', entry.data.id, 'contents', { limit: 100, cursor });
     if (page.error) throw page.error;
     contents.push(...page.entries.map(r => String(r.data.id)));
     cursor = page.nextCursor;
   }
-  return { id: entry.data.id, slug: entry.data.slug || entry.id, status: entry.data.status,
-    data, contents, postId, primaryFolder: refs?.primary_folder?.entries[0]?.data.id ?? null };
+  return thing;
+}
+
+function thingRecord(entry: ContentEntry<InferCollectionData<'things'>, Partial<Record<'contents' | 'post' | 'primary_folder', { entries: { data: { id: string } }[] }>>>): ThingRecord {
+  const refs = entry.references;
+  return {
+    id: entry.data.id, slug: entry.data.slug || entry.id, status: entry.data.status,
+    data: normalizeData({ ...entry.data }),
+    contents: refs?.contents?.entries.map(row => String(row.data.id)) ?? [],
+    postId: refs?.post?.entries[0] ? String(refs.post.entries[0].data.id) : null,
+    primaryFolder: refs?.primary_folder?.entries[0] ? String(refs.primary_folder.entries[0].data.id) : null,
+  };
 }
 
 /** Read independent entries concurrently instead of paying a D1 round trip per Thing.
@@ -75,7 +83,10 @@ export async function readThingAtPath(path: string): Promise<{ thing: ThingRecor
     if (builtin) {
       const matches = await getEmDashCollection('things', { where: { kind: 'page', page_source: builtin }, limit: 1 });
       if (matches.error) throw matches.error;
-      return matches.entries[0] ? resolve(matches.entries[0].data.id) : null;
+      // The collection result already contains all page fields. Built-in paths
+      // are independent of folder ancestry, so do not reread the entry/relations.
+      const thing = matches.entries[0] && thingRecord(matches.entries[0]);
+      return thing ? { thing, things: [thing] } : null;
     }
     const slug = path.split('/').at(-1);
     if (!slug) return null;

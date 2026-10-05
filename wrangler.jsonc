@@ -54,6 +54,10 @@
     {
       "binding": "SESSION",
       "id": "8bf01aa04a0d44499c86e377038ad892"
+    },
+    {
+      "binding": "CONTENT_CACHE",
+      "id": "09450dee8cee45a6b247e7c9f30c128b"
     }
   ],
   "previews": {
@@ -72,6 +76,10 @@
       {
         "binding": "SESSION",
         "id": "d40889cd503f4bd4912c6de7aafd5394"
+      },
+      {
+        "binding": "CONTENT_CACHE",
+        "id": "25ddbbafcde5465b9dad36fd1661f712"
       }
     ],
     "d1_databases": [

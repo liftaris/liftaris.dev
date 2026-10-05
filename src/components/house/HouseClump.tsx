@@ -7,7 +7,6 @@ import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
 import { createSceneEngine } from "../clump/matter-engine";
 import type { Point, SceneEngine } from "../clump/model";
 import { ThingArtwork } from "./ThingArtwork";
-import { prefetchThing } from "../../lib/house/prefetch";
 import { ThingLabel } from "./ThingLabel";
 
 type Grab = { id: string; point: Point; origin: Point; moved: boolean; pointerId?: number };
@@ -27,10 +26,12 @@ export function HouseClump({
   inspectedIds,
   desktopObjects,
   onOpen,
+  onWarm,
 }: {
   inspectedIds: readonly string[];
   desktopObjects: readonly ThingSpec[];
   onOpen: (object: ThingSpec, source: HTMLButtonElement) => void;
+  onWarm: (object: ThingSpec, source: HTMLButtonElement) => void;
 }) {
   const authoring = useContext(AuthoringContext);
   const viewport = useRef<HTMLDivElement>(null);
@@ -271,15 +272,15 @@ export function HouseClump({
                 aria-haspopup="dialog"
                 aria-label={`${object.name}. Open window or use arrow keys to move.`}
                 aria-describedby="house-movement-help"
-                onPointerDown={(event) => { prefetchThing(object); pointerDown(event, object.id); }}
+                onPointerDown={(event) => { onWarm(object, event.currentTarget); pointerDown(event, object.id); }}
                 onPointerMove={pointerMove}
                 onPointerUp={(event) => { if (grabbed.current?.pointerId === event.pointerId) finish(); }}
                 onPointerCancel={(event) => { if (grabbed.current?.pointerId === event.pointerId) finish(true); }}
                 onLostPointerCapture={(event) => { if (grabbed.current?.pointerId === event.pointerId) finish(true); }}
                 onKeyDown={(event) => keyboard(event, object.id)}
                 onBlur={() => { if (grabbed.current?.id === object.id && grabbed.current.pointerId === undefined) finish(); }}
-                onPointerEnter={() => prefetchThing(object)}
-                onFocus={() => prefetchThing(object)}
+                onPointerEnter={event => onWarm(object, event.currentTarget)}
+                onFocus={event => onWarm(object, event.currentTarget)}
                 onClick={(event) => {
                   const suppressed = clickSuppressed.current;
                   if (!opened && !(suppressed?.id === object.id && performance.now() < suppressed.until)) onOpen(object, event.currentTarget);

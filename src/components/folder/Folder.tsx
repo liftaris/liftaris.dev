@@ -1,6 +1,5 @@
 import { ThingControls } from '../house/ThingAuthoring';
 import { getBackgroundStyle } from "../clump/model";
-import { prefetchThing } from "../../lib/house/prefetch";
 import { ThingArtwork } from "../house/ThingArtwork";
 import { ThingLabel } from "../house/ThingLabel";
 
@@ -11,9 +10,10 @@ type FolderProps = {
   contents: readonly ThingSpec[];
   openedIds: readonly string[];
   onOpen: (thing: ThingSpec, source: HTMLButtonElement) => void;
+  onWarm: (thing: ThingSpec, source: HTMLButtonElement) => void;
 };
 
-export function Folder({ folder, contents, openedIds, onOpen }: FolderProps) {
+export function Folder({ folder, contents, openedIds, onOpen, onWarm }: FolderProps) {
   const folderBg = getBackgroundStyle(folder);
   return (
     <>
@@ -40,9 +40,9 @@ export function Folder({ folder, contents, openedIds, onOpen }: FolderProps) {
                   aria-expanded={openedIds.includes(entry.id)}
                   aria-disabled={openedIds.includes(entry.id) || undefined}
                   tabIndex={openedIds.includes(entry.id) ? -1 : 0}
-                  onPointerEnter={() => prefetchThing(entry)}
-                  onFocus={() => prefetchThing(entry)}
-                  onPointerDown={() => prefetchThing(entry)}
+                  onPointerEnter={event => onWarm(entry, event.currentTarget)}
+                  onFocus={event => onWarm(entry, event.currentTarget)}
+                  onPointerDown={event => onWarm(entry, event.currentTarget)}
                   onClick={(event) => {
                     if (openedIds.includes(entry.id)) return;
                     onOpen(entry, event.currentTarget);

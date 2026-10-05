@@ -1293,3 +1293,10 @@ html:not(.on-home) {
 .folder-entry:not([aria-disabled="true"]):is(:hover, :focus, :active) .folder-entry-art[data-is-emoji="true"] {
   font-weight: 700;
 }
+
+/* Prepare closed windows at their real size without exposing them to interaction. */
+.object-window.hide {
+  display: block;
+  visibility: hidden;
+  pointer-events: none;
+}
