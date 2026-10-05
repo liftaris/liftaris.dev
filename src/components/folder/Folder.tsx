@@ -1,41 +1,19 @@
 import { ThingControls } from '../house/ThingAuthoring';
-import { type ComponentProps } from "react";
-import { getBackgroundStyle, isImageUrl, type BackgroundProps } from "../clump/model";
-import { ObjectWindow } from "../window/ObjectWindow";
+import { getBackgroundStyle } from "../clump/model";
 import { prefetchThing } from "../../lib/house/prefetch";
+import { ThingArtwork } from "../house/ThingArtwork";
 import { ThingLabel } from "../house/ThingLabel";
 
-type FolderIcon = BackgroundProps & {
-  id: string;
-  name: string;
-  emoji: string;
-  image?: string | null;
-  width?: number;
-  height?: number;
-};
-export type FolderSpec<T> = FolderIcon & { kind: "folder"; items: readonly FolderEntry<T>[] };
-type FolderEntry<T> = FolderSpec<T> | (FolderIcon & { kind: "item"; value: T });
+import type { ThingSpec } from '../../lib/things/scene';
 
-type FolderProps<T> = Omit<ComponentProps<typeof ObjectWindow>, "title" | "icon" | "children"> & {
-  folder: FolderSpec<T>;
-  openedIds?: readonly string[];
-  onOpen: (item: T, source: HTMLButtonElement) => void;
-  onOpenFolder: (folder: FolderSpec<T>, source: HTMLButtonElement) => void;
+type FolderProps = {
+  folder: ThingSpec;
+  contents: readonly ThingSpec[];
+  openedIds: readonly string[];
+  onOpen: (thing: ThingSpec, source: HTMLButtonElement) => void;
 };
 
-type FolderContentProps<T> = {
-  folder: FolderSpec<T>;
-  openedIds?: readonly string[];
-  onOpen?: (item: T, source: HTMLButtonElement) => void;
-  onOpenFolder?: (folder: FolderSpec<T>, source: HTMLButtonElement) => void;
-};
-
-function FolderContent<T>({
-  folder,
-  openedIds = [],
-  onOpen,
-  onOpenFolder,
-}: FolderContentProps<T>) {
+export function Folder({ folder, contents, openedIds, onOpen }: FolderProps) {
   const folderBg = getBackgroundStyle(folder);
   return (
     <>
@@ -44,29 +22,10 @@ function FolderContent<T>({
         data-has-bg={folderBg ? true : undefined}
         aria-label={`${folder.name} contents`}
       >
-        {folder.items.map((entry) => {
-          const iconImage = entry.image || (isImageUrl(entry.emoji) ? entry.emoji : null);
-
+        {contents.map((entry) => {
           const artwork = (
             <>
-              <span
-                className="folder-entry-art grid place-items-center size-14 text-5xl font-emoji leading-none pointer-events-none select-none [transform:translateZ(0)]"
-                style={{width:entry.width ?? 60,height:entry.height ?? 60,fontSize:Math.min(entry.width ?? 60,entry.height ?? 60)*.85}}
-                data-is-emoji={!iconImage ? "true" : undefined}
-                aria-hidden="true"
-              >
-                {iconImage ? (
-                  <img
-                    src={iconImage}
-                    alt=""
-                    className="folder-entry-image block size-full max-w-full max-h-full object-contain pointer-events-none select-none"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                ) : (
-                  entry.emoji.replace(/\uFE0F/g, "")
-                )}
-              </span>
+              <ThingArtwork thing={entry} className="folder-entry-art" imageClassName="folder-entry-image" />
               <ThingLabel name={entry.name} className="folder-entry-label w-full" />
             </>
           );
@@ -81,15 +40,12 @@ function FolderContent<T>({
                   aria-expanded={openedIds.includes(entry.id)}
                   aria-disabled={openedIds.includes(entry.id) || undefined}
                   tabIndex={openedIds.includes(entry.id) ? -1 : 0}
-                  onPointerEnter={() => prefetchThing(entry.kind === "item" ? (entry.value as { id?: string; href?: string | null; kind?: string }) : entry)}
-                  onFocus={() => prefetchThing(entry.kind === "item" ? (entry.value as { id?: string; href?: string | null; kind?: string }) : entry)}
-                  onPointerDown={() => prefetchThing(entry.kind === "item" ? (entry.value as { id?: string; href?: string | null; kind?: string }) : entry)}
+                  onPointerEnter={() => prefetchThing(entry)}
+                  onFocus={() => prefetchThing(entry)}
+                  onPointerDown={() => prefetchThing(entry)}
                   onClick={(event) => {
                     if (openedIds.includes(entry.id)) return;
-                    if (entry.kind === "folder") onOpenFolder?.(entry, event.currentTarget);
-                    else {
-                      onOpen?.(entry.value, event.currentTarget);
-                    }
+                    onOpen(entry, event.currentTarget);
                   }}
                 >
                   {artwork}
@@ -98,29 +54,7 @@ function FolderContent<T>({
           );
         })}
       </ul>
-      {folder.items.length === 0 && !folderBg && <p className="folder-empty m-0 text-xs">This folder is empty.</p>}
+      {contents.length === 0 && !folderBg && <p className="folder-empty m-0 text-xs">This folder is empty.</p>}
     </>
-  );
-}
-
-/** The caller owns folder and item windows as independent peers. */
-export function Folder<T>({ folder, openedIds = [], onOpen, onOpenFolder, className, ...windowProps }: FolderProps<T>) {
-  const folderIcon = folder.image || folder.emoji;
-  const folderBg = getBackgroundStyle(folder);
-  return (
-    <ObjectWindow
-      {...windowProps}
-      className={["folder-window", className].filter(Boolean).join(" ")}
-      title={folder.name}
-      icon={folderIcon}
-      backgroundStyle={folderBg}
-    >
-      <FolderContent
-        folder={folder}
-        openedIds={openedIds}
-        onOpen={onOpen}
-        onOpenFolder={onOpenFolder}
-      />
-    </ObjectWindow>
   );
 }

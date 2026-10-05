@@ -1,6 +1,32 @@
 import { getEmDashCollection, getEmDashEntry, getEmDashReferences } from 'emdash';
 import { getRequestContext, runWithContext } from 'emdash/request-context';
-import { normalizeData, pathFor, type ThingRecord } from '../../lib/things/model';
+import { normalizeData, pathFor, PAGE_SOURCES, type ThingRecord } from '../../lib/things/model';
+
+/** Resolve fields and native relationships identically for routes, lists, and previews. */
+export async function readThing(id: string, includeContents = false): Promise<ThingRecord | null> {
+  const result = await getEmDashEntry('things', id, { references: {
+    primary_folder: { limit: 1 }, post: { limit: 1 },
+    ...(includeContents ? { contents: { limit: 100 } } : {}),
+  } });
+  if (result.error?.name === 'LiveEntryNotFoundError') return null;
+  if (result.error) throw result.error;
+  if (!result.entry) return null;
+  const entry = result.entry;
+  const refs = entry.references as Record<string, { entries: { data: { id: string } }[]; nextCursor?: string }> | undefined;
+  const data = normalizeData(entry.data as unknown as Record<string, unknown>);
+  const postId = refs?.post?.entries[0]?.data.id ?? null;
+  if (data.page_source === 'post' && !postId) return null;
+  const contents = refs?.contents?.entries.map(r => r.data.id) ?? [];
+  let cursor = refs?.contents?.nextCursor;
+  while (cursor) {
+    const page = await getEmDashReferences('things', entry.data.id, 'contents', { limit: 100, cursor });
+    if (page.error) throw page.error;
+    contents.push(...page.entries.map(r => String(r.data.id)));
+    cursor = page.nextCursor;
+  }
+  return { id: entry.data.id, slug: entry.data.slug || entry.id, status: entry.data.status,
+    data, contents, postId, primaryFolder: refs?.primary_folder?.entries[0]?.data.id ?? null };
+}
 
 /** Read independent entries concurrently instead of paying a D1 round trip per Thing.
  * Select only relevant relations and consume every contents cursor.
@@ -14,27 +40,7 @@ export async function readThings(mode: 'request' | 'published' = 'request', opti
       if (page.error) throw page.error;
       const resolved = await Promise.all(page.entries.map(async (summary): Promise<ThingRecord | null> => {
         const summaryData = summary.data as unknown as Record<string, unknown>;
-        const result = await getEmDashEntry('things', summary.data.id, { references: {
-          primary_folder: { limit: 1 },
-          ...(options.includeContents !== false && summaryData.kind === 'folder' ? { contents: { limit: 100 } } : {}),
-          ...(summaryData.page_source === 'post' ? { post: { limit: 1 } } : {}),
-        } });
-        if (result.error) throw result.error;
-        if (!result.entry) return null;
-        const entry = result.entry;
-        const refs = entry.references as Record<string, { entries: { data: {id: string} }[]; nextCursor?: string }> | undefined;
-        const postId = refs?.post?.entries[0]?.data.id ?? null;
-        if ((entry.data as unknown as Record<string,unknown>).page_source === 'post' && !postId) return null;
-        const contents = refs?.contents?.entries.map(r => r.data.id) ?? [];
-        let next = refs?.contents?.nextCursor;
-        while (next) {
-          const rest = await getEmDashReferences('things', entry.data.id, 'contents', { limit: 100, cursor: next });
-          if (rest.error) throw rest.error;
-          contents.push(...rest.entries.map(r => String(r.data.id))); next = rest.nextCursor;
-        }
-        return { id: entry.data.id, slug: entry.data.slug || entry.id, status: entry.data.status,
-          data: normalizeData(entry.data as unknown as Record<string, unknown>), contents,
-          postId, primaryFolder: refs?.primary_folder?.entries[0]?.data.id ?? null };
+        return readThing(summary.data.id, options.includeContents !== false && summaryData.kind === 'folder');
       }));
       rows.push(...resolved.filter((row): row is ThingRecord => row !== null));
       cursor = page.nextCursor;
@@ -56,25 +62,21 @@ export async function readThingAtPath(path: string): Promise<{ thing: ThingRecor
       const seen = new Set<string>();
       let next: string | null = id;
       while (next) {
-        const result = await getEmDashEntry('things', next, { references: { primary_folder: { limit: 1 }, post: { limit: 1 } } });
-        if (result.error?.name === 'LiveEntryNotFoundError') return null;
-        if (result.error) throw result.error;
-        if (!result.entry) return null;
-        const entry = result.entry;
-        if (seen.has(entry.data.id)) return null;
-        seen.add(entry.data.id);
-        const refs = entry.references as Record<string, { entries: { data: {id: string} }[] }> | undefined;
-        const data = normalizeData(entry.data as unknown as Record<string, unknown>);
-        const postId = refs?.post?.entries[0]?.data.id ?? null;
-        if (data.page_source === 'post' && !postId) return null;
-        const thing: ThingRecord = {id:entry.data.id,slug:entry.data.slug || entry.id,status:entry.data.status,data,
-          contents:[],primaryFolder:refs?.primary_folder?.entries[0]?.data.id ?? null,postId};
+        const thing = await readThing(next);
+        if (!thing || seen.has(thing.id)) return null;
+        seen.add(thing.id);
         things.push(thing);
-        next = data.path_override ? null : thing.primaryFolder;
+        next = thing.data.path_override ? null : thing.primaryFolder;
       }
       const thing = things[0];
       return thing && pathFor(thing, things) === path ? {thing,things} : null;
     };
+    const builtin = Object.entries(PAGE_SOURCES).find(([, route]) => route === path)?.[0];
+    if (builtin) {
+      const matches = await getEmDashCollection('things', { where: { kind: 'page', page_source: builtin }, limit: 1 });
+      if (matches.error) throw matches.error;
+      return matches.entries[0] ? resolve(matches.entries[0].data.id) : null;
+    }
     const slug = path.split('/').at(-1);
     if (!slug) return null;
     const normal = await resolve(slug);

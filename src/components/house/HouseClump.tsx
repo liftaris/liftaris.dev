@@ -1,13 +1,12 @@
-import type { ThingSpec } from "./folders";
+import type { ThingSpec } from "../../lib/things/scene";
 import { Fragment, useContext } from 'react';
 import { AuthoringContext, ThingControls } from './ThingAuthoring';
 import { spawnPoint, normalizedPoint } from '../../lib/things/model';
 import { useLayoutEffect, useRef, useState } from "react";
 import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
 import { createSceneEngine } from "../clump/matter-engine";
-import { isImageUrl } from "../clump/model";
 import type { Point, SceneEngine } from "../clump/model";
-import { normalizeEmojiPresentation } from "../../lib/house/emoji";
+import { ThingArtwork } from "./ThingArtwork";
 import { prefetchThing } from "../../lib/house/prefetch";
 import { ThingLabel } from "./ThingLabel";
 
@@ -250,9 +249,6 @@ export function HouseClump({
         <div ref={world} className="house-world relative origin-top-left" style={{ width: size.width, height: size.height, transform: `scale(${scale})` }}>
           {objects.map((object) => {
             const opened = inspectedIds.includes(object.id);
-            const iconImage = object.image
-              || (isImageUrl(object.emoji) ? object.emoji : null);
-
             return (
               <Fragment key={object.id}>
               <ThingControls id={object.id} name={object.name} floating />
@@ -289,25 +285,7 @@ export function HouseClump({
                   if (!opened && !(suppressed?.id === object.id && performance.now() < suppressed.until)) onOpen(object, event.currentTarget);
                 }}
               >
-                <span
-                  className="house-object-art flex items-center justify-center size-full rounded-xl pointer-events-none [transform:translateZ(0)] font-emoji has-[.house-object-image]:opacity-100 group-data-[grabbed=true]:opacity-100"
-                  data-is-emoji={!iconImage ? "true" : undefined}
-                  aria-hidden="true"
-                >
-                  {iconImage ? (
-                    <img
-                      src={iconImage}
-                      alt=""
-                      className="house-object-image block size-full max-w-full max-h-full object-contain pointer-events-none select-none"
-                      width={Math.round(object.width)}
-                      height={Math.round(object.height)}
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  ) : (
-                    normalizeEmojiPresentation(object.emoji)
-                  )}
-                </span>
+                <ThingArtwork thing={object} className="house-object-art rounded-xl" imageClassName="house-object-image" />
                   <ThingLabel
                     name={object.name}
                     className="absolute top-full left-1/2 -translate-x-1/2 mt-[1px] w-max max-w-[100px] pointer-events-none text-paper [text-shadow:0_1px_2px_rgba(0,0,0,0.7)]"

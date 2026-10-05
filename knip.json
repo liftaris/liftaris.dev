@@ -2,7 +2,6 @@
   "$schema": "https://unpkg.com/knip@6.23.0/schema.json",
   "project": [
     "src/**/*.{astro,ts,tsx,css}",
-    "components/**/*.{ts,tsx}",
     "data/**/*.ts",
     "tools/**/*.ts"
   ],
@@ -12,7 +11,8 @@
     "src/plugins/things.ts",
     "src/plugins/gifts.ts",
     "src/plugins/theme-image.ts",
-    "src/plugins/things/admin.tsx"
+    "src/plugins/things/admin.tsx",
+    "src/plugins/theme-image-components.ts"
   ],
   "ignoreDependencies": [
     "cloudflare"

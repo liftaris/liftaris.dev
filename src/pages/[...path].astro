@@ -1,6 +1,7 @@
 ---
 import { readThings, readThingAtPath } from '../server/things/read';
 import { getRequestContext } from 'emdash/request-context';
+import { thingPage } from '../server/things/page';
 import ThingPage from '../components/house/ThingPage.astro';
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 const resolved = await readThingAtPath(path);
@@ -11,4 +12,4 @@ let { things } = resolved;
 if (thing.data.kind === 'folder') things = await readThings('published');
 if (getRequestContext()?.editMode || getRequestContext()?.preview) Astro.cache.set(false);
 ---
-<ThingPage thing={thing} things={things} />
+<ThingPage page={await thingPage(thing, things)} things={things} />

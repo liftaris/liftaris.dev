@@ -40,6 +40,7 @@ export default defineConfig({
       version: "1.0.0",
       format: "native",
       entrypoint: fileURLToPath(new URL("./src/plugins/theme-image.ts", import.meta.url)),
+      componentsEntry: "/src/plugins/theme-image-components.ts",
     }, {
       id: "liftaris-gifts",
       version: "1.0.0",

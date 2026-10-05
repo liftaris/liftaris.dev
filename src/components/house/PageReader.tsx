@@ -1,7 +1,7 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import { windowPageUrl } from "../../lib/house/prefetch";
 import { AuthoringContext } from "./ThingAuthoring";
-import type { ThingSpec } from "./folders";
+import type { ThingSpec } from "../../lib/things/scene";
 
 /** Reuse the server-rendered page without duplicating PortableText in React. */
 export function PageReader({ page }: { page: ThingSpec }) {

@@ -3,11 +3,11 @@ import { createPortal } from 'react-dom';
 import { STUDIO_PATH } from '../../lib/things/model';
 import { validMessage, messageFor, type PreviewMessage } from '../../lib/things/bridge';
 import { sceneThings } from '../../lib/things/scene';
-import type { ThingSpec } from './folders';
+import type { ThingSpec } from '../../lib/things/scene';
 
 export const AuthoringContext = createContext<{enabled: boolean; session: string; selected: string | null; send: (message: PreviewMessage) => void}>({ enabled:false,session:'',selected:null,send:()=>{} });
 export function useThingPreview(initial: readonly ThingSpec[], enabled: boolean) {
-  const [things,setThings]=useState(initial);
+  const [snapshot,setSnapshot]=useState<readonly ThingSpec[] | null>(null);
   const [selected,setSelected]=useState<string|null>(null);
   const [session]=useState(()=> typeof location !== 'undefined' && enabled ? new URLSearchParams(location.search).get('things-session') ?? '' : '');
   const send = (message: PreviewMessage) => { if(session && parent!==window) parent.postMessage(messageFor(session,message),location.origin); };
@@ -16,13 +16,12 @@ export function useThingPreview(initial: readonly ThingSpec[], enabled: boolean)
     const receive=(event:MessageEvent)=> {
       if(!validMessage(event,parent,session)||event.data.type!=='snapshot')return;
       const data=event.data; const next=sceneThings(data.things);
-      setThings(next.map(t=>t.id===data.selected?{...t,desktop:true,previewUrl:data.previewUrl}:t));setSelected(data.selected);
+      setSnapshot(next.map(t=>t.id===data.selected?{...t,desktop:true,previewUrl:data.previewUrl}:t));setSelected(data.selected);
     };
     window.addEventListener('message',receive);send({type:'ready'});
     return()=>window.removeEventListener('message',receive);
   },[enabled,session]);
-  useEffect(()=>{ if(!session)setThings(initial); },[initial,session]);
-  return {things,authoring:{enabled,session,selected,send}};
+  return {things: session && snapshot ? snapshot : initial,authoring:{enabled,session,selected,send}};
 }
 export function ThingControls({id,name,floating=false}:{id:string;name:string;floating?:boolean}) {
   const ctx=useContext(AuthoringContext); const [mounted,setMounted]=useState(false);useEffect(()=>setMounted(true),[]); const controls=useRef<HTMLDivElement>(null);

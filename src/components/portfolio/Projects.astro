@@ -1,0 +1,45 @@
+---
+import { readProjects } from "../../server/projects";
+const projects = await readProjects();
+---
+<div class="pane projectsPane">
+  {projects.map((item) => {
+    const primaryHref = item.links.find((link) => link.primary)?.href ?? item.links[0].href;
+    return (
+      <article class="card @container grid grid-cols-1 gap-3 border-b border-paper/20 pb-4 pt-4">
+        <div>
+          <p>{item.year} / {item.tag}</p>
+          <div class="projectTitleRow @container flex flex-col @md:flex-row justify-between items-baseline gap-2 flex-wrap">
+            <h3 class="font-serif text-3xl @lg:text-4xl @xl:text-5xl tracking-tight text-blue">
+              <a href={primaryHref} target="_blank" rel="noreferrer">{item.name}</a>
+            </h3>
+            <div class="links">
+              {item.links.map((link) => (
+                <a
+                  class="text-blue underline underline-offset-4 hover:bg-blue/10 px-1 rounded"
+                  href={link.href}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {link.label}
+                </a>
+              ))}
+            </div>
+          </div>
+          <p>{item.body}</p>
+          {item.stat && <strong>{item.stat.value} {item.stat.label}</strong>}
+          <ul>{item.proof.map((line) => <li>{line}</li>)}</ul>
+          <div class="chips flex flex-wrap gap-1.5">
+            {item.stack.slice(0, 6).map((tag) => (
+              <span
+                class="px-2 py-0.5 text-xs rounded border border-blue/35 text-blue hover:bg-blue/10 transition-colors"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
+      </article>
+    );
+  })}
+</div>

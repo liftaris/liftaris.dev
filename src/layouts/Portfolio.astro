@@ -21,6 +21,8 @@ interface Props {
   restoreSlug?: string;
   embedded?: boolean;
   guestbook?: boolean;
+  home?: boolean;
+  unconstrained?: boolean;
   content?: { collection: string; id: string; slug?: string | null };
 }
 const {
@@ -32,6 +34,8 @@ const {
   content,
   embedded = false,
   guestbook = false,
+  home: isHome = false,
+  unconstrained: isUnconstrained = false,
 } = Astro.props;
 if (embedded) {
   const context = getRequestContext();
@@ -39,47 +43,9 @@ if (embedded) {
   Astro.response.headers.append("Vary", "Cookie, Authorization");
 }
 const pathname = Astro.url.pathname.replace(/\/$/, "") || "/";
-const onBlog = pathname.startsWith("/blog/");
-const isHome = pathname === "/";
-const isBlogPost = onBlog || content?.collection === "posts";
-const isWritingPage = (content?.collection === "things" && Boolean(content?.id));
-const isUnconstrained = isBlogPost || isWritingPage;
-
-let displayTitle = windowTitle;
-let displayIcon = windowIcon;
-let actualRestoreSlug = restoreSlug;
-
-if (!displayTitle && !isHome) {
-  if (pathname === "/projects") {
-    displayTitle = "Projects";
-  } else if (pathname === "/experience") {
-    displayTitle = "Experience";
-  } else if (pathname === "/github") {
-    displayTitle = "GitHub";
-  } else {
-    displayTitle = title.replace(/\s*\|\s*Kaio Barbosa\s*$/, "");
-  }
-}
-
-if (!displayIcon && !isHome) {
-  if (pathname === "/projects") {
-    displayIcon = "🖥";
-  } else if (pathname === "/experience") {
-    displayIcon = "💼";
-  } else if (pathname === "/github") {
-    displayIcon = "/github.svg";
-  } else if (onBlog) {
-    displayIcon = "📝";
-  }
-}
-
-if (!actualRestoreSlug && !isHome) {
-  if (pathname === "/projects") actualRestoreSlug = "projects";
-  else if (pathname === "/experience") actualRestoreSlug = "experience";
-  else if (pathname === "/github") actualRestoreSlug = "github";
-  else if (onBlog) actualRestoreSlug = pathname.replace(/^\/blog\//, "").split("?")[0];
-  else actualRestoreSlug = pathname.replace(/^\//, "").split("?")[0];
-}
+const displayTitle = windowTitle ?? title.replace(/\s*\|\s*Kaio Barbosa\s*$/, '');
+const displayIcon = windowIcon;
+const actualRestoreSlug = restoreSlug;
 
 const isIconImage = displayIcon ? isImageUrl(displayIcon) : false;
 const page = createPublicPageContext({ Astro, kind: content ? "content" : "custom", title,

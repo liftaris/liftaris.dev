@@ -1,5 +1,13 @@
 import { mediaUrl, pathFor, type ThingRecord } from './model';
-import type { ThingSpec } from '../../components/house/folders';
+import type { ThingData } from './model';
+
+export type ThingSpec = Omit<ThingData, 'image' | 'background_image'> &
+  Pick<ThingRecord, 'id' | 'slug' | 'contents' | 'primaryFolder'> & {
+    image: string | null;
+    background_image: string | null;
+    href: string | null;
+    previewUrl?: string;
+  };
 export function sceneThings(rows: readonly ThingRecord[]): ThingSpec[] {
   return rows.map(t => ({
     ...t.data, id: t.id, slug: t.slug, kind: t.data.kind, contents: t.contents, primaryFolder: t.primaryFolder,

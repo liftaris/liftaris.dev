@@ -1,18 +1,18 @@
 import { AuthoringContext, useThingPreview, ThingsToolbar } from './ThingAuthoring';
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { HouseClump } from "./HouseClump";
+import { getBackgroundStyle } from "../clump/model";
 import { ObjectWindow } from "../window/ObjectWindow";
-import { Folder, type FolderSpec } from "../folder/Folder";
+import { Folder } from "../folder/Folder";
 import {
-  buildFolder,
   getDefaultOpenChildren,
   getInitialDefaultOpenThings,
-  type HouseThing,
-  type ThingSpec,
-} from "./folders";
+} from "../../lib/things/folders";
 import { PageReader } from "./PageReader";
 
-type OpenedThing = { object: HouseThing | FolderSpec<HouseThing>; origin: DOMRect; source: HTMLButtonElement; restoreAnimation?: boolean; };
+import type { ThingSpec } from '../../lib/things/scene';
+
+type OpenedThing = { id: string; origin: DOMRect; source: HTMLButtonElement; restoreAnimation?: boolean; };
 
 export function House({
   things = [],
@@ -24,28 +24,26 @@ export function House({
   initialFolderId?: string;
 }) {
   const { things: effectiveThings, authoring } = useThingPreview(things, editMode);
-  const foldersById = useMemo(() => new Map(effectiveThings.filter(t=>t.kind==='folder').map(t=>[t.id,buildFolder(t,effectiveThings)])),[effectiveThings]);
+  const thingsById = useMemo(() => new Map(effectiveThings.map(t => [t.id, t])), [effectiveThings]);
   const desktopThings = useMemo(() => effectiveThings.filter(t=>t.desktop),[effectiveThings]);
   const [opened, setOpened] = useState<OpenedThing[]>([]);
   const [ready, setReady] = useState(false);
   useEffect(() => setReady(true), []);
-  const close = (id: string) => setOpened((current) => current.filter((item) => item.object.id !== id));
-  const open = useCallback((object: HouseThing | FolderSpec<HouseThing>, source: HTMLButtonElement) => {
-    const isFolder = "kind" in object && object.kind === "folder";
-    const resolvedObject = foldersById.get(object.id) ?? object;
+  const close = (id: string) => setOpened((current) => current.filter((item) => item.id !== id));
+  const open = useCallback((object: ThingSpec, source: HTMLButtonElement) => {
+    const isFolder = object.kind === "folder";
     const parentRect = source.getBoundingClientRect();
-    const item = { object: resolvedObject, source, origin: parentRect };
+    const item = { id: object.id, source, origin: parentRect };
 
     setOpened((current) => {
       const next = [...current];
-      if (!next.some((entry) => entry.object.id === object.id)) {
+      if (!next.some((entry) => entry.id === object.id)) {
         next.push(item);
       }
       if (isFolder) {
         const defaultChildren = getDefaultOpenChildren(object.id, effectiveThings);
         defaultChildren.forEach((child, idx) => {
-          if (!next.some((entry) => entry.object.id === child.id)) {
-            const resolvedChild = foldersById.get(child.id) ?? child;
+          if (!next.some((entry) => entry.id === child.id)) {
             const childSource = (typeof document !== "undefined" && (
               document.querySelector<HTMLButtonElement>(`[data-folder-entry="${CSS.escape(child.id)}"]`) ??
               document.querySelector<HTMLButtonElement>(`[data-object="${CSS.escape(child.id)}"]`)
@@ -56,13 +54,13 @@ export function House({
               parentRect.width,
               parentRect.height
             );
-            next.push({ object: resolvedChild, source: childSource, origin });
+            next.push({ id: child.id, source: childSource, origin });
           }
         });
       }
       return next;
     });
-  }, [foldersById, effectiveThings]);
+  }, [effectiveThings]);
   const initialOpenDone = useRef(false);
   useEffect(() => {
     if (initialOpenDone.current) return;
@@ -78,9 +76,9 @@ export function House({
       const restoredThing = effectiveThings.find(t=>t.id===restoreSlug || t.slug===restoreSlug || t.page_source===restoreSlug || t.href===`/${restoreSlug}`);
 
       if (restoredThing) {
-        restoredId = (restoredThing as HouseThing).id;
+        restoredId = restoredThing.id;
         if (!toOpen.some((t) => t.id === restoredId)) {
-          toOpen.push(restoredThing as ThingSpec);
+          toOpen.push(restoredThing);
         }
       }
 
@@ -106,8 +104,7 @@ export function House({
     setOpened((current) => {
       const next = [...current];
       toOpen.forEach((thing, idx) => {
-        if (next.some((entry) => entry.object.id === thing.id)) return;
-        const resolvedObject = foldersById.get(thing.id) ?? thing;
+        if (next.some((entry) => entry.id === thing.id)) return;
         const domSource = typeof document !== "undefined" ? (
           document.querySelector<HTMLButtonElement>(`[data-object="${CSS.escape(thing.id)}"]`) ??
           document.querySelector<HTMLButtonElement>(`[data-folder-entry="${CSS.escape(thing.id)}"]`) ??
@@ -121,58 +118,40 @@ export function House({
           : new DOMRect(defaultOrigin.left + idx * 32, defaultOrigin.top + idx * 32, defaultOrigin.width, defaultOrigin.height);
 
         const isRestored = Boolean(restoreSlug && (thing.id === restoreSlug || (restoredId && thing.id === restoredId)));
-        next.push({ object: resolvedObject, source, origin, restoreAnimation: isRestored });
+        next.push({ id: thing.id, source, origin, restoreAnimation: isRestored });
       });
       return next;
     });
-  }, [effectiveThings, foldersById, initialFolderId]);
+  }, [effectiveThings, initialFolderId, authoring.session]);
 
-  useEffect(() => {
-    if (!editMode) return;
-    setOpened(items => items.flatMap(item => {
-      const updated = foldersById.get(item.object.id) ?? effectiveThings.find(t=>t.id===item.object.id);
-      return updated ? [{...item,object:updated}] : [];
-    }));
-  }, [effectiveThings,foldersById,editMode]);
   const geometry = (id: string) => authoring.session ? (size: {width:number;height:number}) => authoring.send({type:'resize',id,window_width:size.width,window_height:size.height}) : undefined;
   const moveGeometry = (id: string) => authoring.session ? (pos: {x:number;y:number}) => authoring.send({type:'window_position',id,window_x:pos.x,window_y:pos.y}) : undefined;
   return (
     <AuthoringContext.Provider value={authoring}><ThingsToolbar />
     <div className="house flex flex-col size-full min-w-0 min-h-0 @container text-paper" data-ready={ready}>
       <HouseClump
-        inspectedIds={opened.map((item) => item.object.id)}
+        inspectedIds={opened.map((item) => item.id)}
         desktopObjects={desktopThings}
         onOpen={open}
       />
       {opened.map((item) => {
-        const spec = effectiveThings.find(t=>t.id===item.object.id);
-        const folder = "kind" in item.object && item.object.kind === "folder" && "items" in item.object ? (item.object as FolderSpec<HouseThing>) : undefined;
-        const page = "kind" in item.object && item.object.kind === "page" ? (item.object as ThingSpec) : undefined;
-        const parentFolderId = spec?.primaryFolder;
-        const fallbackSource = () => document.querySelector<HTMLButtonElement>(`[data-folder-entry="${CSS.escape(item.object.id)}"]`)
-          ?? document.querySelector<HTMLButtonElement>(`[data-object="${CSS.escape(item.object.id)}"]`)
+        const spec = thingsById.get(item.id);
+        if (!spec) return null;
+        const folder = spec.kind === 'folder' ? spec : undefined;
+        const parentFolderId = spec.primaryFolder;
+        const fallbackSource = () => document.querySelector<HTMLButtonElement>(`[data-folder-entry="${CSS.escape(item.id)}"]`)
+          ?? document.querySelector<HTMLButtonElement>(`[data-object="${CSS.escape(item.id)}"]`)
           ?? (parentFolderId ? document.querySelector<HTMLButtonElement>(`[data-object="${CSS.escape(parentFolderId)}"]`) : null);
-        if (folder) return <Folder key={item.object.id} folder={folder}
-          origin={item.origin} source={item.source} fallbackSource={fallbackSource} openedIds={opened.map((entry) => entry.object.id)}
-          width={spec?.window_width} height={spec?.window_height}
-          x={spec?.window_x} y={spec?.window_y}
-          onAuthorResize={geometry(item.object.id)} onAuthorMove={moveGeometry(item.object.id)}
-          maximizeUrl={spec?.href ?? undefined}
+        return <ObjectWindow key={item.id} title={spec.name} icon={spec.image || spec.emoji} origin={item.origin} source={item.source} fallbackSource={fallbackSource}
+          className={folder ? "folder-window" : spec.page_source === "guestbook" ? "guestbook-window" : undefined}
+          backgroundStyle={folder ? getBackgroundStyle(folder) : undefined}
+          maximizeUrl={spec.href ?? undefined}
           restoreAnimation={item.restoreAnimation}
-          onOpen={open} onOpenFolder={open} onClose={() => close(item.object.id)} />;
-        const title = item.object.name;
-        const icon = item.object.image || item.object.emoji;
-        const isGuestbook = spec?.page_source === 'guestbook';
-        const winClass = isGuestbook ? "guestbook-window" : undefined;
-        return <ObjectWindow key={item.object.id} title={title} icon={icon} origin={item.origin} source={item.source} fallbackSource={fallbackSource}
-          className={winClass}
-          maximizeUrl={spec?.href ?? undefined}
-          restoreAnimation={item.restoreAnimation}
-          width={spec?.window_width} height={spec?.window_height}
-          x={spec?.window_x} y={spec?.window_y}
-          onAuthorResize={geometry(item.object.id)} onAuthorMove={moveGeometry(item.object.id)}
-          onClose={() => close(item.object.id)}>
-          {page && <PageReader page={page} />}
+          width={spec.window_width} height={spec.window_height}
+          x={spec.window_x} y={spec.window_y}
+          onAuthorResize={geometry(item.id)} onAuthorMove={moveGeometry(item.id)}
+          onClose={() => close(item.id)}>
+          {folder ? <Folder folder={folder} contents={folder.contents.flatMap(id => thingsById.get(id) ?? [])} openedIds={opened.map(entry => entry.id)} onOpen={open} /> : <PageReader page={spec} />}
         </ObjectWindow>;
       })}
     </div></AuthoringContext.Provider>

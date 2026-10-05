@@ -1,5 +1,0 @@
----
-import Portfolio from "../layouts/Portfolio.astro";
-import { Stage } from "../../components/Stage";
----
-<Portfolio embedded={Astro.url.searchParams.get("window") === "1"} title="Projects | Kaio Barbosa" windowTitle="Projects" windowIcon="🖥" restoreSlug="projects"><Stage view="projects" client:idle /></Portfolio>

@@ -9,4 +9,4 @@ const things = sceneThings(await readThings());
 // A Thing can change many folder routes and appearances; never cache an editor snapshot.
 if (editMode) Astro.cache.set(false);
 ---
-<Portfolio><House things={things} editMode={editMode} client:load /></Portfolio>
+<Portfolio home><House things={things} editMode={editMode} client:load /></Portfolio>
