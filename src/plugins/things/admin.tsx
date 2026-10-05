@@ -5,7 +5,7 @@ import { MediaPickerModal, PortableTextEditor, apiFetch, parseApiResponse, fetch
 import { Button } from '@cloudflare/kumo';
 import { DEFAULT_DATA, STUDIO_PATH, mediaUrl, pathFor, slugFromName, dependentNames, canAddToFolder, type ThingRecord, type ThingData } from '../../lib/things/model';
 import { messageFor, validMessage } from '../../lib/things/bridge';
-import { EMOJI_CATALOG } from '../../lib/house/emoji';
+import { EmojiSearch } from '../../components/EmojiSearch';
 import './workspace.css';
 
 type Draft = ThingRecord;
@@ -22,7 +22,6 @@ function Workspace() {
   const [state, setState] = useState('Loading');
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
-  const [emojiQuery, setEmojiQuery] = useState('');
   const [folderQuery, setFolderQuery] = useState('');
   const [picker, setPicker] = useState<'image' | 'background_image' | null>(null);
   const [lastTrashed, setLastTrashed] = useState<string | null>(null);
@@ -189,7 +188,7 @@ function Workspace() {
         <details open><summary>Identity</summary>{text('name', 'Name')}<label>Kind<select value={d.kind} onChange={e => patch({ kind: e.target.value as ThingData['kind'] })}><option value="page">Page</option><option value="folder">Folder / picture</option><option value="application">Application</option></select></label></details>
         <details open><summary>Icon</summary><div className="thing-icon-preview">{d.icon_type === 'image' && mediaUrl(d.image) ? <img src={mediaUrl(d.image)!} alt="Selected icon" /> : d.emoji}</div>
           <div className="thing-actions"><Button onClick={() => patch({icon_type: 'emoji'})}>Emoji</Button><Button onClick={() => { patch({icon_type: 'image'}); setPicker('image'); }}>Image…</Button></div>
-          {d.icon_type === 'emoji' && <>{text('emoji', 'Emoji')}<input aria-label="Search emoji" placeholder="Search emoji…" value={emojiQuery} onChange={e => setEmojiQuery(e.target.value)} /><div className="thing-emoji-grid">{EMOJI_CATALOG.filter(e => `${e.name} ${e.keywords}`.includes(emojiQuery.toLowerCase())).slice(0, 36).map(e => <button key={e.id} title={e.name} aria-label={e.name} onClick={() => patch({emoji: e.emoji})}>{e.emoji}</button>)}</div></>}
+          {d.icon_type === 'emoji' && <>{text('emoji', 'Emoji')}<EmojiSearch value={d.emoji} disabled={locked} onSelect={emoji => patch({emoji: emoji.emoji})} /></>}
           <div className="thing-pair">{number('width', 'Width',24,240)}{number('height','Height',24,240)}</div></details>
         <details open><summary>Window</summary><div className="thing-pair">{number('window_width','Width',180,2560)}{number('window_height','Height',100,1800)}</div><div className="thing-pair">{optionalNumber('window_x','Starting X (0–1)',0,1,0.001)}{optionalNumber('window_y','Starting Y (0–1)',0,1,0.001)}</div>{toggle('default_open','Open on arrival')}</details>
         {d.kind === 'page' && <details open><summary>Page content</summary><label>Source<select value={d.page_source} onChange={e => patch({page_source:e.target.value as ThingData['page_source']})}>{['content','post','projects','experience','github','clump'].map(s => <option key={s}>{s}</option>)}</select></label>{d.page_source === 'content' ? <><PortableTextEditor pluginBlocks={pluginBlocks} value={d.body as PortableTextEditorProps['value']} onChange={body => patch({body})} /></> : d.page_source==='post' ? <><label>Post<select aria-label="Post" value={draft.postId ?? ''} onChange={e=>patchRecord({postId:e.target.value||null})}><option value="">Choose a Post…</option>{posts.map(p=><option key={p.id} value={p.id}>{p.title}{p.status==='published'?'':' · Unpublished'}</option>)}</select></label>{draft.postId&&<a href={`/_emdash/admin/content/posts/${draft.postId}`}>Edit Post content →</a>}<p>Post content and publishing are managed in Posts. Unpublished Posts stay hidden from visitors.</p></> : <p>This page’s content is maintained in code. Its icon, name, and window are editable here.</p>}</details>}

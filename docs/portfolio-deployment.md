@@ -23,7 +23,7 @@ per-branch database provisioning. Astro/EmDash native cookie sessions use each
 target's `SESSION` KV, not a separate visitor auth service. Production's existing
 resources, content, routes, and publishing cron remain unchanged.
 
-The app needs `DB`, `MEDIA`, `SESSION`, `JEV_API_KEY`, and `HOUSE_OWNER_ID`, plus
+The app needs `DB`, `MEDIA`, `SESSION`, `AI`, and `HOUSE_OWNER_ID`, plus
 `EMDASH_SETUP_KEY` to protect initial setup. The former production visitor sentinel
 has been removed. Do not provision a replacement visitor database or apply the
 archived visitor-auth schema to `DB`.
@@ -36,7 +36,6 @@ Keep local values in the ignored `.dev.vars` file:
 
 ```dotenv
 EMDASH_SETUP_KEY=<your existing local CMS setup key>
-JEV_API_KEY=<your TypeSafe API key>
 HOUSE_OWNER_ID=<your native EmDash administrator user ID>
 ```
 
@@ -56,7 +55,7 @@ bun run dev
 Use EmDash's local dev bypass to initialize a fresh local CMS and administrator.
 Automatic visitor creation must not replace or bypass first-admin setup. On hosted
 targets that setup stays protected by `EMDASH_SETUP_KEY`; keep its handoff link
-private. There are no remote bindings in the development configuration. Local
+private. Workers AI inference uses remote Cloudflare resources even during local development. Local
 emulator data lives under ignored `.wrangler/`; do not erase it to fix migrations.
 
 EmDash manages its CMS schema. There is no separate visitor migration step.
@@ -78,7 +77,7 @@ bun run build
 
 `bun run build` compiles the Worker; it does not deploy. Before deploying a
 preview, inspect `dist/server/wrangler.json`: D1, R2, and session KV must be
-separate from production, and the setup/Jev secrets must be inherited. Keep
+separate from production, and the setup secret must be inherited and AI must be bound. Keep
 `fetch` / `scheduled`, the inert `House` export, and applied class history.
 `scripts/` contains optional local tooling and is not part of the tracked build.
 
@@ -122,10 +121,10 @@ only preview. Do not copy the production owner's ID as a shortcut.
 The old preview visitor database is unbound, not deleted. Old House namespaces
 and test identities remain untouched, not imported into the new preview CMS.
 
-Set `EMDASH_SETUP_KEY` and `JEV_API_KEY` in the **Previews Base** configuration.
+Set `EMDASH_SETUP_KEY` in the **Previews Base** configuration.
 Use a distinct preview setup key. Values do not belong in Git or plaintext `vars`.
 For an authorized deployment, bootstrap each new Preview with a
-private JSON or dotenv file containing only those two keys:
+private JSON or dotenv file containing only that key:
 
 ```sh
 bunx wrangler preview base-config secret bulk /path/to/private-preview-secrets.json
@@ -137,8 +136,8 @@ Base secrets are copied when a Preview is created, not when the Base changes.
 The explicit secrets file initializes an existing Preview too, including one
 created by a failed build. Wrangler 4.135 preview uploads replace the deployment
 environment: neither top-level `secrets.required` nor an earlier secret upload
-preserves omitted bindings. `previews.unsafe.bindings` explicitly inherits these
-two server-side secrets without putting values in Git or CI. Subsequent pushes
+preserves omitted bindings. `previews.unsafe.bindings` explicitly inherits this
+server-side secret without putting values in Git or CI. Subsequent pushes
 can deploy without a secrets file. Verify names
 after an authorized deployment with
 `wrangler preview secret list --name interactive-stuff`; a green build alone does
@@ -174,7 +173,7 @@ for them. This avoids competing resource owners and creating an extra CMS solely
 for the transitional Alchemy stack. Stage `Sessions` remains Alchemy-owned;
 do not replace it with the production or Wrangler preview namespace.
 
-The stack also needs preview setup and Jev secrets (`Config.Redacted`) and the
+The stack also needs the preview setup secret (`Config.Redacted`) and the
 preview administrator's `HOUSE_OWNER_ID`. Routes and crons are explicitly empty;
 only production runs scheduled CMS publishing. The stack still declares legacy
 `Visitors` with `RemovalPolicy.retain()` and an unused `HOUSE` binding as a
@@ -198,7 +197,7 @@ belongs to Alchemy.
 ## Existing production target
 
 `bun run deploy` targets the Wrangler-owned production Worker, not a preview.
-Keep `EMDASH_SETUP_KEY` and `JEV_API_KEY` configured as Worker secrets. Set the
+Keep `EMDASH_SETUP_KEY` configured as a Worker secret and the Workers AI binding enabled. Set the
 exact `HOUSE_OWNER_ID` for CMS administration and moderation. Keep the verified
 production administrator ID unchanged; preview uses its own administrator ID.
 Preserve the existing CMS ID,

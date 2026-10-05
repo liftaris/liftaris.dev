@@ -2,7 +2,8 @@ import { useEffect, useId, useRef, useState } from "react";
 import type { SubmitEvent } from "react";
 import { getGift, HouseError, reclaimGift, updateGift } from "../../lib/house/client";
 import type { HouseMutation } from "../../lib/house/client";
-import { EMOJI_CATALOG } from "../../lib/house/emoji";
+import { findEmoji } from "../../lib/house/emoji";
+import { EmojiSearch } from "../EmojiSearch";
 import type { Gift, GiftDetail, UpdateGift } from "../../lib/house/types";
 
 export function GiftDialog({ gift, initialDetail, onClose, onDetail, mutate }: {
@@ -100,11 +101,7 @@ export function GiftDialog({ gift, initialDetail, onClose, onDetail, mutate }: {
   const message = current.message;
   return <div className="house-gift-body flex flex-col items-start w-full min-h-0">
     {draft && detail?.canEdit ? <form className="house-gift-editor w-full text-xs leading-relaxed" aria-label="Edit gift" onSubmit={(event) => { void save(event); }}>
-      <label className="house-edit-object grid gap-2 mb-5" htmlFor={`${fieldId}-object`}>Object
-        <select id={`${fieldId}-object`} className="w-full min-w-0 min-h-11 p-2 border border-current rounded-none bg-paper text-inherit font-inherit text-base cursor-pointer disabled:cursor-wait disabled:opacity-65" name="emojiId" value={draft.emojiId} disabled={saving || removing} onChange={(event) => setDraft({ ...draft, emojiId: event.target.value })}>
-          {EMOJI_CATALOG.map((option) => <option key={option.id} value={option.id} className="text-blue bg-paper">{option.emoji} {option.name}</option>)}
-        </select>
-      </label>
+      <EmojiSearch value={findEmoji(draft.emojiId)?.emoji} disabled={saving || removing} onSelect={emoji => setDraft({ ...draft, emojiId: emoji.id })} />
       <label htmlFor={`${fieldId}-message`}>Your message</label>
       <textarea id={`${fieldId}-message`} className="block w-full min-w-0 mt-2 p-3 resize-y min-h-[144px] border border-dashed border-current rounded-none bg-transparent text-inherit font-inherit text-base leading-relaxed placeholder:text-inherit placeholder:opacity-60 disabled:cursor-wait disabled:opacity-65" name="message" rows={5} required maxLength={400} value={draft.message ?? ""} disabled={saving || removing} onChange={(event) => setDraft({ ...draft, message: event.target.value })} />
       <label className="gift-from flex items-baseline gap-2.5 mt-5" htmlFor={`${fieldId}-name`}><span className="shrink-0">From</span><input id={`${fieldId}-name`} className="w-full min-w-0 min-h-11 py-2 px-0 border-0 border-b border-dashed border-current rounded-none bg-transparent text-inherit font-inherit text-base placeholder:text-inherit placeholder:opacity-60 disabled:cursor-wait disabled:opacity-65" aria-label="Your name" name="nickname" autoComplete="nickname" required maxLength={60} value={draft.authorName ?? ""} disabled={saving || removing} onChange={(event) => setDraft({ ...draft, authorName: event.target.value })} /></label>

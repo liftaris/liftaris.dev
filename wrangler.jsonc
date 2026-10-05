@@ -63,8 +63,7 @@
     // top-level secrets.required only drives local validation and type generation.
     "unsafe": {
       "bindings": [
-        { "name": "EMDASH_SETUP_KEY", "type": "inherit" },
-        { "name": "JEV_API_KEY", "type": "inherit" }
+        { "name": "EMDASH_SETUP_KEY", "type": "inherit" }
       ]
     },
     "vars": {
@@ -100,8 +99,7 @@
   },
   "secrets": {
     "required": [
-      "EMDASH_SETUP_KEY",
-      "JEV_API_KEY"
+      "EMDASH_SETUP_KEY"
     ]
   }
 }

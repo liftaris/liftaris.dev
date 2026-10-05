@@ -19,37 +19,24 @@ local development administrator. This bypass is disabled in production.
 Cloudflare bindings are emulated locally. No Tina Cloud credentials are used.
 A local `.dev.vars` file can hold Worker secrets; it is ignored by Git.
 
-## Homepage gifts
+## Guestbook and emoji icons
 
-The homepage contains the shared Matter.js clump. Visitors can leave emoji gifts,
-optionally attach a public or private message, and edit or take back their own gifts.
-All icons remain visible. Private messages and attribution are visible only to
-that gift's sender and the owner; icon-only gifts are public. The signed-in owner
-uses their CMS name rather than an anonymous visitor name.
-Jev suggests emoji while they type. Visitors receive an automatic native EmDash
-account with an animal name, without a signup form. Native HttpOnly session cookies
-authorize ownership; names and public gift IDs do not. Losing that session can
-lose access to earlier gifts.
+Visitors can leave public guestbook messages, edit their own messages, and move
+those messages to trash. Clef moderates submissions; pending messages are visible
+only to their author and the owner. Native EmDash HttpOnly sessions establish
+visitor ownership without a signup form.
 
-Gifts are EmDash content in the existing CMS `DB`. The native `liftaris-gifts`
-plugin owns their HTTP API under `/_emdash/api/plugins/liftaris-gifts`. EmDash
-handles route methods, bounded body parsing, subscriber authentication, CSRF
-headers, and response envelopes. Gift-specific policy restricts ownership and
-projects private fields; generic CMS APIs remain owner-only. No realtime
-connection, shared physics, or separate visitor auth database is involved.
-Movement stays local, with a fresh arrangement on reload. Set `JEV_API_KEY` in ignored `.dev.vars` for suggestions, and set
-`HOUSE_OWNER_ID` to the exact EmDash user ID allowed to administer the CMS, read
-private messages, and moderate gifts. After setup, this is required for CMS admin
-access; empty configuration fails closed. The signed-in owner's ID is available
-at `/_emdash/api/auth/me`. No visitor database migration or auth secret is needed.
+Guestbook and Things share a 255-icon Noto picker. Search shows local name matches
+immediately and uses Cloudflare Clef for semantic suggestions through the `AI`
+binding. No separate API key is required. Names and keywords come from Emojibase;
+run `bun run emoji:generate` to regenerate the catalog. See [emoji search](docs/emoji-search.md).
 
-See the [gift specification](docs/portfolio-gifts-spec.md) and
-[deployment guide](docs/portfolio-deployment.md). GitHub branch previews use the
-`previews` bindings in `wrangler.jsonc`. Preview has its own EmDash database,
-media bucket, and session KV, separate from production. Its native users, gifts,
-and content stay in that environment. Complete a separate owner/passkey setup,
-optionally import the repository seed, then configure the preview owner's ID.
-Production content and credentials are not copied automatically.
+The `liftaris-gifts` plugin owns comment reads and mutations. Set `HOUSE_OWNER_ID`
+to the exact native EmDash administrator ID allowed to administer the CMS and
+moderate messages. Losing a visitor session can lose access to earlier messages.
+
+See the [deployment guide](docs/portfolio-deployment.md) for isolated preview
+bindings and owner setup.
 
 ## Portfolio interaction lab
 

@@ -38,15 +38,9 @@ Keep the audience clear before submission, using concise functional controls. Ic
 
 Choosing a suggestion does not publish a gift. A deliberate submit sends it. Preserve the draft and idempotency key on failure, and prevent duplicate submission or dismissal while saving. The server returns the exact created gift ID, including on retries; never infer it from the latest item or a collection diff. After authorized detail readback, open the real gift at the preview's bounds, then fade away the outer composer. The real window collapses to the newly created clump object. Reduced-motion users get an immediate handoff. Private text and attribution remain only in authorized open cards, never the public collection. The handoff belongs only to the composer that submitted the gift; later gift edits must not remount its window or close a new composer.
 
-## Jev suggestions
+## Emoji suggestions
 
-Jev is the TypeSafe AI model the user requested. Two verified examples match the idea: [Emoji Jev](https://github.com/colinmcdermott/emoji-jev) and [Jevmoji](https://github.com/cheeaun/jevmoji). The exact X post has not been identified.
-
-Use TypeSafe's API or typed SDK in a server-side Effect service. Its credentials stay in Worker secrets. A suggestions request contains the draft needed for ranking, not the visitor's ownership secret or attribution. Suggestions do not create gifts or persist drafts.
-
-Jev Choice returns probabilities for a defined set of at most 255 options. Emoji selection therefore uses catalog IDs, with exact/local name matches and a bounded semantic candidate set. A broad Unicode catalog needs category or shortlist selection rather than passing thousands of emoji to one Choice. Benchmark that design against the demos before fixing the catalog size. [Choice documentation](https://docs.typesafe.ai/primitives/choice), [TypeSafe SDKs](https://docs.typesafe.ai/sdk).
-
-Invalidate old results immediately whenever the draft changes, cancel prior requests, and ignore stale responses even during the debounce gap. Provide local keyword matches when Jev is unavailable. Do not replace a visitor's selected emoji in response to an old request. Store and render catalog values rather than arbitrary model-provided HTML or glyph strings.
+The current implementation uses a generated 255-option Emojibase catalog and Cloudflare Clef through the native Workers AI binding. See [emoji search](emoji-search.md) for the current selection and search behavior. The earlier Jev SDK integration is removed.
 
 ## Opening and reclaiming a gift
 
@@ -165,9 +159,9 @@ infrastructure; neither serves gift requests.
 
 ## Effect and Alchemy boundary
 
-Effect owns command validation, authorization, TypeSafe calls, storage services, concurrency errors, and retry/cancellation boundaries. Matter retains its imperative numerical loop and transform rendering.
+Effect owns command validation, authorization, Workers AI calls, storage services, concurrency errors, and retry/cancellation boundaries. Matter retains its imperative numerical loop and transform rendering.
 
-Wrangler describes the active Worker, `DB` / `MEDIA` / `SESSION`, setup and Jev
+Wrangler describes the active Worker, `DB` / `MEDIA` / `SESSION`, setup
 secrets, and owner ID. Hosted preview uses separate D1, R2, and session KV from
 production. Preview CMS users, gifts, content, and media never write into production.
 Its owner/passkey setup and `HOUSE_OWNER_ID` are environment-specific; do not clone
@@ -205,7 +199,7 @@ Retaining all gifts means crowding is a layout and performance constraint, not p
   mutation snapshots, stable gift windows and source-scoped composer handoff;
   no deleted private text in responses, independent local arrangements, and
   HTTP-only network traffic.
-- Debounced Jev suggestions with local fallback, cancellation and stale-result
+- Debounced Clef suggestions with local fallback, cancellation and stale-result
   protection; credentials and drafts must not leak into public records.
 - Desktop/mobile layout, click-versus-drag, keyboard completion, window focus and
   stacking, reduced motion, and no new horizontal overflow.

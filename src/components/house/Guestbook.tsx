@@ -1,39 +1,34 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { SubmitEvent } from "react";
 import { createGift, ensureVisitor, getHouse, houseMutations, reclaimGift, updateGift } from "../../lib/house/client";
-import { EMOJI_CATALOG, findEmoji, searchEmojiCatalog } from "../../lib/house/emoji";
-import type { CreateGift, EmojiOption, Gift, UpdateGift } from "../../lib/house/types";
+import { findEmoji, normalizeEmojiPresentation } from "../../lib/house/emoji";
+import { EmojiSearch } from "../EmojiSearch";
+import type { CreateGift, Gift, UpdateGift } from "../../lib/house/types";
 
 const emptyMessage: UpdateGift = { emojiId: "gift", message: "", authorName: "", location: "" };
 const inputClass = "w-full min-w-0 border-0 border-b border-paper/30 bg-transparent pb-0.5 text-paper placeholder:text-paper/60 focus:border-paper";
 
 function EmojiPicker({ value, onChange }: { value: string; onChange: (id: string) => void }) {
-  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
   const id = useId();
   const popover = useRef<HTMLDivElement>(null);
   const selected = findEmoji(value) ?? findEmoji("gift")!;
-  const options: readonly EmojiOption[] = query.trim() ? searchEmojiCatalog(query) : EMOJI_CATALOG;
 
   return <div className="shrink-0">
     <button type="button" popoverTarget={id} className="flex size-16 cursor-pointer items-center justify-center font-emoji text-[52px] leading-none" aria-label={`Change icon. Current: ${selected.name}`}>
-      {selected.emoji}
+      {normalizeEmojiPresentation(selected.emoji)}
     </button>
-    <div id={id} ref={popover} popover="auto" onKeyDown={event => {
+    <div id={id} ref={popover} popover="auto" onToggle={event => setOpen(event.newState === "open")} onKeyDown={event => {
       if (event.key === "Escape") {
         event.preventDefault();
         event.stopPropagation();
         popover.current?.hidePopover();
       }
     }} className="fixed inset-0 m-auto w-72 max-w-[calc(100%-2rem)] border border-ink bg-paper p-3 text-ink shadow-2xl backdrop:bg-ink/30">
-      <input type="search" autoFocus aria-label="Search icons" placeholder="Search icons" value={query} onChange={event => setQuery(event.target.value)} className="mb-3 w-full border-b border-ink/30 bg-transparent p-1 text-xs" />
-      <div className="grid max-h-52 grid-cols-6 gap-1 overflow-y-auto overscroll-contain">
-        {options.map(option => <button key={option.id} type="button" aria-label={option.name} aria-pressed={option.id === value} title={option.name} className="flex size-9 cursor-pointer items-center justify-center rounded font-emoji text-2xl hover:bg-ink/10" onClick={() => {
-          onChange(option.id);
-          popover.current?.hidePopover();
-          setQuery("");
-        }}>{option.emoji}</button>)}
-        {!options.length && <p className="col-span-6 text-xs">No matching icons.</p>}
-      </div>
+      {open && <EmojiSearch value={selected.emoji} onSelect={option => {
+        onChange(option.id);
+        popover.current?.hidePopover();
+      }} />}
     </div>
   </div>;
 }
@@ -157,7 +152,7 @@ export function Guestbook() {
     {loading ? <p role="status" className="py-6 text-center text-xs text-paper/70">Loading guestbook…</p> : gifts.length === 0 ? <p className="py-8 text-center text-xs text-paper/70">No messages left yet. Be the first to leave one!</p> : gifts.map(gift => editingId === gift.id ?
       <MessageForm key={gift.id} gift={gift} onSave={draft => save(draft, gift.id)} onCancel={() => setEditingId(null)} /> :
       <div key={gift.id} className="flex items-start gap-3 border-b border-paper/15 py-5 @sm:gap-4">
-        <span className="flex size-16 shrink-0 select-none items-center justify-center font-emoji text-[52px] leading-none" aria-hidden="true">{gift.emoji}</span>
+        <span className="flex size-16 shrink-0 select-none items-center justify-center font-emoji text-[52px] leading-none" aria-hidden="true">{normalizeEmojiPresentation(gift.emoji)}</span>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
             <p className="mb-3 min-w-0 flex-1 wrap-anywhere whitespace-pre-wrap">{gift.message}</p>

@@ -15,7 +15,8 @@
     "knip": "knip",
     "knip:fix": "knip --fix",
     "typecheck": "astro check",
-    "cms": "emdash"
+    "cms": "emdash",
+    "emoji:generate": "bun tools/generate-emoji-catalog.ts"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.3.3",
@@ -26,7 +27,6 @@
     "@fontsource-variable/geist-mono": "^5.3.0",
     "@fontsource-variable/noto-emoji": "^5.3.2",
     "@fontsource/young-serif": "^5.3.0",
-    "@typesafe-ai/sdk": "0.6.0",
     "astro": "^7.3.5",
     "effect": "4.0.0-rc.117",
     "emdash": "1.0.1",
@@ -51,6 +51,7 @@
     "@types/react-dom": "^19.3.0",
     "@types/winbox": "0.2.6",
     "alchemy": "2.0.0-beta.79",
+    "emojibase-data": "17.0.0",
     "eslint": "10.11.0",
     "eslint-plugin-astro": "^3.2.1",
     "knip": "^6.38.0",

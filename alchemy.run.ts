@@ -65,7 +65,6 @@ export default Stack(
         // No application route uses HOUSE; Wrangler needs no runtime binding.
         HOUSE: Cloudflare.DurableObject<House>("House", { className: "House" }),
         EMDASH_SETUP_KEY: Config.Redacted("EMDASH_SETUP_KEY"),
-        JEV_API_KEY: Config.Redacted("JEV_API_KEY"),
         HOUSE_OWNER_ID: Config.String("HOUSE_OWNER_ID").pipe(Config.withDefault("")),
       },
     }).pipe(RemovalPolicy.retain());
@@ -74,6 +73,7 @@ export default Stack(
     // Scheduled CMS publishing stays exclusively on the production Worker.
     yield* website.bind`preview-cms`({
       bindings: [
+        { type: "ai", name: "AI" },
         { type: "d1", name: "DB", databaseId: cmsDatabaseId },
         { type: "r2_bucket", name: "MEDIA", bucketName: mediaBucketName },
       ],
