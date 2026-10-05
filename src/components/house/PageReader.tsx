@@ -1,5 +1,5 @@
 import { useContext, useEffect, useRef, useState } from "react";
-import { windowPageUrl } from "../../lib/house/prefetch";
+import { getCachedWindowHtml, preloadWindowHtml, windowPageUrl } from "../../lib/house/prefetch";
 import { AuthoringContext } from "./ThingAuthoring";
 import type { ThingSpec } from "./folders";
 
@@ -10,31 +10,50 @@ export function PageReader({ page }: { page: ThingSpec }) {
   const src = windowPageUrl(href);
   const { enabled: editing } = useContext(AuthoringContext);
   const direct = editing || Boolean(page.previewUrl);
-  const [loaded, setLoaded] = useState<{ src: string; html?: string }>();
+
+  // Synchronously initialize with cached HTML if available so frame 0 renders with content
+  const [loaded, setLoaded] = useState<{ src: string; html?: string } | undefined>(() => {
+    if (direct) return undefined;
+    const cached = getCachedWindowHtml(src);
+    return cached ? { src, html: cached } : undefined;
+  });
+
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     if (direct) return;
-    const controller = new AbortController();
-    // Chromium partitions iframe navigations from link-prefetch responses.
-    // Read through the browser HTTP cache warmed by Astro, with no JS HTML cache.
-    void fetch(src, { signal: controller.signal }).then(async response => {
-      if (!response.ok || !response.headers.get("content-type")?.includes("text/html")) throw new Error("Page unavailable");
-      if (new URL(response.url).origin !== location.origin) throw new Error("External page");
-      const html = await response.text();
-      if (!controller.signal.aborted) setLoaded({ src, html });
-    }).catch(() => {
-      // Native navigation remains available if fetching HTML fails.
-      if (!controller.signal.aborted) setLoaded({ src });
-    });
-    return () => controller.abort();
-  }, [src, direct]);
+    if (loaded?.src === src && loaded.html) return;
+
+    let active = true;
+    preloadWindowHtml(src)
+      .then((html) => {
+        if (active) setLoaded({ src, html });
+      })
+      .catch(() => {
+        // Native navigation remains available if fetching HTML fails
+        if (active) setLoaded({ src });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [src, direct, loaded?.src, loaded?.html]);
+
   const current = loaded?.src === src ? loaded : undefined;
 
   useEffect(() => {
-    const frame = iframe.current!;
+    const frame = iframe.current;
     if (!frame) return;
     let listeners: AbortController | undefined;
+
+    const onFrameLoad = () => {
+      setReady(true);
+    };
+
+    frame.addEventListener("load", onFrameLoad);
+
     const connect = () => {
+      setReady(true);
       listeners?.abort();
       // Page links can navigate the frame away; never inspect another origin.
       let document: Document | null;
@@ -42,20 +61,34 @@ export function PageReader({ page }: { page: ThingSpec }) {
       if (!document) return;
       listeners = new AbortController();
       const options = { signal: listeners.signal };
-      const window = frame.closest(".object-window");
-      const raise = () => window?.dispatchEvent(new Event("focusin"));
+      const win = frame.closest(".object-window");
+      const raise = () => win?.dispatchEvent(new Event("focusin"));
       document.addEventListener("pointerdown", raise, options);
       document.addEventListener("focusin", raise, options);
       document.addEventListener("keydown", (event) => {
         if (event.key !== "Escape" || event.defaultPrevented) return;
         event.preventDefault();
-        window?.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+        win?.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
       }, options);
     };
+
     frame.addEventListener("load", connect);
     connect();
-    return () => { frame.removeEventListener("load", connect); listeners?.abort(); };
-  }, [src]);
 
-  return <iframe ref={iframe} className="post-reader block size-full border-0 bg-transparent" src={direct || (current && !current.html) ? src : undefined} srcDoc={!direct ? current?.html : undefined} title={page.name} />;
+    return () => {
+      frame.removeEventListener("load", onFrameLoad);
+      frame.removeEventListener("load", connect);
+      listeners?.abort();
+    };
+  }, [src, current?.html]);
+
+  return (
+    <iframe
+      ref={iframe}
+      className={`post-reader block size-full border-0 bg-transparent transition-opacity duration-150 ${ready ? "opacity-100" : "opacity-0"}`}
+      src={direct || (current && !current.html) ? src : undefined}
+      srcDoc={!direct ? current?.html : undefined}
+      title={page.name}
+    />
+  );
 }

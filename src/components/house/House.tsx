@@ -294,7 +294,10 @@ export function House({
         const title = item.object.name;
         const icon = item.object.image || item.object.emoji;
         const bgStyle = spec?.kind === 'folder' ? getBackgroundStyle(spec) : undefined;
+        const isGuestbook = item.object.id === 'leave-gift' || ('slug' in item.object && item.object.slug === 'guestbook') || ('page_source' in item.object && item.object.page_source === 'guestbook') || ('action' in item.object && item.object.action === 'leave-gift');
+        const winClass = isGuestbook ? "guestbook-window" : undefined;
         return <ObjectWindow key={item.object.id} title={title} icon={icon} origin={item.origin} source={item.source} fallbackSource={fallbackSource}
+          className={winClass}
           maximizeUrl={spec?.href ?? undefined}
           restoreAnimation={item.restoreAnimation}
           width={spec?.window_width} height={spec?.window_height}

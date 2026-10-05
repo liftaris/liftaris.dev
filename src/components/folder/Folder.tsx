@@ -87,6 +87,7 @@ export function FolderContent<T>({
                   href={entry.href}
                   onPointerEnter={() => prefetchThing(entry)}
                   onFocus={() => prefetchThing(entry)}
+                  onPointerDown={() => prefetchThing(entry)}
                 >
                   {artwork}
                 </a>
@@ -101,6 +102,7 @@ export function FolderContent<T>({
                   tabIndex={openedIds.includes(entry.id) ? -1 : 0}
                   onPointerEnter={() => prefetchThing(entry.kind === "item" ? (entry.value as { id?: string; action?: string; href?: string | null; kind?: string }) : entry)}
                   onFocus={() => prefetchThing(entry.kind === "item" ? (entry.value as { id?: string; action?: string; href?: string | null; kind?: string }) : entry)}
+                  onPointerDown={() => prefetchThing(entry.kind === "item" ? (entry.value as { id?: string; action?: string; href?: string | null; kind?: string }) : entry)}
                   onClick={(event) => {
                     if (openedIds.includes(entry.id)) return;
                     if (entry.kind === "folder") onOpenFolder?.(entry, event.currentTarget);

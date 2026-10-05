@@ -490,7 +490,7 @@ export function HouseClump({
                   });
                   setDisplayed((current) => current.filter((item) => item.id !== object.id));
                 }}
-                onPointerDown={(event) => pointerDown(event, object.id)}
+                onPointerDown={(event) => { prefetchThing(object); pointerDown(event, object.id); }}
                 onPointerMove={pointerMove}
                 onPointerUp={(event) => {
                   if (grabbed.current?.pointerId === event.pointerId) {

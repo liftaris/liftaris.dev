@@ -3,6 +3,7 @@ import type { FormEvent, KeyboardEvent } from "react";
 import { createGift, ensureVisitor, getHouse, reclaimGift, updateGift } from "../../lib/house/client";
 import type { HouseMutation } from "../../lib/house/client";
 import { EMOJI_CATALOG, findEmoji, searchEmojiCatalog } from "../../lib/house/emoji";
+import { invalidateWindowHtmlCache } from "../../lib/house/prefetch";
 import type { EmojiOption, Gift, HouseSnapshot } from "../../lib/house/types";
 
 interface GuestbookProps {
@@ -137,6 +138,7 @@ export function Guestbook({ initialSnapshot, mutate, onGiftsChange }: GuestbookP
 
       setGifts(snapshot.gifts);
       onGiftsChange?.(snapshot.gifts);
+      invalidateWindowHtmlCache("guestbook");
 
       // Reset form fields
       setMessage("");
@@ -179,6 +181,7 @@ export function Guestbook({ initialSnapshot, mutate, onGiftsChange }: GuestbookP
 
       setGifts(snapshot.gifts);
       onGiftsChange?.(snapshot.gifts);
+      invalidateWindowHtmlCache("guestbook");
       setEditingId(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn’t update message. Please try again.");
@@ -198,6 +201,7 @@ export function Guestbook({ initialSnapshot, mutate, onGiftsChange }: GuestbookP
 
       setGifts(snapshot.gifts);
       onGiftsChange?.(snapshot.gifts);
+      invalidateWindowHtmlCache("guestbook");
       if (editingId === id) setEditingId(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn’t delete message. Please try again.");
