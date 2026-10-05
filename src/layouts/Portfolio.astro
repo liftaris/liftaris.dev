@@ -11,6 +11,7 @@ import "@fontsource-variable/geist-mono";
 import "@fontsource/young-serif";
 import "@fontsource-variable/noto-emoji";
 import "../styles/global.css";
+import { imageUrl, imageSources } from "../lib/images";
 import { isImageUrl } from "../components/clump/model";
 
 interface Props {
@@ -129,7 +130,7 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
                 {displayIcon && (
                   <span class="site-window-icon">
                     {isIconImage ? (
-                      <img src={displayIcon} alt="" class="site-window-image" />
+                      <img src={imageUrl(displayIcon, 20)} srcset={imageSources(displayIcon, 20)} alt="" class="site-window-image" />
                     ) : (
                       displayIcon.replace(/\uFE0F/g, "").trim()
                     )}

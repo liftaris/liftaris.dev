@@ -1,0 +1,18 @@
+---
+import { emdashComponents } from 'emdash/ui';
+import type { ComponentProps } from 'astro/types';
+import { imageUrl } from '../lib/images';
+
+const NativeImage = emdashComponents.type.image;
+type Props = ComponentProps<typeof NativeImage>;
+const { node, ...props } = Astro.props;
+// Imported posts can lack dimensions. EmDash deliberately serves those URLs
+// unchanged; give its renderer a bounded rendition while retaining its native
+// captions, links, alignment, accessibility and placeholder behavior.
+const src = node.asset?.url;
+const nativeResponsive = src?.startsWith('/_emdash/api/media/file/') && node.width && node.height;
+const image = src && !nativeResponsive
+  ? { ...node, asset: { ...node.asset, url: imageUrl(src, Math.min(node.width || 1600, 1600)) } }
+  : node;
+---
+<NativeImage {...props} node={image} />

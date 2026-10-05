@@ -1,3 +1,4 @@
+import { imageUrl } from '../../lib/images';
 export type Point = { x: number; y: number };
 export type Size = { width: number; height: number };
 export type Pose = Point & { id: string; angle: number };
@@ -25,8 +26,12 @@ export function getBackgroundStyle(props?: BackgroundProps | null): CSSPropertie
   const image = props.background_image.trim();
   if (!image) return undefined;
 
+  // `auto` uses the original's intrinsic tile size; resizing would change it.
+  const rendition = props.background_size === 'auto' ? image : imageUrl(image, 960, 70);
   return {
-    backgroundImage: `url(${JSON.stringify(image)})`,
+    backgroundImage: rendition === image
+      ? `url(${JSON.stringify(image)})`
+      : `image-set(url(${JSON.stringify(rendition)}) 1x, url(${JSON.stringify(imageUrl(image, 1920, 70))}) 2x)`,
     backgroundSize: props.background_size || 'cover',
     backgroundPosition: props.background_position || 'center',
     backgroundRepeat: props.background_repeat || 'no-repeat',
