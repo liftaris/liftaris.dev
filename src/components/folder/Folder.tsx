@@ -146,4 +146,3 @@ export function Folder<T>({ folder, openedIds = [], thingsConfig, onOpen, onOpen
     </ObjectWindow>
   );
 }
-

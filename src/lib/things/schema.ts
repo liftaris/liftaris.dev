@@ -1,4 +1,5 @@
 import type { CreateFieldInput, CreateCollectionInput } from 'emdash';
+import { PAGE_SOURCES } from './model';
 const num = (slug: string, label: string, value: number, min: number, max: number, step?: number): CreateFieldInput => ({ slug, label, type: ['width','height','sort_order'].includes(slug) ? 'integer' : 'number', defaultValue: value, validation: { min, max, ...(step ? { step } : {}) } });
 const select = (slug: string, label: string, options: string[], value: string): CreateFieldInput => ({ slug, label, type: 'select', defaultValue: value, validation: { options } });
 export const thingFields: CreateFieldInput[] = [
@@ -17,7 +18,7 @@ export const thingFields: CreateFieldInput[] = [
   { slug: 'contents', label: 'Folder contents', type: 'reference', validation: { targetCollection: 'things', multiple: true } },
   { slug: 'primary_folder', label: 'Primary folder (URL)', type: 'reference', validation: { targetCollection: 'things', multiple: false } },
   { slug: 'path_override', label: 'Custom site path', type: 'string' },
-  select('page_source', 'Page source', ['content', 'post', 'projects', 'experience', 'github', 'clump'], 'content'),
+  select('page_source', 'Page source', Object.keys(PAGE_SOURCES), 'content'),
   { slug: 'post', label: 'Post', type: 'reference', validation: { targetCollection: 'posts', multiple: false } },
   select('application', 'Application', ['leave-gift'], 'leave-gift'),
   { slug: 'body', label: 'Content', type: 'portableText', searchable: true },

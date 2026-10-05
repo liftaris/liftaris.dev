@@ -98,6 +98,11 @@ images in the media library.
 
 ## Production setup and deployment
 
+For the `interactive-stuff` release, follow the
+[production migration runbook](docs/releases/things-production.md) before merging
+to `main`. The existing production CMS is populated; deploying code or an updated
+seed does not copy preview content or create its models.
+
 `wrangler.jsonc` contains the production Worker, custom domains, D1, R2, session
 KV, and a Cron Trigger for EmDash scheduled publishing and maintenance.
 The historical `house-v1` migration and inert `House` export preserve old storage;
@@ -146,7 +151,8 @@ automatic builds update the application without resetting CMS content.
 ## Backups
 
 Use Cloudflare D1 backups/Time Travel for the database, and retain R2 media.
-EmDash's content export can also be used for a portable backup. The Markdown
+EmDash's Site Transfer package can copy content into an empty target; its JSON
+backup is not a restore format. The Markdown
 archive is only the original migration snapshot; it is not a backup of later
 editor changes. Export current content before deliberately replacing the D1
 binding or making a destructive schema change.

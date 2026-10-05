@@ -171,4 +171,3 @@ export function GitHubViewer() {
     </div>
   );
 }
-
