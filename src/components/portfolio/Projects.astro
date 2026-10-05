@@ -1,6 +1,6 @@
 ---
 import { readProjects } from "../../server/projects";
-const projects = await readProjects();
+const projects = await readProjects(Astro.url.origin);
 ---
 <div class="pane projectsPane">
   {projects.map((item) => {
