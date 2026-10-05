@@ -693,6 +693,7 @@ body.on-home .winbox.object-window.max:has(.folder) {
 }
 
 /* The double-border gap stays paper; only the guestbook content is blue. */
+html:has(> body.on-guestbook),
 body.on-guestbook,
 body.on-guestbook .desktop-viewport {
   background: var(--color-blue);
