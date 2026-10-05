@@ -1,4 +1,12 @@
 ---
-import Portfolio from "../layouts/Portfolio.astro";
+import Portfolio from '../layouts/Portfolio.astro';
+import { House } from '../components/house/House';
+import { readThings } from '../server/things/read';
+import { sceneThings } from '../lib/things/scene';
+import { getRequestContext } from 'emdash/request-context';
+const editMode = getRequestContext()?.editMode === true;
+const things = sceneThings(await readThings());
+// A Thing can change many folder routes and appearances; never cache an editor snapshot.
+if (editMode) Astro.cache.set(false);
 ---
-<Portfolio />
+<Portfolio home><House things={things} editMode={editMode} client:load /></Portfolio>

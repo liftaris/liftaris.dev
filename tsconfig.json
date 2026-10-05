@@ -20,10 +20,13 @@
     "**/*"
   ],
   "exclude": [
+    "scripts",
     "node_modules",
+    ".worktrees",
     "dist",
     "out",
     ".next",
-    ".wrangler"
+    ".wrangler",
+    ".ignore"
   ]
 }

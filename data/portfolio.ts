@@ -10,13 +10,14 @@ export interface Project {
   proof: string[];
 }
 
-export type ProjectLinkKind = "site" | "github" | "npm" | "blog";
+type ProjectLinkKind = "site" | "github" | "npm" | "blog";
 
-export interface ProjectLink {
+interface ProjectLink {
   kind: ProjectLinkKind;
   label: string;
   href: string;
   primary?: boolean;
+  counter?: { url: string; field: string; suffix: string };
 }
 
 export const PROJECTS: Project[] = [
@@ -27,8 +28,10 @@ export const PROJECTS: Project[] = [
     year: "2026",
     stack: ["TypeScript", "Bun", "OpenTUI React", "SQLite", "JSON-RPC", "Hermes Agent"],
     links: [
-      { kind: "github", label: "github", href: "https://github.com/liftaris/herm", primary: true },
-      { kind: "npm", label: "npm", href: "https://www.npmjs.com/package/herm-tui" },
+      { kind: "github", label: "github", href: "https://github.com/liftaris/herm", primary: true,
+        counter: { url: "https://api.github.com/repos/liftaris/herm", field: "stargazers_count", suffix: "★" } },
+      { kind: "npm", label: "npm", href: "https://www.npmjs.com/package/herm-tui",
+        counter: { url: "https://api.npmjs.org/downloads/point/last-month/herm-tui", field: "downloads", suffix: "/mo" } },
     ],
     body: "A tabbed, mouse-aware TUI that brings Hermes Agent into an OpenCode-style terminal workspace with chat, sessions, memory, skills, cron, config, analytics, and kanban tabs.",
     proof: [
@@ -86,10 +89,4 @@ export const EXPERIENCE: Record<string, Experience> = {
     period: "2021 — 2022",
     body: "In my first professional stint as a software dev, I built dashboards for the FAA and CBP. That's basically all I did: data visualization in a SPA, following mocks to a T. With React, yeah.",
   },
-};
-
-export const SOCIAL = {
-  github: "https://github.com/liftaris",
-  linkedin: "https://www.linkedin.com/in/kaiobarb",
-  email: "mailto:kaio@liftaris.dev",
 };

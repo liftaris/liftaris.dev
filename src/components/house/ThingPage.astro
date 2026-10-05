@@ -1,0 +1,33 @@
+---
+import { getRequestContext } from 'emdash/request-context';
+import Portfolio from '../../layouts/Portfolio.astro';
+import Article from '../Article.astro';
+import Projects from '../portfolio/Projects.astro';
+import Experience from '../portfolio/Experience.astro';
+import { GitHubViewer } from './GitHubViewer';
+import { Guestbook } from './Guestbook';
+import { House } from './House';
+import { sceneThings } from '../../lib/things/scene';
+import type { ThingRecord } from '../../lib/things/model';
+import type { Page } from '../../server/things/page';
+interface Props { page: Page; things?: ThingRecord[] }
+const { page, things = [] } = Astro.props;
+---
+<Portfolio
+  unconstrained={['content', 'post'].includes(page.source)}
+  guestbook={page.source === 'guestbook'}
+  embedded={Astro.url.searchParams.get('window') === '1'}
+  title={`${page.title} | Kaio Barbosa`}
+  windowTitle={page.windowTitle}
+  windowIcon={page.icon}
+  restoreSlug={page.restoreId}
+  canonicalPath={page.canonical}
+  content={page.content}
+>
+  {page.source === 'folder' ? <House things={sceneThings(things)} initialFolderId={page.restoreId} editMode={Boolean(getRequestContext()?.editMode)} client:load /> :
+  page.source === 'projects' ? <Projects /> :
+  page.source === 'experience' ? <Experience /> :
+  page.source === 'github' ? <GitHubViewer client:load /> :
+  page.source === 'guestbook' ? <Guestbook client:load /> :
+  <Article {...page.article} />}
+</Portfolio>

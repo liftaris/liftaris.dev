@@ -1,0 +1,16 @@
+---
+import { PortableText } from 'emdash/ui';
+import type { PortableTextBlock } from 'emdash';
+interface Props {
+  body: PortableTextBlock[];
+  title?: string;
+  date?: string | null;
+  titleAttributes?: Record<string, string>;
+}
+const { body, title, date, titleAttributes } = Astro.props;
+---
+<article class={title ? 'article-content' : 'page-content'}>
+  {date && <p class="meta">{new Date(date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}</p>}
+  {title && <h1 {...titleAttributes}>{title}</h1>}
+  <PortableText value={body} />
+</article>

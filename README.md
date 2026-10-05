@@ -1,119 +1,36 @@
 # liftaris.dev
 
-Kaio Barbosa's portfolio, built with Astro, React, and EmDash CMS on Cloudflare
-Workers. Posts live in D1, uploads in R2, and login sessions in Workers KV.
-Publishing and editing posts does not require a build or Git commit.
+Astro, React, and EmDash on Cloudflare Workers. Content lives in D1, media in R2,
+and sessions in KV. Edit Things and Posts in `/_emdash/admin`.
 
-## Local development
-
-```bash
+```sh
 bun install --frozen-lockfile
 bun run dev
 ```
 
-Open the URL printed by Astro (normally `http://localhost:4321`). The CMS is at
-`/_emdash/admin`; `/admin` redirects there. On a fresh local database, use the
-**Dev bypass** link printed by EmDash to import the seed content and sign in as a
-local development administrator. This bypass is disabled in production.
+Worker declarations are generated before development, build, and type checking.
 
-Cloudflare bindings are emulated locally. No Tina Cloud credentials are used.
-A local `.dev.vars` file can hold Worker secrets; it is ignored by Git.
+Use `.dev.vars` for local `EMDASH_SETUP_KEY` and `HOUSE_OWNER_ID`. Native EmDash
+Dev bypass is available locally. Hosted administration requires the configured
+owner's passkey.
 
-## Checks
+`seed/seed.json` defines models for a fresh CMS; it contains no sample content.
+Existing CMS models and content are managed in EmDash, not reapplied on deploy.
+Apply `migrations/guestbook/0001_receipts.sql` explicitly to the intended D1 after
+EmDash initialization; the guestbook needs its atomic retry receipt trigger.
 
-```bash
-bun test
+```sh
 bun run lint
 bun run typecheck
 bun run knip
 bun run build
 ```
 
-`bun run start` serves the production build through Wrangler.
+`bun run emoji:generate` rebuilds the 255-icon catalog from Emojibase using
+Unicode IDs. `things-preview/[id]` is the signed CMS preview route.
 
-## Content and migration
-
-The `posts` collection contains title, date, and rich-text body fields. Its
-public URLs remain `/blog/<slug>`, including the existing mixed-case
-`Understanding-L-Systems` URL. The Theme Image editor block keeps separate light
-and dark image URLs and alternative text.
-
-When editing a published post, **Save** keeps a draft revision. Use **Publish
-changes** to make that revision visible on the site.
-
-`content/posts/*.md` is the preserved import archive, not the live CMS. The
-conversion script creates `seed/seed.json`, preserving original text, dates,
-URLs, nested lists, links, code, and images:
-
-```bash
-bun run migrate:posts
-```
-
-This command only prepares the import. EmDash initializes the schema on first
-request; content is imported by the setup wizard with seed content enabled (or
-the local dev bypass). Existing content is not overwritten on redeploy. Do not
-use the archive or seed to edit published content: use EmDash.
-
-The existing blog images have been imported into EmDash's media library. Live
-posts reference those media records (or their media URLs for the Theme Image
-block), and the files are served from the private R2 bucket through EmDash's
-media API. New uploads use the same library.
-
-Original files remain under `public/` to preserve existing direct image links
-and keep the initial seed portable. The seed is a one-time copy of the original
-posts, including their historical references to TinaCMS; it is not the live CMS
-or an ongoing backup. Importing the seed alone does not register its static
-images in the media library.
-
-## Production setup and deployment
-
-`wrangler.jsonc` contains the production Worker, custom domains, D1, R2, session
-KV, and a Cron Trigger for EmDash scheduled publishing and maintenance.
-
-```bash
-bunx wrangler login
-bun run deploy
-```
-
-The first-admin setup flow is protected by the `EMDASH_SETUP_KEY` Worker secret.
-Open the private setup link supplied during deployment, then create your admin
-account and register your own passkey. The browser receives an hour-long,
-HttpOnly setup cookie; the key is removed from the address bar. Once setup is
-complete, EmDash's regular authentication applies. Keep the setup key private.
-The local `.emdash/` directory is ignored by Git and can hold this handoff link.
-
-To set the secret manually, use `bunx wrangler secret put EMDASH_SETUP_KEY` and
-enter a cryptographically random value. Never commit it. The setup URL is
-`https://www.liftaris.dev/_emdash/admin/setup?setup_key=YOUR_VALUE`.
-
-The site's original `/work` and `/posts` redirects are configured in Astro.
-Both `liftaris.dev` and `www.liftaris.dev` are attached to the production Worker.
-
-## GitHub builds
-
-Connect `liftaris/liftaris.dev` in **Workers & Pages → liftaris-dev → Settings →
-Builds → Connect**:
-
-| Setting | Value |
-| --- | --- |
-| Production branch | `main` |
-| Root directory | Repository root |
-| Build command | `bun run build` |
-| Deploy command | `bunx wrangler deploy` |
-| Bun version | `1.3.13` |
-
-Commit the source, `bun.lock`, seed, generated EmDash types, and Wrangler config.
-No Tina build variables or CMS build tokens are needed. `EMDASH_SETUP_KEY` is a
-Worker runtime secret, not a build variable. D1/R2/KV persist across deployments;
-automatic builds update the application without resetting CMS content.
-
-## Backups
-
-Use Cloudflare D1 backups/Time Travel for the database, and retain R2 media.
-EmDash's content export can also be used for a portable backup. The Markdown
-archive is only the original migration snapshot; it is not a backup of later
-editor changes. Export current content before deliberately replacing the D1
-binding or making a destructive schema change.
-
-References: [EmDash](https://github.com/emdash-cms/emdash),
-[Cloudflare Workers Builds](https://developers.cloudflare.com/workers/ci-cd/builds/).
+Wrangler owns deployments. `interactive-stuff` uses isolated preview bindings;
+merging `main` deploys production through Workers Builds. `bun run deploy` also
+targets production. Deploying code does not migrate preview content to production.
+The `House` deletion declaration retires the unused Durable Object store on
+deployment. Local notes live under ignored `.ignore/`.

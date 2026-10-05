@@ -3,24 +3,71 @@
 
 /// <reference types="emdash/locals" />
 
-import type { ContentBylineCredit, TaxonomyTerm, PortableTextBlock } from "emdash";
+import type { BylineSummary, ContentBylineCredit, TaxonomyTerm, PortableTextBlock, ReferencePage } from "emdash";
 
 export interface Post {
   id: string;
   slug: string | null;
   status: string;
   title: string;
+  icon: string;
   date: string;
   content?: PortableTextBlock[];
   createdAt: Date;
   updatedAt: Date;
   publishedAt: Date | null;
+  byline?: BylineSummary | null;
   bylines?: ContentBylineCredit[];
   terms?: Record<string, TaxonomyTerm[]>;
+}
+
+export interface Thing {
+  id: string;
+  slug: string | null;
+  status: string;
+  name: string;
+  kind?: "page" | "folder";
+  icon_type?: "emoji" | "image";
+  emoji?: string;
+  image?: { id: string; src?: string; alt?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown>; darkVariant?: { id: string; src?: string; alt?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown> } };
+  width?: number;
+  height?: number;
+  window_width?: number;
+  window_height?: number;
+  window_x?: number;
+  window_y?: number;
+  desktop?: boolean;
+  default_open?: boolean;
+  sort_order?: number;
+  spawn_x?: number;
+  spawn_y?: number;
+  path_override?: string;
+  page_source?: "content" | "post" | "projects" | "experience" | "github" | "guestbook";
+  body?: PortableTextBlock[];
+  background_image?: { id: string; src?: string; alt?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown>; darkVariant?: { id: string; src?: string; alt?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown> } };
+  background_size?: "cover" | "contain" | "auto" | "100% 100%" | "50%" | "75%" | "150%" | "200%";
+  background_position?: "center" | "top" | "bottom" | "left" | "right" | "top left" | "top right" | "bottom left" | "bottom right";
+  background_repeat?: "no-repeat" | "repeat" | "repeat-x" | "repeat-y" | "round" | "space";
+  createdAt: Date;
+  updatedAt: Date;
+  publishedAt: Date | null;
+  byline?: BylineSummary | null;
+  bylines?: ContentBylineCredit[];
+  terms?: Record<string, TaxonomyTerm[]>;
+}
+
+export interface ThingReferences {
+  contents: ReferencePage<Thing>;
+  primary_folder: ReferencePage<Thing>;
+  post: ReferencePage<Post>;
 }
 
 declare module "emdash" {
   interface EmDashCollections {
     posts: Post;
+    things: Thing;
+  }
+  interface EmDashCollectionReferences {
+    things: ThingReferences;
   }
 }

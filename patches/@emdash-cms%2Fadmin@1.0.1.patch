@@ -1,0 +1,20 @@
+diff --git a/dist/index.js b/dist/index.js
+index 3d2c9331f3daebb21af6dc33f9cd2d3e92859c98..76f98b62ad0dc122d15428d5ad55a884abe87983 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -30308,6 +30308,7 @@ function FieldRenderer({ name, field, value, onChange, onEditorReady, minimal, p
+ 				required: field.required,
+ 				min: range.min,
+ 				max: range.max,
++				step: (field.type === "integer" || field.kind === "integer") ? "1" : (field.step ?? field.validation?.step ?? "any"),
+ 				"aria-invalid": outOfRange || void 0,
+ 				description: hint,
+ 				error: boundsError(hint, outOfRange)
+@@ -48337,6 +48338,7 @@ function SettingFieldInput({ fieldKey, field, value, secretSet, secretInput, sec
+ 			description: field.description,
+ 			min: field.min,
+ 			max: field.max,
++			step: field.step ?? "any",
+ 			value: typeof value === "number" ? String(value) : "",
+ 			onChange: (e) => {
+ 				const parsed = Number.parseFloat(e.target.value);

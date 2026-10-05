@@ -7,6 +7,7 @@
 
 # testing
 /coverage
+/scripts
 
 # next.js
 /.next/
@@ -37,6 +38,7 @@ yarn-error.log*
 # Cloudflare
 .wrangler/
 .dev.vars*
+.alchemy/
 
 # IntelliJ IDEA
 .idea
@@ -46,6 +48,7 @@ tsconfig.tsbuildinfo
 next-env.d.ts
 
 .playwright-mcp/
+.hermes/
 
 supabase/
 
@@ -56,3 +59,13 @@ dist/
 *.db
 *.db-shm
 *.db-wal
+
+# Private migration snapshots
+.local-backups/
+.worktrees/
+
+# Local notes and archived development tooling
+/.ignore/
+
+# Generated from wrangler.jsonc
+/worker-configuration.d.ts

@@ -1,76 +1,200 @@
 ---
-import { getEmDashCollection } from "emdash";
+import { getRequestContext } from "emdash/request-context";
+import { pageCacheControl } from "../server/things/page-cache";
+import { ClientRouter } from "astro:transitions";
 import { EmDashHead, EmDashBodyStart, EmDashBodyEnd } from "emdash/ui";
 import { createPublicPageContext } from "emdash/page";
-import { SOCIAL } from "../../data/portfolio";
-import { TownSquare } from "../../components/TownSquare";
-import { TOWNSQUARE_ORIGIN, TOWNSQUARE_STYLESHEET } from "../../lib/townsquare";
+import geistMonoLatinUrl from "@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2?url";
+import youngSerifLatinUrl from "@fontsource/young-serif/files/young-serif-latin-400-normal.woff2?url";
+import notoEmojiSubset3Url from "@fontsource-variable/noto-emoji/files/noto-emoji-3-wght-normal.woff2?url";
 import "@fontsource-variable/geist-mono";
-import "@fontsource-variable/manrope";
 import "@fontsource/young-serif";
+import "@fontsource-variable/noto-emoji";
 import "../styles/global.css";
+import { isImageUrl } from "../components/clump/model";
 
-interface Props { title?: string; content?: { collection: string; id: string; slug?: string | null } }
-const { title = "Kaio Barbosa", content } = Astro.props;
+interface Props {
+  title?: string;
+  canonicalPath?: string;
+  windowTitle?: string;
+  windowIcon?: string;
+  restoreSlug?: string;
+  embedded?: boolean;
+  guestbook?: boolean;
+  home?: boolean;
+  unconstrained?: boolean;
+  content?: { collection: string; id: string; slug?: string | null };
+}
+const {
+  title = "Kaio Barbosa",
+  windowTitle,
+  canonicalPath,
+  windowIcon,
+  restoreSlug,
+  content,
+  embedded = false,
+  guestbook = false,
+  home: isHome = false,
+  unconstrained: isUnconstrained = false,
+} = Astro.props;
+if (embedded || isHome) {
+  const context = getRequestContext();
+  Astro.response.headers.set("Cache-Control", pageCacheControl(Astro.request, Boolean(context?.editMode || context?.preview)));
+  Astro.response.headers.append("Vary", "Cookie, Authorization");
+}
 const pathname = Astro.url.pathname.replace(/\/$/, "") || "/";
-const onBlog = pathname.startsWith("/blog/");
-const posts = [];
-let cursor: string | undefined;
-do {
-  const result = await getEmDashCollection("posts", { status: "published", orderBy: { date: "desc" }, limit: 100, cursor });
-  if (result.error) throw result.error;
-  Astro.cache.set(result.cacheHint);
-  posts.push(...result.entries);
-  cursor = result.nextCursor;
-} while (cursor);
+const displayTitle = windowTitle ?? title.replace(/\s*\|\s*Kaio Barbosa\s*$/, '');
+const displayIcon = windowIcon;
+const actualRestoreSlug = restoreSlug;
+
+const isIconImage = displayIcon ? isImageUrl(displayIcon) : false;
 const page = createPublicPageContext({ Astro, kind: content ? "content" : "custom", title,
   description: "Software engineer building BazaarGhost and Herm TUI.", content,
-  canonical: new URL(pathname, Astro.site).href, siteName: "Kaio Barbosa" });
+  canonical: new URL(canonicalPath || pathname, Astro.site).href, siteName: "Kaio Barbosa" });
 ---
 <!doctype html>
-<html lang="en">
+<html lang="en" class:list={{ "on-home": isHome }}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
+    <link rel="preload" href={youngSerifLatinUrl} as="font" type="font/woff2" crossorigin="anonymous" />
+    <link rel="preload" href={geistMonoLatinUrl} as="font" type="font/woff2" crossorigin="anonymous" />
+    <link rel="preload" href={notoEmojiSubset3Url} as="font" type="font/woff2" crossorigin="anonymous" />
+    {(!embedded || guestbook) && <link rel="preload" href="/noise.webp?v=4" as="image" type="image/webp" />}
+    {embedded && <base href={Astro.url.href} target="_top" />}
     <EmDashHead page={page} />
     <link rel="icon" href="/favicon.ico" />
-    <link rel="preconnect" href={TOWNSQUARE_ORIGIN} crossorigin="anonymous" />
-    <link rel="stylesheet" href={TOWNSQUARE_STYLESHEET} />
+    {!embedded && <ClientRouter fallback="swap" />}
   </head>
-  <body>
+  <body class:list={[
+    embedded ? (isHome ? "embedded-post on-home" : "embedded-post object-window @container") : (isHome ? "on-home" : undefined),
+    guestbook && "on-guestbook",
+  ]}>
     <EmDashBodyStart page={page} />
-    <div class:list={["shell", { onBlog, onHome: pathname === "/" }]}>
-      <div class="noise" aria-hidden="true"></div>
-      <nav class="stageNav" aria-label="Primary">
-        <a class:list={{ active: pathname === "/projects" }} href="/projects">projects</a>
-        <a class:list={{ active: pathname === "/experience" }} href="/experience">experience</a>
-        <a href={SOCIAL.github} target="_blank" rel="noreferrer">github</a>
-      </nav>
-      <div class="identity">
-        <a class="name" href="/" aria-label="Home"><h1><span>Kaio</span><span>Barbosa</span></h1></a>
-      </div>
-      <aside class="writing" aria-label="Writing">
-        <h2>Writing</h2>
-        <div class="postlist">
-          {posts.map((post) => <a class:list={{ active: pathname === `/blog/${post.id}` }} href={`/blog/${post.id}`}>
-            <time datetime={new Date(post.data.date).toISOString()}>{new Date(post.data.date).toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" })}</time>
-            <span>{post.data.title}</span>
-          </a>)}
+    <svg width="0" height="0" class="sr-only" style="position:absolute;width:0;height:0;overflow:hidden;pointer-events:none;" aria-hidden="true" focusable="false">
+      <defs>
+        <filter id="thing-outline" x="-40%" y="-40%" width="180%" height="180%">
+          <feMorphology in="SourceAlpha" operator="dilate" radius="2" result="dilated" />
+          <feFlood flood-color="#ffffff" result="white" />
+          <feComposite in="white" in2="dilated" operator="in" result="outline" />
+          <feMerge>
+            <feMergeNode in="outline" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+    </svg>
+    {!embedded ? (
+      isHome ? (
+        <div
+          data-app="Desktop"
+          data-window-surface
+          data-persisted-desktop
+          transition:persist="home"
+          class="desktop-viewport flex size-full min-h-dvh justify-center items-center p-2.5 md:p-4"
+        >
+          <div
+            class="physics-area @container w-full md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1200px] 2xl:max-w-[1360px] h-[calc(100dvh-20px)] md:h-[calc(100dvh-32px)] max-h-[1200px] relative flex flex-col box-border"
+          >
+            <div class="shell onHome">
+              <div class="identity">
+                <span class="name"><h1><span>Kaio</span><span>Barbosa</span></h1></span>
+              </div>
+              <section class="stageContent"><slot /></section>
+            </div>
+          </div>
+          <div data-window-root />
         </div>
-      </aside>
-      <section class="stageContent"><slot /></section>
-      {!onBlog && <footer class="townSquare" aria-label="TownSquare"><TownSquare client:load /></footer>}
-    </div>
-    <EmDashBodyEnd page={page} />
+      ) : (
+        <div data-window-surface class="contents">
+        <div data-persisted-desktop transition:persist="home" />
+        <div
+          data-app="WindowList"
+          class="desktop-viewport flex size-full min-h-dvh justify-center items-start p-2.5 md:p-4"
+        >
+          <div
+            data-app="AppWindow"
+            class="site-window object-window @container w-full md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1200px] 2xl:max-w-[1360px]"
+            class:list={[
+              isUnconstrained
+                ? "min-h-[calc(100dvh-20px)] md:min-h-[calc(100dvh-32px)] h-auto"
+                : "h-[calc(100dvh-20px)] md:h-[calc(100dvh-32px)]",
+            ]}
+            data-unconstrained={isUnconstrained ? "true" : undefined}
+            transition:name="site-window"
+          >
+            <header class="site-window-header" transition:name="window-titlebar">
+              <div class="site-window-drag">
+                {displayIcon && (
+                  <span class="site-window-icon">
+                    {isIconImage ? (
+                      <img src={displayIcon} alt="" class="site-window-image" />
+                    ) : (
+                      displayIcon.replace(/\uFE0F/g, "").trim()
+                    )}
+                  </span>
+                )}
+                {displayTitle && (
+                  <div class="site-window-handle">
+                    <span class="site-window-title">{displayTitle}</span>
+                  </div>
+                )}
+              </div>
+              <div class="site-window-controls">
+                <a
+                  href={actualRestoreSlug ? `/#restore=${encodeURIComponent(actualRestoreSlug)}` : "/"}
+                  data-astro-prefetch="load"
+                  class="site-window-max"
+                  aria-label="Restore window"
+                  title="Restore window"
+                >
+                  <span class="wb-restore-square" aria-hidden="true" />
+                </a>
+                <a
+                  href={actualRestoreSlug ? `/#close=${encodeURIComponent(actualRestoreSlug)}` : "/"}
+                  data-astro-prefetch="load"
+                  class="site-window-close"
+                  aria-label="Close to homepage"
+                  title="Close window"
+                >
+                  ×
+                </a>
+              </div>
+            </header>
+            <div class="site-window-body">
+              <div class="object-window-content">
+                <slot />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div data-window-root />
+        </div>
+      )
+    ) : (
+      <div data-window-surface class="contents">
+        <div class="object-window-content"><slot /></div>
+        <div data-window-root />
+      </div>
+    )}
     <script>
-      const shell = document.querySelector<HTMLElement>(".shell");
-      const name = document.querySelector<HTMLElement>(".name");
-      if (shell && name) {
-        const syncWidth = () => shell.style.setProperty("--identity-width", `${name.getBoundingClientRect().width}px`);
-        new ResizeObserver(syncWidth).observe(name);
-        syncWidth();
-      }
+      import "../lib/house/desktop-navigation";
+      const bindControls = () => {
+        const header = document.querySelector<HTMLElement>(".site-window-header");
+        const maxBtn = document.querySelector<HTMLAnchorElement>(".site-window-max");
+        if (header && maxBtn && !header.dataset.dblBound) {
+          header.dataset.dblBound = "true";
+          header.addEventListener("dblclick", (e) => {
+            if ((e.target as HTMLElement).closest(".site-window-controls")) return;
+            maxBtn.click();
+          });
+        }
+      };
+
+      bindControls();
+      document.addEventListener("astro:page-load", bindControls);
     </script>
+    <EmDashBodyEnd page={page} />
   </body>
 </html>

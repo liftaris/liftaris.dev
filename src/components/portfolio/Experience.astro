@@ -1,0 +1,21 @@
+---
+import { EXPERIENCE } from "../../../data/portfolio";
+const jobs = Object.values(EXPERIENCE);
+---
+<div class="pane experiencePane">
+  {jobs.map((job) => (
+    <article
+      class="row @container grid grid-cols-1 gap-3 border-b border-paper/20 pb-4 pt-4"
+    >
+      <div>
+        <p>{job.period}</p>
+        <h3 class="font-serif text-3xl @lg:text-4xl @xl:text-5xl tracking-tight text-blue">
+          {job.company}
+        </h3>
+      </div>
+      <div>
+        <p>{job.body}</p>
+      </div>
+    </article>
+  ))}
+</div>
