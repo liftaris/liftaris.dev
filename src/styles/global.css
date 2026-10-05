@@ -1244,6 +1244,13 @@ body.on-guestbook .object-window-content {
 }
 
 @view-transition { navigation: auto; }
+html:not(.on-home) [data-persisted-desktop] {
+  position: fixed;
+  inset: 0;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
 ::view-transition-group(site-window) {
   overflow: clip;
 }
