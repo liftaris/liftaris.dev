@@ -193,9 +193,7 @@ export function Guestbook({ initialSnapshot, mutate, onGiftsChange }: GuestbookP
       {/* Top Explanation Banner: --ink text on --paper background */}
       <div className="bg-paper text-ink p-3.5 mb-6 border border-ink/20 font-mono text-xs leading-relaxed shadow-sm shrink-0">
         <p className="m-0 font-medium">
-          Anyone can leave a gift! Authorship is tied to your device — you can edit and delete your
-          message as long as you revisit from the same device and don’t clear your browser session.
-          Messages are reviewed by me, though they might be auto-approved.
+          Choose an icon and leave a message. If you want, tell me who and where you&apos;re from! Authorship is tied to your device.
         </p>
       </div>
 
