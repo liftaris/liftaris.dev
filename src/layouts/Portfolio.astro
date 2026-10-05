@@ -89,6 +89,9 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
       isHome ? (
         <div
           data-app="Desktop"
+          data-window-surface
+          data-persisted-desktop
+          transition:persist="home"
           class="desktop-viewport flex size-full min-h-dvh justify-center items-center p-2.5 md:p-4"
         >
           <div
@@ -101,8 +104,11 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
               <section class="stageContent"><slot /></section>
             </div>
           </div>
+          <div data-window-root />
         </div>
       ) : (
+        <div data-window-surface class="contents">
+        <div data-persisted-desktop transition:persist="home" />
         <div
           data-app="WindowList"
           class="desktop-viewport flex size-full min-h-dvh justify-center items-start p-2.5 md:p-4"
@@ -146,7 +152,7 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
                   <span class="wb-restore-square" aria-hidden="true" />
                 </a>
                 <a
-                  href="/"
+                  href={actualRestoreSlug ? `/#close=${encodeURIComponent(actualRestoreSlug)}` : "/"}
                   data-astro-prefetch="load"
                   class="site-window-close"
                   aria-label="Close to homepage"
@@ -163,13 +169,17 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
             </div>
           </div>
         </div>
+        <div data-window-root />
+        </div>
       )
     ) : (
-      <div class="object-window-content">
-        <slot />
+      <div data-window-surface class="contents">
+        <div class="object-window-content"><slot /></div>
+        <div data-window-root />
       </div>
     )}
     <script>
+      import "../lib/house/desktop-navigation";
       const bindControls = () => {
         const header = document.querySelector<HTMLElement>(".site-window-header");
         const maxBtn = document.querySelector<HTMLAnchorElement>(".site-window-max");

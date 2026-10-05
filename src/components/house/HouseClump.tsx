@@ -80,9 +80,10 @@ export function HouseClump({
         element.dataset.angle = String(pose.angle);
       }
     };
+    const hidden = () => document.hidden || Boolean(element.closest('[data-persisted-desktop]') && !document.documentElement.classList.contains('on-home'));
     const tick = (now: number) => {
       frame = 0;
-      if (disposed) return;
+      if (disposed || hidden()) return;
       remainder += previous ? Math.min(now - previous, 50) : 1000 / 60;
       previous = now;
       let active = true;
@@ -95,7 +96,7 @@ export function HouseClump({
       else previous = 0;
     };
     const run = () => {
-      if (!frame && !disposed && !document.hidden) {
+      if (!frame && !disposed && !hidden()) {
         previous = 0;
         remainder = 0;
         frame = requestAnimationFrame(tick);
@@ -130,7 +131,7 @@ export function HouseClump({
     });
     observer.observe(element);
     const visibility = () => {
-      if (document.hidden) {
+      if (hidden()) {
         cancelAnimationFrame(frame);
         frame = 0;
         if (grabbed.current) {
@@ -141,11 +142,13 @@ export function HouseClump({
       } else run();
     };
     document.addEventListener("visibilitychange", visibility);
+    document.addEventListener("astro:after-swap", visibility);
     return () => {
       disposed = true;
       cancelAnimationFrame(frame);
       observer.disconnect();
       document.removeEventListener("visibilitychange", visibility);
+      document.removeEventListener("astro:after-swap", visibility);
       scene.dispose();
       engine.current = null;
     };

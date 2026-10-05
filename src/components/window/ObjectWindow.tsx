@@ -8,6 +8,9 @@ import { windowPoint, normalizedWindowPoint } from "../../lib/things/model";
 import "winbox/dist/css/winbox.min.css";
 
 type ObjectWindowProps = {
+  root: HTMLElement;
+  thingId: string;
+  activation?: number;
   open: boolean;
   title: string;
   icon: string;
@@ -28,7 +31,7 @@ type ObjectWindowProps = {
   children?: ReactNode;
 };
 
-export function ObjectWindow({ open, title, icon, source, fallbackSource, origin, width = 480, height = 380, x, y, className, backgroundStyle, maximizeUrl, restoreAnimation = false, onAuthorResize, onAuthorMove, onClose, children }: ObjectWindowProps) {
+export function ObjectWindow({ root, thingId, activation, open, title, icon, source, fallbackSource, origin, width = 480, height = 380, x, y, className, backgroundStyle, maximizeUrl, restoreAnimation = false, onAuthorResize, onAuthorMove, onClose, children }: ObjectWindowProps) {
   const visible = useRef(open); visible.current = open;
   const closing = useRef(false);
   const [body, setBody] = useState<HTMLElement | null>(null);
@@ -64,7 +67,7 @@ export function ObjectWindow({ open, title, icon, source, fallbackSource, origin
       win.blur();
       if (hadFocus) (source.isConnected ? source : fallback.current?.())?.focus({ preventScroll: true });
     }
-  }, [body, open, source]);
+  }, [body, open, source, activation]);
 
   useLayoutEffect(() => {
     const win = windowInstance.current;
@@ -154,7 +157,7 @@ export function ObjectWindow({ open, title, icon, source, fallbackSource, origin
         { width: innerWidth, height: innerHeight }
       );
       const options: WinBox.Params & { template: HTMLElement } = {
-        root: document.body, hidden: true,
+        root, hidden: true,
         template, index: 20, header: 18,
         class: ["object-window", "@container", "no-full", "no-max", "no-animation", windowClass].filter(Boolean).join(" "),
         width, height,
@@ -186,6 +189,7 @@ export function ObjectWindow({ open, title, icon, source, fallbackSource, origin
       windowInstance.current = win;
       const frame = win.window as HTMLElement;
       frame.setAttribute("role", "dialog");
+      frame.dataset.windowId = thingId;
       frame.inert = !visible.current;
       let sizing = false;
       const resizeStart = (event: PointerEvent) => { sizing = event.target instanceof HTMLElement && /^wb-(n|s|e|w|ne|nw|se|sw)$/.test(event.target.className); };
@@ -345,7 +349,7 @@ export function ObjectWindow({ open, title, icon, source, fallbackSource, origin
           return;
         }
 
-        const siteWindow = document.querySelector<HTMLElement>(".site-window, .physics-area");
+        const siteWindow = (document.querySelector<HTMLElement>(".site-window") ?? root.parentElement?.querySelector<HTMLElement>(".physics-area"));
         const siteRect = siteWindow?.getBoundingClientRect();
 
         isAnimating.current = true;
@@ -410,7 +414,27 @@ export function ObjectWindow({ open, title, icon, source, fallbackSource, origin
             header.style.setProperty("view-transition-name", "window-titlebar");
           }
           void import("astro:transitions/client")
-            .then(({ navigate }) => { if (!disposed) return navigate(url); })
+            .then(async ({ navigate }) => {
+              if (disposed) return;
+              await navigate(url);
+              if (disposed) return;
+              // The window survives navigation; undo the outgoing route animation
+              // without changing its saved visitor geometry or stacking order.
+              frame.style.transition = '';
+              frame.style.pointerEvents = '';
+              frame.style.boxShadow = '';
+              frame.style.border = '';
+              frame.style.borderRadius = '';
+              frame.style.removeProperty('view-transition-name');
+              header?.style.removeProperty('view-transition-name');
+              frame.classList.remove('maximizing');
+              frame.style.width = `${win.width}px`;
+              frame.style.height = `${win.height}px`;
+              frame.style.left = `${win.x}px`;
+              frame.style.top = `${win.y}px`;
+              maxButton.setAttribute('aria-label', `Maximize ${frame.getAttribute('aria-label')} window`);
+              isAnimating.current = false;
+            })
             .catch(() => { if (!disposed) window.location.assign(url); });
         };
 
@@ -492,7 +516,7 @@ export function ObjectWindow({ open, title, icon, source, fallbackSource, origin
         );
         moveCallback.current?.({ x: norm.window_x, y: norm.window_y });
       };
-      const focus = () => { if (visible.current) win.focus(); };
+      const focus = () => { if (visible.current && !root.closest('[inert]')) win.focus(); };
       // Disabling a focused action blurs to BODY without another focusin.
       const trackFocus = () => { restoreFocus = frame.contains(document.activeElement); };
       document.addEventListener("focusin", trackFocus);
@@ -508,7 +532,7 @@ export function ObjectWindow({ open, title, icon, source, fallbackSource, origin
         const targetW = Number(win.width);
         const targetH = Number(win.height);
 
-        const siteWindow = document.querySelector<HTMLElement>(".site-window, .physics-area");
+        const siteWindow = (document.querySelector<HTMLElement>(".site-window") ?? root.parentElement?.querySelector<HTMLElement>(".physics-area"));
         const siteRect = siteWindow?.getBoundingClientRect();
 
         const isMd = typeof window !== "undefined" && window.innerWidth >= 768;
