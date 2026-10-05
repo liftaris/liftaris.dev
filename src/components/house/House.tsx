@@ -15,14 +15,12 @@ import {
   getInitialDefaultOpenThings,
   type HouseThing,
   type ThingSpec,
-  type WritingPost,
 } from "./folders";
 import { PageReader } from "./PageReader";
 
 const EMPTY_GIFTS: readonly Gift[] = [];
 type OpenedThing = { object: HouseThing | FolderSpec<HouseThing>; gift?: Gift; detail?: GiftDetail; origin: DOMRect; source: HTMLButtonElement; previewBounds?: DOMRect; restoreAnimation?: boolean; onReady?: () => void };
 
-const EMPTY_POSTS: readonly WritingPost[] = [];
 
 const SENT_GIFTS_STORAGE_KEY = "liftaris:sent_gifts";
 
@@ -51,13 +49,11 @@ function isFolderObject(_id: string, kind?: string): boolean {
 }
 
 export function House({
-  posts = EMPTY_POSTS,
   things = [],
   editMode = false,
   initialFolderId,
   thingsConfig,
 }: {
-  posts?: readonly WritingPost[];
   things?: readonly ThingSpec[];
   editMode?: boolean;
   initialFolderId?: string;
@@ -246,7 +242,7 @@ export function House({
       });
       return next;
     });
-  }, [effectiveThings, foldersById, posts, initialFolderId]);
+  }, [effectiveThings, foldersById, initialFolderId]);
 
   useEffect(() => {
     if (!editMode) return;

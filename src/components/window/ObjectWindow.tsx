@@ -441,22 +441,15 @@ export function ObjectWindow({ title, icon, source, fallbackSource, origin, mono
         }
 
         const redirect = () => {
+          if (disposed) return;
           frame.style.setProperty("view-transition-name", "site-window");
           const header = frame.querySelector<HTMLElement>(".wb-header");
           if (header) {
             header.style.setProperty("view-transition-name", "window-titlebar");
           }
-          if (typeof document !== "undefined" && "startViewTransition" in document && typeof (document as unknown as { startViewTransition?: (cb: () => void) => unknown }).startViewTransition === "function") {
-            void import("astro:transitions/client")
-              .then(({ navigate }) => navigate(url))
-              .catch(() => {
-                (document as unknown as { startViewTransition: (cb: () => void) => unknown }).startViewTransition(() => {
-                  window.location.href = url;
-                });
-              });
-          } else {
-            window.location.href = url;
-          }
+          void import("astro:transitions/client")
+            .then(({ navigate }) => { if (!disposed) return navigate(url); })
+            .catch(() => { if (!disposed) window.location.assign(url); });
         };
 
         if (isReducedMotion) {

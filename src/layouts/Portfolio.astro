@@ -20,6 +20,7 @@ interface Props {
   windowIcon?: string;
   restoreSlug?: string;
   embedded?: boolean;
+  guestbook?: boolean;
   content?: { collection: string; id: string; slug?: string | null };
 }
 const {
@@ -30,6 +31,7 @@ const {
   restoreSlug,
   content,
   embedded = false,
+  guestbook = false,
 } = Astro.props;
 if (embedded) {
   const context = getRequestContext();
@@ -81,7 +83,6 @@ if (!actualRestoreSlug && !isHome) {
 }
 
 const isIconImage = displayIcon ? isImageUrl(displayIcon) : false;
-const isGuestbook = pathname === "/guestbook" || content?.slug === "guestbook" || content?.id === "leave-gift";
 const page = createPublicPageContext({ Astro, kind: content ? "content" : "custom", title,
   description: "Software engineer building BazaarGhost and Herm TUI.", content,
   canonical: new URL(canonicalPath || pathname, Astro.site).href, siteName: "Kaio Barbosa" });
@@ -103,7 +104,7 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
   </head>
   <body class:list={[
     embedded ? (isHome ? "embedded-post on-home" : "embedded-post object-window @container") : (isHome ? "on-home" : undefined),
-    isGuestbook && "on-guestbook",
+    guestbook && "on-guestbook",
   ]}>
     <EmDashBodyStart page={page} />
     <svg width="0" height="0" class="sr-only" style="position:absolute;width:0;height:0;overflow:hidden;pointer-events:none;" aria-hidden="true" focusable="false">
@@ -202,25 +203,7 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
       </div>
     )}
     <script>
-      import { navigate } from "astro:transitions/client";
-
       const bindControls = () => {
-        document.querySelectorAll<HTMLAnchorElement>(".site-window-max, .site-window-close").forEach((btn) => {
-          if (btn.dataset.bound) return;
-          btn.dataset.bound = "true";
-          btn.addEventListener("click", (e) => {
-            const href = btn.getAttribute("href");
-            if (!href) return;
-            e.preventDefault();
-            // Astro ClientRouter handles startViewTransition under the hood
-            if (typeof document !== "undefined" && "startViewTransition" in document) {
-              navigate(href);
-            } else {
-              window.location.href = href;
-            }
-          });
-        });
-
         const header = document.querySelector<HTMLElement>(".site-window-header");
         const maxBtn = document.querySelector<HTMLAnchorElement>(".site-window-max");
         if (header && maxBtn && !header.dataset.dblBound) {

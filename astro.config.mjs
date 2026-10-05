@@ -3,7 +3,7 @@ import react from "@astrojs/react";
 import tailwind from "@tailwindcss/vite";
 import { d1, r2 } from "@emdash-cms/cloudflare";
 import { defineConfig } from "astro/config";
-import emdash, { memoryCache } from "emdash/astro";
+import emdash from "emdash/astro";
 import { fileURLToPath } from "node:url";
 
 export default defineConfig({
@@ -32,7 +32,6 @@ export default defineConfig({
   integrations: [react(), emdash({
     database: d1({ binding: "DB" }),
     storage: r2({ binding: "MEDIA" }),
-    objectCache: memoryCache({ defaultTtl: 60 }),
     toolbar: "client",
     plugins: [{
       id: "liftaris-things", version: "1.0.0", format: "native",

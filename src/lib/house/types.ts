@@ -1,5 +1,3 @@
-export type Audience = "public" | "private";
-
 export interface Gift {
   id: string;
   emojiId: string;
@@ -7,11 +5,11 @@ export interface Gift {
   authorName: string;
   location?: string | null;
   createdAt: string;
+  updatedAt: string;
   message: string;
   status: "approved" | "pending";
   canEdit?: boolean;
   canDelete?: boolean;
-  visibility?: Audience;
 }
 
 export interface HouseSnapshot {
@@ -33,7 +31,6 @@ export interface Viewer {
 }
 
 export interface GiftDetail extends Gift {
-  version?: number;
   canEdit: boolean;
   canReclaim: boolean;
   canRemove: boolean;
@@ -45,18 +42,14 @@ export interface CreateGift {
   message: string;
   authorName: string;
   location?: string;
-  visibility?: Audience;
-  displayName?: string;
 }
 
 export interface UpdateGift {
+  updatedAt?: string;
   emojiId: string;
   message: string;
   authorName: string;
   location?: string;
-  version?: number;
-  visibility?: Audience;
-  displayName?: string;
 }
 
 export interface EmojiOption {

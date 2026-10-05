@@ -25,7 +25,7 @@ export function createPlugin(options: Partial<Dependencies> = {}) {
     ...options,
   };
 
-  async function invoke(ctx: RouteContext, action: "snapshot" | "public-gift" | "gift" | "create" | "update") {
+  async function invoke(ctx: RouteContext, action: "snapshot" | "mine" | "public-gift" | "gift" | "create" | "update") {
     try {
       if (ctx.request.method !== "GET") {
         sameOrigin(ctx.request);
@@ -37,15 +37,14 @@ export function createPlugin(options: Partial<Dependencies> = {}) {
       if (!publicRead && ctx.request.headers.has("Authorization")) throw failure(403, "Use this browser's visitor identity.");
       const db = await dependencies.database();
       const store = new CmsHouseStore(db);
-      await store.initialize();
 
       const viewer = await resolveCmsViewer(db, ctx.user?.id, await dependencies.ownerId());
 
-      if (action === "snapshot" || action === "public-gift") {
+      if (action === "snapshot" || action === "mine") {
         return await store.snapshot(viewer);
       }
 
-      if (!viewer.visitor) throw failure(401, "Your visitor identity is needed for this action.");
+      if (!publicRead && !viewer.visitor) throw failure(401, "Your visitor identity is needed for this action.");
       if (action === "create") return await store.create(ctx.input, viewer);
 
       const ids = new URL(ctx.request.url).searchParams.getAll("id");
@@ -79,6 +78,10 @@ export function createPlugin(options: Partial<Dependencies> = {}) {
       },
     },
     routes: {
+      mine: {
+        public: false, permission: "content:read", methods: [...GIFT_METHODS.mine], request: { body: "none" },
+        handler: ctx => invoke(ctx, "mine"),
+      },
       snapshot: {
         public: true, methods: [...GIFT_METHODS.snapshot], request: { body: "none" },
         handler: (ctx) => invoke(ctx, "snapshot"),

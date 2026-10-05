@@ -1,7 +1,7 @@
 import type { APIContext } from "astro";
 import { Effect, Schema } from "effect";
 import { EmojiSuggestions } from "../../lib/house/suggestions";
-import { digest } from "./cms-schema";
+import { digest } from "./digest";
 import { failure } from "./errors";
 import { call, json, readBody, run } from "./http";
 import { takeQuota } from "./rate-limit";

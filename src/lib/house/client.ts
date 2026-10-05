@@ -1,4 +1,4 @@
-import type { CreateGift, CreatedGift, EmojiOption, GiftDetail, HouseSnapshot, UpdateGift, Viewer, Visitor } from "./types";
+import type { CreateGift, CreatedGift, GiftDetail, HouseSnapshot, UpdateGift, Viewer, Visitor } from "./types";
 
 import { GIFT_API, type GIFT_METHODS } from "./gift-api";
 
@@ -73,7 +73,13 @@ async function giftRequest<T>(route: keyof typeof GIFT_METHODS, init: RequestIni
   return result.data;
 }
 
-export const getHouse = (signal?: AbortSignal) => giftRequest<HouseSnapshot>("snapshot", { signal });
+export async function getHouse(signal?: AbortSignal): Promise<HouseSnapshot> {
+  try { return await giftRequest<HouseSnapshot>("mine", { signal }); }
+  catch (error) {
+    if (!(error instanceof HouseError) || error.status !== 401) throw error;
+    return giftRequest<HouseSnapshot>("snapshot", { signal });
+  }
+}
 export async function getGift(id: string, signal?: AbortSignal): Promise<GiftDetail> {
   try { return await giftRequest<GiftDetail>("gift", { signal }, id); }
   catch (error) {
@@ -86,4 +92,3 @@ export async function getGift(id: string, signal?: AbortSignal): Promise<GiftDet
 export const createGift = (gift: CreateGift) => giftRequest<CreatedGift>("create", { method: "POST", body: JSON.stringify(gift) });
 export const updateGift = (id: string, gift: UpdateGift) => giftRequest<HouseSnapshot>("update", { method: "PATCH", body: JSON.stringify(gift) }, id);
 export const reclaimGift = (id: string) => giftRequest<HouseSnapshot>("gift", { method: "DELETE" }, id);
-export const suggestEmoji = (text: string, signal?: AbortSignal) => request<{ options: EmojiOption[] }>("/api/house/suggest", { method: "POST", body: JSON.stringify({ text }), signal });

@@ -35,9 +35,14 @@ Apply the EmDash seed, then run `bun tools/finalize-things-seed.ts LOCAL.db` bef
 
 ## Verification
 
-Run `bun test`, `bun run typecheck`, `bun run lint`, and `bun run build`. Run real-browser gift/window regressions with `HOUSE_BROWSER_TESTS=1 bun test src/lib/house/client-browser.test.ts`.
+Run `bun run typecheck`, `bun run lint`, `bun run knip`, and `bun run build`.
+Repository guidance prohibits adding unit tests. Verify live saves, independent
+Post drafts, stale-revision handling, trash/restore, and preview isolation using
+a disposable database and browser sessions before rollout.
 
-Integration tests cover direct Thing saves, independent Post drafts, reference changes, stale revision rejection, trash/restore, fresh seeds, and resumable conversion of the prior model. Browser checks cover immediate anonymous visibility and both light/dark inspector themes.
+The guestbook requires the additive [receipt migration](../migrations/guestbook/README.md)
+after EmDash core setup. It uses native comments, with visitor-owned edits and
+pending messages available only through authenticated plugin reads.
 
 ### Page prefetch
 
@@ -55,8 +60,10 @@ Cookie and Authorization. There is no persistent JavaScript HTML cache. Editor
 windows use native iframe navigation; editing and signed preview responses stay
 `no-store`, including refreshed previews after saves.
 
-Run the live prefetch regression against a running server or the branch preview:
-`HOUSE_PREFETCH_URL=http://127.0.0.1:4331 bun test src/lib/house/prefetch-browser.test.ts`.
+To check prefetch in a browser, wait for visitor identity initialization, focus
+an icon, and confirm only its embedded URL is fetched. Opening the window should
+reuse that HTTP response. Signed preview and edit-mode responses must remain
+`no-store`. Check the canonical URL on the maximize button separately.
 
 Thing collection pages read independent entries concurrently through EmDash's
 public query APIs. They request folder contents only for folders and Post links

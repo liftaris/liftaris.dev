@@ -2,12 +2,6 @@ import { ContentRepository, type Database } from 'emdash';
 import type { Kysely } from 'kysely';
 import { normalizeData, type ThingRecord } from '../../lib/things/model';
 
-let postsCache: { rows: { id: string; title: string; slug: string; status: string }[]; expiresAt: number } | null = null;
-
-export function invalidatePostsCache() {
-  postsCache = null;
-}
-
 /** Server policy snapshot. Only the candidate's draft is overlaid for publication. */
 export async function policyGraph(db: Kysely<Database>, draftId?: string, allDrafts = false): Promise<ThingRecord[]> {
   const repo = new ContentRepository(db);
@@ -35,9 +29,7 @@ export async function policyGraph(db: Kysely<Database>, draftId?: string, allDra
       .where('id', 'in', neededRevisionIds)
       .execute();
     for (const row of revRows) {
-      try {
-        revisionMap.set(row.id, JSON.parse(row.data));
-      } catch {}
+      revisionMap.set(row.id, JSON.parse(row.data));
     }
   }
 
@@ -55,9 +47,6 @@ export async function policyGraph(db: Kysely<Database>, draftId?: string, allDra
 }
 
 export async function postChoices(db: Kysely<Database>) {
-  if (postsCache && Date.now() < postsCache.expiresAt) {
-    return postsCache.rows;
-  }
   const repo = new ContentRepository(db);
   const posts: {id: string; title: string; slug: string; status: string}[] = [];
   let cursor: string | undefined;
@@ -66,6 +55,5 @@ export async function postChoices(db: Kysely<Database>) {
     posts.push(...page.items.map(p => ({id:p.id, title:String(p.data.title ?? p.slug), slug:p.slug ?? p.id, status:p.status})));
     cursor = page.nextCursor;
   } while (cursor);
-  postsCache = { rows: posts, expiresAt: Date.now() + 30_000 };
   return posts;
 }

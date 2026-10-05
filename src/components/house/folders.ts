@@ -1,7 +1,6 @@
 import type { FolderSpec, FolderEntry } from "../folder/Folder";
 import { isImageUrl, type ObjectSpec } from "../clump/model";
 
-export type WritingPost = { id: string; slug: string; title: string; icon: string };
 export type PostThing = ObjectSpec & { kind: "post"; href: string };
 export type HouseThing = ObjectSpec | PostThing | ThingSpec;
 
@@ -28,79 +27,22 @@ export interface ThingSpec extends ObjectSpec {
   body?: unknown;
 }
 
-export const DEFAULT_THINGS: readonly ThingSpec[] = [
-  { id: "octopus", name: "Octopus", emoji: "🐙", kind: "object", desktop: true, parent_id: null, action: "none", href: null, anchor: false, width: 68, height: 70, sort_order: 1 },
-  { id: "computer", name: "Computer", emoji: "🖥", kind: "object", desktop: true, parent_id: "portfolio-folder", action: "projects", href: null, anchor: true, width: 64, height: 58, sort_order: 2 },
-  { id: "shoes", name: "Walking shoes", emoji: "👟", kind: "object", desktop: true, parent_id: null, action: "none", href: null, anchor: false, width: 54, height: 40, sort_order: 3 },
-  { id: "globe", name: "Globe", emoji: "🌍", kind: "object", desktop: true, parent_id: null, action: "none", href: null, anchor: false, width: 50, height: 50, sort_order: 4 },
-  { id: "plant", name: "Plant", emoji: "🪴", kind: "object", desktop: true, parent_id: null, action: "none", href: null, anchor: true, width: 56, height: 66, sort_order: 5 },
-  { id: "cloud", name: "Cloud", emoji: "☁", kind: "object", desktop: true, parent_id: null, action: "none", href: null, anchor: false, width: 60, height: 42, sort_order: 6 },
-  { id: "bike", name: "Bicycle", emoji: "🚲", kind: "object", desktop: true, parent_id: null, action: "none", href: null, anchor: false, width: 74, height: 54, sort_order: 7 },
-  { id: "boots", name: "Climbing shoes", emoji: "🥾", kind: "object", desktop: true, parent_id: null, action: "none", href: null, anchor: false, width: 47, height: 54, sort_order: 8 },
-  { id: "light", name: "Light", emoji: "💡", kind: "object", desktop: true, parent_id: null, action: "none", href: null, anchor: true, width: 38, height: 52, sort_order: 9 },
-  { id: "case", name: "Briefcase", emoji: "💼", kind: "object", desktop: true, parent_id: "portfolio-folder", action: "experience", href: null, anchor: false, width: 52, height: 44, sort_order: 10 },
-  { id: "leave-gift", name: "Guestbook", emoji: "🎁", kind: "page", desktop: true, parent_id: null, action: "leave-gift", href: "/guestbook", anchor: false, width: 64, height: 64, sort_order: 11 },
-  { id: "portfolio-folder", name: "Portfolio", emoji: "📁", kind: "folder", desktop: true, parent_id: null, action: "none", href: null, anchor: false, width: 64, height: 56, sort_order: 12 },
-  { id: "writing-folder", name: "Writing", emoji: "📂", kind: "folder", desktop: true, parent_id: null, action: "none", href: null, anchor: false, width: 64, height: 56, sort_order: 13 },
-];
-
-export const WRITING_FOLDER_OBJECT: ObjectSpec = DEFAULT_THINGS.find((t) => t.id === "writing-folder") ?? {
-  id: "writing-folder", name: "Writing", emoji: "📂", width: 64, height: 56,
-};
-
-export const PORTFOLIO_FOLDER_OBJECT: ObjectSpec = DEFAULT_THINGS.find((t) => t.id === "portfolio-folder") ?? {
-  id: "portfolio-folder", name: "Portfolio", emoji: "📁", width: 64, height: 56,
-};
-
-export const GITHUB_THING: ThingSpec = {
-  id: "github",
-  name: "GitHub",
-  emoji: "🐙",
-  image: "/github.svg",
-  kind: "object",
-  desktop: true,
-  parent_id: null,
-  action: "none",
-  anchor: false,
-  width: 58,
-  height: 58,
-  sort_order: 16,
-};
-
 export function buildFolder(
   folderThing: ThingSpec,
-  allThings: readonly ThingSpec[] = DEFAULT_THINGS,
-  posts: readonly WritingPost[] = [],
+  allThings: readonly ThingSpec[],
   visited = new Set<string>()
 ): FolderSpec<HouseThing> {
   const nextVisited = new Set(visited).add(folderThing.id);
-  const children = (folderThing.contents?.length
+  const children = (folderThing.contents
     ? folderThing.contents.flatMap(id => allThings.find(t => t.id === id) ?? [])
     : allThings.filter(t => t.parent_id === folderThing.id || t.primaryFolder === folderThing.id).sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)))
     .filter(t => !nextVisited.has(t.id));
 
   const items: FolderEntry<HouseThing>[] = [];
 
-  if ((!folderThing.contents || folderThing.contents.length === 0) && folderThing.id === "writing-folder") {
-    for (const post of posts) {
-      const isImg = isImageUrl(post.icon);
-      const value: PostThing = {
-        kind: "post",
-        id: `post:${post.id}`,
-        name: post.title,
-        emoji: isImg ? "📝" : post.icon,
-        image: isImg ? post.icon : undefined,
-        href: `/blog/${encodeURIComponent(post.slug)}`,
-        width: 56,
-        height: 64,
-      };
-      items.push({ kind: "item", id: value.id, name: value.name, emoji: value.emoji, image: value.image, value });
-    }
-  }
-
   for (const child of children) {
     if (child.kind === "folder") {
-      items.push(buildFolder(child, allThings, posts, nextVisited));
+      items.push(buildFolder(child, allThings, nextVisited));
     } else if (child.kind === "link") {
       const isImg = isImageUrl(child.image) ? child.image : isImageUrl(child.emoji) ? child.emoji : undefined;
       items.push({
@@ -145,17 +87,6 @@ export function buildFolder(
   };
 }
 
-export function writingFolder(posts: readonly WritingPost[], things: readonly ThingSpec[] = DEFAULT_THINGS): FolderSpec<HouseThing> {
-  const writingThing = things.find((t) => t.id === "writing-folder") ?? (WRITING_FOLDER_OBJECT as ThingSpec);
-  return buildFolder(writingThing, things, posts);
-}
-
-export const PORTFOLIO_FOLDER: FolderSpec<HouseThing> = buildFolder(
-  DEFAULT_THINGS.find((t) => t.id === "portfolio-folder")!,
-  DEFAULT_THINGS,
-  []
-);
-
 /**
  * Recursively retrieves all items inside a folder that are marked default_open.
  * If a child is a folder with default_open, it and its default_open descendants are returned.
@@ -169,7 +100,7 @@ export function getDefaultOpenChildren(
   const folder = allThings.find(f => f.id === folderId);
   const children = allThings
     .filter((t) => {
-      return folder?.contents?.length
+      return folder?.contents
         ? folder.contents.includes(t.id)
         : (t.parent_id === folderId || t.primaryFolder === folderId);
     })
@@ -189,7 +120,7 @@ export function getDefaultOpenChildren(
 
 /**
  * Returns all windows that should be open on initial page load:
- * - Desktop or top-level things (desktop: true or !parent_id) with default_open: true.
+ * - Desktop Things with default_open: true.
  * - If any of those is a folder, its default_open descendants are also included.
  */
 export function getInitialDefaultOpenThings(allThings: readonly ThingSpec[]): ThingSpec[] {
@@ -197,7 +128,7 @@ export function getInitialDefaultOpenThings(allThings: readonly ThingSpec[]): Th
   const visitedFolders = new Set<string>();
 
   const topLevel = allThings
-    .filter((t) => t.default_open && (t.desktop || !t.parent_id) && t.kind !== "link")
+    .filter((t) => t.default_open && t.desktop && t.kind !== "link")
     .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
 
   for (const thing of topLevel) {

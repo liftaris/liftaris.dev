@@ -1,22 +1,20 @@
 import { Fragment, useContext } from 'react';
 import { AuthoringContext, ThingControls } from './ThingAuthoring';
 import { spawnPoint, normalizedPoint } from '../../lib/things/model';
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
 import { createSceneEngine } from "../clump/matter-engine";
-import { isGift, isImageUrl, OBJECTS } from "../clump/model";
+import { isGift, isImageUrl } from "../clump/model";
 import type { ObjectSpec, Point, SceneEngine } from "../clump/model";
 import { normalizeEmojiPresentation, worldSize } from "../../lib/house/emoji";
 import { getGift } from "../../lib/house/client";
 import type { Gift } from "../../lib/house/types";
 import { reconcileGifts, retiringGiftIds } from "./gift-presence";
-import { GITHUB_THING, PORTFOLIO_FOLDER_OBJECT, WRITING_FOLDER_OBJECT } from "./folders";
 import { prefetchThing } from "../../lib/house/prefetch";
 import { ThingLabel } from "./ThingLabel";
 
 type Grab = { id: string; point: Point; origin: Point; moved: boolean; pointerId?: number };
 const INITIAL_SIZE = { width: 500, height: 600 };
-const GIFT_ENTRY: ObjectSpec = { id: "leave-gift", name: "Guestbook", emoji: "🎁", width: 64, height: 64 };
 
 function measureViewport(element: HTMLDivElement) {
   // Measure the fixed outer box: scrollbars appearing as the crowd grows must
@@ -44,7 +42,7 @@ export function HouseClump({
   gifts: readonly Gift[];
   inspectedIds: readonly string[];
   thingsConfig?: Record<string, { default_open?: boolean }>;
-  desktopObjects?: readonly ObjectSpec[];
+  desktopObjects: readonly ObjectSpec[];
   isAdmin?: boolean;
   sentGiftIds?: ReadonlySet<string>;
   onOpen: (object: ObjectSpec, source: HTMLButtonElement, gift?: Gift) => void;
@@ -73,8 +71,7 @@ export function HouseClump({
   const bounds = useRef(INITIAL_SIZE);
   const available = useRef(INITIAL_SIZE);
   const growth = useRef({ width: 0, height: 0 });
-  const baseObjects = useMemo(() => desktopObjects ?? [...OBJECTS, GITHUB_THING, PORTFOLIO_FOLDER_OBJECT, WRITING_FOLDER_OBJECT, GIFT_ENTRY], [desktopObjects]);
-  const objects = useMemo(() => baseObjects, [baseObjects]);
+  const objects = desktopObjects;
   const retiring = retiringGiftIds(displayed, gifts, [...inspectedIds, grabId]);
   const liveIds = new Set(gifts.map((gift) => gift.id));
 

@@ -3,7 +3,7 @@ import type { SubmitEvent } from "react";
 import { getGift, HouseError, reclaimGift, updateGift } from "../../lib/house/client";
 import type { HouseMutation } from "../../lib/house/client";
 import { EMOJI_CATALOG } from "../../lib/house/emoji";
-import type { Audience, Gift, GiftDetail, UpdateGift } from "../../lib/house/types";
+import type { Gift, GiftDetail, UpdateGift } from "../../lib/house/types";
 
 export function GiftDialog({ gift, initialDetail, onClose, onDetail, mutate }: {
   gift: Gift; initialDetail?: GiftDetail; onClose: () => void; onDetail: (gift: GiftDetail) => void; mutate: HouseMutation;
@@ -33,7 +33,7 @@ export function GiftDialog({ gift, initialDetail, onClose, onDetail, mutate }: {
 
   const edit = () => {
     if (!detail?.canEdit || mutating.current || conflict) return;
-    setDraft({ version: detail.version, emojiId: detail.emojiId, message: detail.message ?? "", visibility: detail.visibility, authorName: detail.authorName ?? "Anonymous" });
+    setDraft({ updatedAt: detail.updatedAt, emojiId: detail.emojiId, message: detail.message ?? "", authorName: detail.authorName ?? "Anonymous", location: detail.location ?? undefined });
     setError("");
   };
   const save = async (event: SubmitEvent<HTMLFormElement>) => {
@@ -51,7 +51,7 @@ export function GiftDialog({ gift, initialDetail, onClose, onDetail, mutate }: {
       saved = true;
       if (controller.signal.aborted) return;
       const visible = next.gifts.find((item) => item.id === gift.id);
-      // Public snapshots redact private text and author; don't reopen an incomplete draft.
+      // Refresh permissions after moderation.
       if (visible) setDetail({ ...detail, ...visible, canEdit: false });
       setDraft(null);
       const refreshed = await getGift(gift.id, controller.signal);
@@ -105,17 +105,15 @@ export function GiftDialog({ gift, initialDetail, onClose, onDetail, mutate }: {
           {EMOJI_CATALOG.map((option) => <option key={option.id} value={option.id} className="text-blue bg-paper">{option.emoji} {option.name}</option>)}
         </select>
       </label>
-      <label htmlFor={`${fieldId}-message`}>Your message, optional</label>
-      <textarea id={`${fieldId}-message`} className="block w-full min-w-0 mt-2 p-3 resize-y min-h-[144px] border border-dashed border-current rounded-none bg-transparent text-inherit font-inherit text-base leading-relaxed placeholder:text-inherit placeholder:opacity-60 disabled:cursor-wait disabled:opacity-65" name="message" rows={5} maxLength={2000} value={draft.message ?? ""} disabled={saving || removing} onChange={(event) => setDraft({ ...draft, message: event.target.value })} />
-      <label className="gift-from flex items-baseline gap-2.5 mt-5" htmlFor={`${fieldId}-name`}><span className="shrink-0">From</span><input id={`${fieldId}-name`} className="w-full min-w-0 min-h-11 py-2 px-0 border-0 border-b border-dashed border-current rounded-none bg-transparent text-inherit font-inherit text-base placeholder:text-inherit placeholder:opacity-60 disabled:cursor-wait disabled:opacity-65" aria-label="Your name, optional" name="nickname" autoComplete="nickname" maxLength={40} value={draft.authorName ?? ""} disabled={saving || removing} onChange={(event) => setDraft({ ...draft, authorName: event.target.value })} /></label>
-      <label className="house-audience flex items-center flex-wrap gap-x-2 gap-y-0 mt-2 text-[11px]"><span>Message & name visible to</span><select className="min-h-11 max-w-full py-1.5 px-0 border-0 rounded-none text-inherit bg-transparent font-inherit cursor-pointer disabled:cursor-wait disabled:opacity-65 [&>option]:text-blue [&>option]:bg-paper" name="visibility" value={draft.visibility} disabled={saving || removing} onChange={(event) => setDraft({ ...draft, visibility: event.target.value as Audience })}><option value="public" className="text-blue bg-paper">Everyone</option><option value="private" className="text-blue bg-paper">Only Kaio & you</option></select></label>
+      <label htmlFor={`${fieldId}-message`}>Your message</label>
+      <textarea id={`${fieldId}-message`} className="block w-full min-w-0 mt-2 p-3 resize-y min-h-[144px] border border-dashed border-current rounded-none bg-transparent text-inherit font-inherit text-base leading-relaxed placeholder:text-inherit placeholder:opacity-60 disabled:cursor-wait disabled:opacity-65" name="message" rows={5} required maxLength={400} value={draft.message ?? ""} disabled={saving || removing} onChange={(event) => setDraft({ ...draft, message: event.target.value })} />
+      <label className="gift-from flex items-baseline gap-2.5 mt-5" htmlFor={`${fieldId}-name`}><span className="shrink-0">From</span><input id={`${fieldId}-name`} className="w-full min-w-0 min-h-11 py-2 px-0 border-0 border-b border-dashed border-current rounded-none bg-transparent text-inherit font-inherit text-base placeholder:text-inherit placeholder:opacity-60 disabled:cursor-wait disabled:opacity-65" aria-label="Your name" name="nickname" autoComplete="nickname" required maxLength={60} value={draft.authorName ?? ""} disabled={saving || removing} onChange={(event) => setDraft({ ...draft, authorName: event.target.value })} /></label>
       <div className="house-gift-actions flex flex-wrap items-center gap-3 mt-6 [&_.house-send]:m-0 [&_.house-reclaim]:m-0">
         <button className="house-reclaim min-h-11 px-5 py-2.5 border border-current rounded-lg text-inherit bg-transparent font-inherit text-xs cursor-pointer hover:bg-[color-mix(in_srgb,var(--color-blue)_7%,transparent)] transition-all duration-150 active:scale-[0.96] disabled:cursor-wait disabled:opacity-65" type="button" disabled={saving || removing} onClick={() => { setDraft(null); setError(""); }}>Cancel</button>
         <button className="house-send flex items-center justify-between gap-6 min-h-11 px-5 py-2.5 border border-blue bg-blue text-paper cursor-pointer font-inherit hover:bg-paper hover:text-blue transition-all active:scale-95 disabled:cursor-wait disabled:opacity-65" type="submit" disabled={saving || removing || conflict}>{saving ? "Saving…" : "Save changes"}</button>
       </div>
     </form> : <>
     {message && <p className="house-gift-message m-0 mb-6 text-lg leading-relaxed whitespace-pre-wrap [overflow-wrap:anywhere]">{message}</p>}
-    {current.visibility === "private" && <p className="house-private text-[11px] m-0 mb-5">{message ? "A private note" : "A private note for Kaio"}</p>}
     {current.authorName !== null && <p className="house-attribution text-sm m-0 mb-1.5 [overflow-wrap:anywhere]">From {current.authorName}</p>}
     <time className="house-gift-date text-[11px]" dateTime={current.createdAt}>{new Date(current.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}</time>
     <div className="house-gift-actions flex flex-wrap items-center gap-3 mt-6 [&_.house-send]:m-0 [&_.house-reclaim]:m-0">

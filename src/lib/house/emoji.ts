@@ -209,18 +209,14 @@ export function emojiToOption(char: string, name = "Icon"): EmojiOption {
 export const findEmoji = (id: string): EmojiOption | undefined => {
   const found = byId.get(id);
   if (found) return found;
-  if (id.startsWith("u_")) {
-    try {
-      const codePoints = id
-        .slice(2)
-        .split("_")
-        .map((hex) => parseInt(hex, 16));
-      if (codePoints.length > 0 && codePoints.every((cp) => !isNaN(cp) && cp > 0)) {
-        const char = String.fromCodePoint(...codePoints);
-        return { id, emoji: char, name: "Icon", keywords: "" };
+  if (id.length <= 100 && /^u_[0-9a-f]{1,6}(?:_[0-9a-f]{1,6})*$/i.test(id)) {
+    const points = id.slice(2).split("_").map(hex => Number.parseInt(hex, 16));
+    if (points.every(cp => cp <= 0x10ffff && (cp < 0xd800 || cp > 0xdfff))) {
+      const emoji = String.fromCodePoint(...points);
+      const graphemes = [...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(emoji)];
+      if (graphemes.length === 1 && /\p{Extended_Pictographic}|\p{Regional_Indicator}|\u20e3/u.test(emoji)) {
+        return { id, emoji, name: "Icon", keywords: "" };
       }
-    } catch {
-      // ignore parsing failure
     }
   }
   return undefined;
@@ -242,7 +238,8 @@ export function searchEmojiCatalog(text: string): EmojiOption[] {
 
   // Check if query contains any raw emoji characters directly
   const customEmojis: EmojiOption[] = [];
-  const emojiMatches = input.match(/\p{Extended_Pictographic}/gu) || [];
+  const emojiMatches = [...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(input)]
+    .map(part => part.segment).filter(char => /\p{Extended_Pictographic}|\p{Regional_Indicator}|\u20e3/u.test(char));
   for (const char of emojiMatches) {
     const existing = EMOJI_CATALOG.find(
       (e) => e.emoji === char || normalizeEmojiPresentation(e.emoji) === normalizeEmojiPresentation(char)
