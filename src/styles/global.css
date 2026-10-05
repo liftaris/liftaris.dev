@@ -776,13 +776,12 @@ body.on-home .winbox.object-window.max:has(.folder) {
   scrollbar-color: var(--color-blue) transparent;
 }
 
-/* Guestbook Window Interior: blue background without noise texture, paper text */
+/* Guestbook Window: double border gap stays --paper like all other windows */
 .site-window:has(.guestbook-view),
 .winbox.guestbook-window,
 .winbox:has(.guestbook-view),
 .object-window:has(.guestbook-view) {
-  background: var(--color-blue) !important;
-  background-image: none !important;
+  background: var(--color-paper) !important;
 }
 
 html:has(.guestbook-view),
