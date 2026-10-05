@@ -1,18 +1,178 @@
 ---
-import { emdashComponents } from 'emdash/ui';
-import type { ComponentProps } from 'astro/types';
-import { imageUrl } from '../lib/images';
+import { imageUrl, imageSources } from '../lib/images';
 
-const NativeImage = emdashComponents.type.image;
-type Props = ComponentProps<typeof NativeImage>;
-const { node, ...props } = Astro.props;
-// Imported posts can lack dimensions. EmDash deliberately serves those URLs
-// unchanged; give its renderer a bounded rendition while retaining its native
-// captions, links, alignment, accessibility and placeholder behavior.
-const src = node.asset?.url;
-const nativeResponsive = src?.startsWith('/_emdash/api/media/file/') && node.width && node.height;
-const image = src && !nativeResponsive
-  ? { ...node, asset: { ...node.asset, url: imageUrl(src, Math.min(node.width || 1600, 1600)) } }
-  : node;
+export interface Props {
+  node: {
+    _type: 'image';
+    _key?: string;
+    asset?: {
+      _ref?: string;
+      url?: string;
+      src?: string;
+      provider?: string;
+      width?: number;
+      height?: number;
+      alt?: string;
+      meta?: Record<string, unknown>;
+    };
+    alt?: string;
+    caption?: string;
+    title?: string;
+    width?: number;
+    height?: number;
+    blurhash?: string;
+    dominantColor?: string;
+    displayWidth?: number;
+    displayHeight?: number;
+    alignment?: 'left' | 'center' | 'right' | 'wide' | 'full';
+    link?: string | { href: string; blank?: boolean };
+  };
+}
+
+const { node } = Astro.props;
+
+if (!node?.asset) {
+  return null;
+}
+
+const rawSrc = node.asset?.url ?? node.asset?.src ?? (node.asset?._ref ? `/_emdash/api/media/file/${node.asset._ref}` : undefined);
+if (!rawSrc) {
+  return null;
+}
+
+const alt = node.alt ?? node.asset?.alt ?? '';
+const title = node.title;
+const caption = node.caption;
+const alignment = node.alignment;
+
+const dimension = (val: unknown) => typeof val === 'number' && Number.isFinite(val) && val > 0 ? val : undefined;
+const originalWidth = dimension(node.width ?? node.asset?.width);
+const originalHeight = dimension(node.height ?? node.asset?.height);
+const customWidth = dimension(node.displayWidth);
+const customHeight = dimension(node.displayHeight);
+
+const aspectRatio = originalWidth && originalHeight ? originalWidth / originalHeight : undefined;
+
+let renderWidth: number | undefined;
+let renderHeight: number | undefined;
+
+if (customWidth && customHeight) {
+  renderWidth = customWidth;
+  renderHeight = customHeight;
+} else if (customWidth && aspectRatio) {
+  renderWidth = customWidth;
+  renderHeight = Math.round(customWidth / aspectRatio);
+} else if (customHeight && aspectRatio) {
+  renderWidth = Math.round(customHeight * aspectRatio);
+  renderHeight = customHeight;
+} else {
+  renderWidth = customWidth ?? originalWidth;
+  renderHeight = customHeight ?? originalHeight;
+}
+
+const targetWidth = Math.min(renderWidth || 960, 1600);
+const src = imageUrl(rawSrc, targetWidth);
+const srcset = imageSources(rawSrc, targetWidth);
+const sizes = renderWidth
+  ? `(min-width: ${renderWidth}px) ${renderWidth}px, 100vw`
+  : '(min-width: 960px) 960px, 100vw';
+
+const link = node.link;
+const imageLink = typeof link === 'string' ? { href: link, blank: false } : link;
+const linkHref = imageLink?.href;
+const isSamePageAnchor = linkHref?.startsWith('#') ?? false;
+const linkBlank = !isSamePageAnchor && imageLink?.blank === true;
+const linkTarget = linkBlank ? '_blank' : undefined;
+const linkRel = linkBlank ? 'noopener noreferrer' : undefined;
+
+const blurhash = (node.blurhash ?? node.asset?.meta?.blurhash) as string | undefined;
+const dominantColor = (node.dominantColor ?? node.asset?.meta?.dominantColor) as string | undefined;
+
+let placeholderStyle = '';
+if (blurhash) {
+  try {
+    const { blurhashToImageCssString } = await import('@unpic/placeholder');
+    placeholderStyle = blurhashToImageCssString(blurhash);
+  } catch {}
+} else if (dominantColor) {
+  placeholderStyle = `background-color: ${dominantColor};`;
+}
 ---
-<NativeImage {...props} node={image} />
+<figure class:list={['emdash-image', alignment && `emdash-image--align-${alignment}`]}>
+  {linkHref ? (
+    <a href={linkHref} target={linkTarget} rel={linkRel}>
+      <img
+        src={src}
+        srcset={srcset}
+        sizes={sizes}
+        alt={alt}
+        title={title}
+        width={renderWidth}
+        height={renderHeight}
+        loading="lazy"
+        decoding="async"
+        style={placeholderStyle || undefined}
+      />
+    </a>
+  ) : (
+    <img
+      src={src}
+      srcset={srcset}
+      sizes={sizes}
+      alt={alt}
+      title={title}
+      width={renderWidth}
+      height={renderHeight}
+      loading="lazy"
+      decoding="async"
+      style={placeholderStyle || undefined}
+    />
+  )}
+  {caption && <figcaption>{caption}</figcaption>}
+</figure>
+
+<style>
+  .emdash-image {
+    margin: 1.5rem 0;
+  }
+  .emdash-image img {
+    max-width: 100%;
+    height: auto;
+  }
+  .emdash-image figcaption {
+    font-size: 0.875rem;
+    color: var(--emdash-caption-color, var(--color-muted, #666));
+    margin-top: 0.5rem;
+    text-align: center;
+  }
+  .emdash-image--align-left,
+  .emdash-image--align-right {
+    width: fit-content;
+    max-width: 50%;
+  }
+  .emdash-image--align-left {
+    float: left;
+    margin: 0 1.5rem 1rem 0;
+  }
+  .emdash-image--align-right {
+    float: right;
+    margin: 0 0 1rem 1.5rem;
+  }
+  .emdash-image--align-center {
+    width: fit-content;
+    margin-inline: auto;
+  }
+  .emdash-image--align-wide,
+  .emdash-image--align-full {
+    width: 100%;
+  }
+  @media (max-width: 640px) {
+    .emdash-image--align-left,
+    .emdash-image--align-right {
+      float: none;
+      width: 100%;
+      max-width: 100%;
+      margin-inline: 0;
+    }
+  }
+</style>

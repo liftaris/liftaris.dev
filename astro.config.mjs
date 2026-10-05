@@ -10,6 +10,12 @@ export default defineConfig({
   site: "https://www.liftaris.dev",
   output: "server",
   adapter: cloudflare({ imageService: "cloudflare-binding" }),
+  image: {
+    remotePatterns: [
+      { protocol: "https", pathname: "/_emdash/api/media/file/**" },
+      { protocol: "http", pathname: "/_emdash/api/media/file/**" },
+    ],
+  },
   build: {
     inlineStylesheets: "always",
   },
@@ -28,6 +34,7 @@ export default defineConfig({
     "/admin": { destination: "/_emdash/admin", status: 302 },
   },
   integrations: [react(), emdash({
+    siteUrl: "https://www.liftaris.dev",
     database: d1({ binding: "DB" }),
     storage: r2({ binding: "MEDIA" }),
     objectCache: kvCache({ binding: "CONTENT_CACHE", defaultTtl: 60 }),
