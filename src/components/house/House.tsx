@@ -81,8 +81,8 @@ export function House({
     if (initialOpenDone.current) return;
     initialOpenDone.current = true;
 
-    const urlParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
-    const restoreSlug = initialFolderId ?? urlParams?.get("restore");
+    const urlParams = new URLSearchParams(window.location.hash.slice(1));
+    const restoreSlug = initialFolderId ?? urlParams.get("restore");
 
     const toOpen = authoring.session ? [] : [...getInitialDefaultOpenThings(effectiveThings)];
 
@@ -97,11 +97,11 @@ export function House({
         }
       }
 
-      if (typeof window !== "undefined" && window.history?.replaceState) {
+      if (urlParams.has("restore")) {
         const newUrl = new URL(window.location.href);
-        newUrl.searchParams.delete("restore");
-        const queryStr = newUrl.searchParams.toString();
-        window.history.replaceState({}, "", newUrl.pathname + (queryStr ? `?${queryStr}` : "") + newUrl.hash);
+        urlParams.delete("restore");
+        newUrl.hash = urlParams.toString();
+        window.history.replaceState(window.history.state, "", newUrl);
       }
     }
 

@@ -1,6 +1,6 @@
 ---
 import { getRequestContext } from "emdash/request-context";
-import { windowCacheControl } from "../server/things/window-cache";
+import { pageCacheControl } from "../server/things/page-cache";
 import { ClientRouter } from "astro:transitions";
 import { EmDashHead, EmDashBodyStart, EmDashBodyEnd } from "emdash/ui";
 import { createPublicPageContext } from "emdash/page";
@@ -37,9 +37,9 @@ const {
   home: isHome = false,
   unconstrained: isUnconstrained = false,
 } = Astro.props;
-if (embedded) {
+if (embedded || isHome) {
   const context = getRequestContext();
-  Astro.response.headers.set("Cache-Control", windowCacheControl(Astro.request, Boolean(context?.editMode || context?.preview)));
+  Astro.response.headers.set("Cache-Control", pageCacheControl(Astro.request, Boolean(context?.editMode || context?.preview)));
   Astro.response.headers.append("Vary", "Cookie, Authorization");
 }
 const pathname = Astro.url.pathname.replace(/\/$/, "") || "/";
@@ -137,7 +137,8 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
               </div>
               <div class="site-window-controls">
                 <a
-                  href={`/?restore=${encodeURIComponent(actualRestoreSlug || "")}`}
+                  href={actualRestoreSlug ? `/#restore=${encodeURIComponent(actualRestoreSlug)}` : "/"}
+                  data-astro-prefetch="load"
                   class="site-window-max"
                   aria-label="Restore window"
                   title="Restore window"
@@ -146,6 +147,7 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
                 </a>
                 <a
                   href="/"
+                  data-astro-prefetch="load"
                   class="site-window-close"
                   aria-label="Close to homepage"
                   title="Close window"
