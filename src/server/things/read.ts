@@ -1,4 +1,4 @@
-import { getEmDashCollection, getEmDashEntry, getEmDashReferences, type ContentEntry, type InferCollectionData } from 'emdash';
+import { ContentRepository, getEmDashCollection, getEmDashEntry, getEmDashReferences, type ContentEntry, type InferCollectionData } from 'emdash';
 import { getDb } from 'emdash/runtime';
 import { getRequestContext, runWithContext } from 'emdash/request-context';
 import { normalizeData, pathFor, PAGE_SOURCES, type ThingRecord } from '../../lib/things/model';
@@ -38,7 +38,7 @@ function thingRecord(entry: ContentEntry<InferCollectionData<'things'>, Partial<
   };
 }
 
-/** Bulk read all Things and relations in 2 queries, avoiding the N+1 D1 query storm. */
+/** Bulk read all Things and relations in 2-3 queries, avoiding the N+1 D1 query storm. */
 export async function readThings(mode: 'request' | 'published' = 'request'): Promise<ThingRecord[]> {
   const fetchThings = async () => {
     const db = await getDb();
@@ -48,7 +48,33 @@ export async function readThings(mode: 'request' | 'published' = 'request'): Pro
     const draftId = isRequestMode ? context?.preview?.id : undefined;
 
     const all = await policyGraph(db, draftId, includeUnpublished);
-    return all.filter(r => !(r.data.page_source === 'post' && !r.postId));
+    const postIds = all
+      .filter(r => r.data.page_source === 'post' && r.postId)
+      .map(r => r.postId as string);
+
+    let visiblePostIds: Set<string> | null = null;
+    if (postIds.length > 0) {
+      const postRepo = new ContentRepository(db);
+      const posts: { id: string; status: string }[] = [];
+      let cursor: string | undefined;
+      do {
+        const page = await postRepo.findMany('posts', { limit: 100, cursor });
+        posts.push(...page.items.map(p => ({ id: p.id, status: p.status })));
+        cursor = page.nextCursor;
+      } while (cursor);
+      visiblePostIds = new Set(
+        posts
+          .filter(p => includeUnpublished || p.status === 'published')
+          .map(p => p.id)
+      );
+    }
+
+    return all.filter(r => {
+      if (r.data.page_source === 'post') {
+        return Boolean(r.postId && visiblePostIds?.has(r.postId));
+      }
+      return true;
+    });
   };
   if (mode === 'request') return fetchThings();
   return runWithContext({ ...getRequestContext(), editMode: false, preview: undefined }, fetchThings);

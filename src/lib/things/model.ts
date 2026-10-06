@@ -28,14 +28,35 @@ export function slugFromName(name: string): string {
   return name.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'thing';
 }
 export function mediaUrl(value: unknown): string | null {
-  if (typeof value === 'string') return value.startsWith('/') || /^https?:\/\//.test(value) ? value : null;
+  if (typeof value === 'string') {
+    return value.startsWith('/') || /^https?:\/\//.test(value) ? value : '/_emdash/api/media/file/' + value;
+  }
   if (!value || typeof value !== 'object') return null;
   const v = value as Record<string, unknown>;
   const meta = v.meta as Record<string, unknown> | undefined;
-  return typeof v.src === 'string' ? v.src : typeof v.url === 'string' ? v.url : typeof meta?.storageKey === 'string' ? '/_emdash/api/media/file/' + meta.storageKey : null;
+  const raw = typeof v.src === 'string' ? v.src : typeof v.url === 'string' ? v.url : typeof meta?.storageKey === 'string' ? meta.storageKey : null;
+  if (!raw) return null;
+  return raw.startsWith('/') || /^https?:\/\//.test(raw) ? raw : '/_emdash/api/media/file/' + raw;
 }
+
+function normalizeMediaValue(value: unknown): unknown {
+  if (typeof value === 'string') {
+    return value.startsWith('/') || /^https?:\/\//.test(value) ? value : `/_emdash/api/media/file/${value}`;
+  }
+  if (!value || typeof value !== 'object') return value;
+  const v = value as Record<string, unknown>;
+  const src = typeof v.src === 'string' ? v.src : undefined;
+  if (src && !src.startsWith('/') && !/^https?:\/\//.test(src)) {
+    return { ...v, src: `/_emdash/api/media/file/${src}` };
+  }
+  return value;
+}
+
 export function normalizeData(data: Record<string, unknown>): ThingData {
-  return { ...DEFAULT_DATA, ...data } as ThingData;
+  const normalized = { ...DEFAULT_DATA, ...data } as ThingData;
+  if (normalized.image) normalized.image = normalizeMediaValue(normalized.image);
+  if (normalized.background_image) normalized.background_image = normalizeMediaValue(normalized.background_image);
+  return normalized;
 }
 export function pathFor(thing: ThingRecord, all: readonly ThingRecord[], seen = new Set<string>()): string | null {
   if (seen.has(thing.id)) throw new Error('Primary folders cannot form a cycle.');
