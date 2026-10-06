@@ -1,6 +1,8 @@
 import { getEmDashCollection, getEmDashEntry, getEmDashReferences, type ContentEntry, type InferCollectionData } from 'emdash';
+import { getDb } from 'emdash/runtime';
 import { getRequestContext, runWithContext } from 'emdash/request-context';
 import { normalizeData, pathFor, PAGE_SOURCES, type ThingRecord } from '../../lib/things/model';
+import { policyGraph } from './graph';
 
 /** Resolve fields and native relationships identically for routes, lists, and previews. */
 export async function readThing(id: string, includeContents = false): Promise<ThingRecord | null> {
@@ -36,27 +38,20 @@ function thingRecord(entry: ContentEntry<InferCollectionData<'things'>, Partial<
   };
 }
 
-/** Read independent entries concurrently instead of paying a D1 round trip per Thing.
- * Select only relevant relations and consume every contents cursor.
- */
-export async function readThings(mode: 'request' | 'published' = 'request', options: { includeContents?: boolean } = {}): Promise<ThingRecord[]> {
-  const read = async () => {
-    const rows: ThingRecord[] = [];
-    let cursor: string | undefined;
-    do {
-      const page = await getEmDashCollection('things', { limit: 100, cursor });
-      if (page.error) throw page.error;
-      const resolved = await Promise.all(page.entries.map(async (summary): Promise<ThingRecord | null> => {
-        const summaryData = summary.data as unknown as Record<string, unknown>;
-        return readThing(summary.data.id, options.includeContents !== false && summaryData.kind === 'folder');
-      }));
-      rows.push(...resolved.filter((row): row is ThingRecord => row !== null));
-      cursor = page.nextCursor;
-    } while (cursor);
-    return rows;
+/** Bulk read all Things and relations in 2 queries, avoiding the N+1 D1 query storm. */
+export async function readThings(mode: 'request' | 'published' = 'request'): Promise<ThingRecord[]> {
+  const fetchThings = async () => {
+    const db = await getDb();
+    const context = getRequestContext();
+    const isRequestMode = mode === 'request';
+    const includeUnpublished = isRequestMode && context?.editMode === true;
+    const draftId = isRequestMode ? context?.preview?.id : undefined;
+
+    const all = await policyGraph(db, draftId, includeUnpublished);
+    return all.filter(r => !(r.data.page_source === 'post' && !r.postId));
   };
-  if (mode === 'request') return read();
-  return runWithContext({ ...getRequestContext(), editMode: false, preview: undefined }, read);
+  if (mode === 'request') return fetchThings();
+  return runWithContext({ ...getRequestContext(), editMode: false, preview: undefined }, fetchThings);
 }
 
 /** Resolve a normal page in O(primary-folder depth), not O(all Things).

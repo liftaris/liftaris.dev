@@ -38,9 +38,11 @@ const {
   home: isHome = false,
   unconstrained: isUnconstrained = false,
 } = Astro.props;
-if (embedded || isHome) {
-  const context = getRequestContext();
-  Astro.response.headers.set("Cache-Control", pageCacheControl(Astro.request, Boolean(context?.editMode || context?.preview)));
+const context = getRequestContext();
+const isPrivate = Boolean(context?.editMode || context?.preview);
+const cacheControl = pageCacheControl(Astro.request, isPrivate);
+Astro.response.headers.set("Cache-Control", cacheControl);
+if (cacheControl.includes("private")) {
   Astro.response.headers.append("Vary", "Cookie, Authorization");
 }
 const pathname = Astro.url.pathname.replace(/\/$/, "") || "/";

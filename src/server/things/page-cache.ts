@@ -8,9 +8,8 @@ export function pageCacheControl(request: Request, preview: boolean): string {
     /(?:^|;\s*)emdash-edit-mode=true(?:;|$)/.test(cookies) ||
     [...url.searchParams.keys()].some(key => key !== 'window');
   if (request.method !== 'GET' || privateRequest) return 'private, no-store';
-  // After a longer read, return immediately while the browser refreshes the
-  // desktop in the background. This cache is browser-only, never shared at edge.
+  // Allow Cloudflare edge caching for public requests; keep private for preview/edit mode.
   return url.pathname === '/'
-    ? 'private, max-age=30, stale-while-revalidate=300'
-    : 'private, max-age=30';
+    ? 'public, max-age=30, s-maxage=300, stale-while-revalidate=86400'
+    : 'public, max-age=30, s-maxage=300, stale-while-revalidate=86400';
 }

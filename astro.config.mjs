@@ -1,4 +1,5 @@
 import cloudflare from "@astrojs/cloudflare";
+import { cacheCloudflare } from "@astrojs/cloudflare/cache";
 import react from "@astrojs/react";
 import tailwind from "@tailwindcss/vite";
 import { d1, r2, kvCache } from "@emdash-cms/cloudflare";
@@ -10,6 +11,12 @@ export default defineConfig({
   site: "https://www.liftaris.dev",
   output: "server",
   adapter: cloudflare({ imageService: "cloudflare-binding" }),
+  cache: {
+    provider: cacheCloudflare(),
+  },
+  routeRules: {
+    "/": { maxAge: 300, swr: 86400 },
+  },
   image: {
     remotePatterns: [
       { protocol: "https", pathname: "/_emdash/api/media/file/**" },
@@ -35,9 +42,9 @@ export default defineConfig({
   },
   integrations: [react(), emdash({
     siteUrl: "https://www.liftaris.dev",
-    database: d1({ binding: "DB" }),
+    database: d1({ binding: "DB", session: "auto" }),
     storage: r2({ binding: "MEDIA" }),
-    objectCache: kvCache({ binding: "CONTENT_CACHE", defaultTtl: 60 }),
+    objectCache: kvCache({ binding: "CONTENT_CACHE", defaultTtl: 3600 }),
     toolbar: "client",
     plugins: [{
       id: "liftaris-things", version: "1.0.0", format: "native",
