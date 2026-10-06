@@ -113,6 +113,13 @@ export async function readThingAtPath(path: string): Promise<{ thing: ThingRecor
     if (!slug) return null;
     const normal = await resolve(slug);
     if (normal) return normal;
+    const bySlug = await getEmDashCollection('things', { where: { slug }, limit: 1 });
+    if (!bySlug.error && bySlug.entries[0]) {
+      const thing = thingRecord(bySlug.entries[0]);
+      if (!thing.primaryFolder && pathFor(thing, [thing]) === path) return { thing, things: [thing] };
+      const match = await resolve(bySlug.entries[0].data?.id || bySlug.entries[0].id);
+      if (match) return match;
+    }
     const override = await getEmDashCollection('things', { where: { path_override: path }, limit: 1 });
     if (override.error) throw override.error;
     return override.entries[0] ? resolve(override.entries[0].data.id) : null;

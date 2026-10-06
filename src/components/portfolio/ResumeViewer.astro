@@ -1,0 +1,33 @@
+---
+interface Props {
+  pdfUrl?: string;
+}
+const { pdfUrl = "/resume.pdf" } = Astro.props;
+---
+<div class="resume-viewer size-full h-full flex flex-col flex-1 min-h-0 bg-[#525659]">
+  <object
+    data={pdfUrl}
+    type="application/pdf"
+    class="resume-frame w-full h-full flex-1 border-0 block"
+    aria-label="Kaio Barbosa Resume"
+  >
+    <iframe
+      src={pdfUrl}
+      class="resume-frame w-full h-full flex-1 border-0 block"
+      title="Kaio Barbosa Resume"
+    >
+      <div class="resume-fallback flex flex-col items-center justify-center p-8 text-center gap-4 bg-paper text-ink h-full">
+        <p class="text-lg">Your browser does not support inline PDF rendering.</p>
+        <a
+          href={pdfUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-2 px-4 py-2 border border-blue text-blue rounded hover:bg-blue/10 transition-colors"
+        >
+          <span>Open / Download Resume (PDF)</span>
+          <span aria-hidden="true">&rarr;</span>
+        </a>
+      </div>
+    </iframe>
+  </object>
+</div>

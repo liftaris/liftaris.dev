@@ -4,6 +4,7 @@ import Portfolio from '../../layouts/Portfolio.astro';
 import Article from '../Article.astro';
 import Projects from '../portfolio/Projects.astro';
 import Experience from '../portfolio/Experience.astro';
+import ResumeViewer from '../portfolio/ResumeViewer.astro';
 import { GitHubViewer } from './GitHubViewer';
 import { Guestbook } from './Guestbook';
 import { House } from './House';
@@ -12,9 +13,10 @@ import type { ThingRecord } from '../../lib/things/model';
 import type { Page } from '../../server/things/page';
 interface Props { page: Page; things?: ThingRecord[] }
 const { page, things = [] } = Astro.props;
+const isResume = page.content?.slug === 'resume' || page.canonical === '/resume' || page.restoreId === 'resume' || (page.source as string) === 'resume';
 ---
 <Portfolio
-  unconstrained={['content', 'post'].includes(page.source)}
+  unconstrained={!isResume && ['content', 'post'].includes(page.source)}
   guestbook={page.source === 'guestbook'}
   embedded={Astro.url.searchParams.get('window') === '1'}
   title={`${page.title} | Kaio Barbosa`}
@@ -29,5 +31,6 @@ const { page, things = [] } = Astro.props;
   page.source === 'experience' ? <Experience /> :
   page.source === 'github' ? <GitHubViewer client:load /> :
   page.source === 'guestbook' ? <Guestbook client:load /> :
+  isResume ? <ResumeViewer /> :
   <Article {...page.article} />}
 </Portfolio>
