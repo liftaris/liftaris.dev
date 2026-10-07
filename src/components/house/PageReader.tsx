@@ -6,8 +6,7 @@ import type { ThingSpec } from "../../lib/things/scene";
 export function PageReader({ page }: { page: ThingSpec }) {
   const iframe = useRef<HTMLIFrameElement>(null);
   const href = page.previewUrl || page.href || `/things-preview/${encodeURIComponent(page.id)}`;
-  const isPdf = (page.slug === 'resume' || page.id === 'resume') && !page.previewUrl;
-  const src = isPdf ? '/resume.pdf' : windowPageUrl(href);
+  const src = windowPageUrl(href);
   useEffect(() => {
     const frame = iframe.current!;
     if (!frame) return;

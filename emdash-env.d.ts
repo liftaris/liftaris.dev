@@ -42,7 +42,7 @@ export interface Thing {
   spawn_x?: number;
   spawn_y?: number;
   path_override?: string;
-  page_source?: "content" | "post" | "projects" | "experience" | "github" | "guestbook";
+  page_source?: "content" | "post" | "projects" | "experience" | "github" | "guestbook" | "resume";
   body?: PortableTextBlock[];
   background_image?: { id: string; src?: string; alt?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown>; darkVariant?: { id: string; src?: string; alt?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown> } };
   background_size?: "cover" | "contain" | "auto" | "100% 100%" | "50%" | "75%" | "150%" | "200%";
