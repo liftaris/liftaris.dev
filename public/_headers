@@ -19,3 +19,9 @@
   Cache-Control: public, max-age=2592000, stale-while-revalidate=86400
 /BazaarGhost/*
   Cache-Control: public, max-age=2592000, stale-while-revalidate=86400
+
+# LLM context index
+/llms.txt
+  Content-Type: text/markdown; charset=utf-8
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400
+

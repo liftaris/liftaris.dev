@@ -6,10 +6,14 @@ import { cmsVisitorGuard, visitorDb } from "./server/house/visitor";
 // their passkey. Afterwards EmDash's normal session authentication takes over.
 export const onRequest = defineMiddleware(async (context, next) => {
   if (context.url.hostname === "liftaris.dev") {
+    context.cache.set(false);
     const canonical = new URL(context.url);
     canonical.hostname = "www.liftaris.dev";
     canonical.protocol = "https:";
-    return context.redirect(canonical.href, 308);
+    const response = context.redirect(canonical.href, 308);
+    response.headers.set("Cache-Control", "no-store");
+    response.headers.set("Cloudflare-CDN-Cache-Control", "no-store");
+    return response;
   }
   let path: string;
   try { path = decodeURIComponent(context.url.pathname).replace(/\/{2,}/g, "/"); }

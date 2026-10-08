@@ -68,6 +68,7 @@ const page = createPublicPageContext({ Astro, kind: content ? "content" : "custo
     {embedded && <base href={Astro.url.href} target="_top" />}
     <EmDashHead page={page} />
     <link rel="icon" href="/favicon.ico" />
+    <link rel="alternate" type="text/markdown" href="/llms.txt" title="LLM Context" />
     {!embedded && <ClientRouter fallback="swap" />}
   </head>
   <body class:list={[

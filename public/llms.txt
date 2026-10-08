@@ -1,0 +1,56 @@
+# Kaio Barbosa (liftaris.dev)
+
+> Full-stack software engineer and founder of Liftaris. Currently on the Commercial Websites team at Moderna.
+
+Personal website and portfolio: https://www.liftaris.dev
+GitHub: https://github.com/liftaris
+Location: Seattle, WA (open to NYC)
+
+## Background
+
+Kaio Barbosa is a software engineer and founder with full-stack and distributed systems experience across enterprise platforms, healthcare AI startups, and federal agency dashboards.
+- **Current:** Commercial Websites team at Moderna, building a module-federated web platform, commercial LLM translation workflows, and regulatory healthcare platforms.
+- **Founder:** Liftaris (video game intelligence and streaming analytics).
+- **Past:** Health Note (early clinical AI assistant startup), Parsons (data visualization dashboards for FAA and CBP), Freelance (WASM bindings for HNSWLib, Replit bounties, Unity).
+- **Education:** UC Santa Cruz (B.S.).
+
+## Liftaris (Company & Vision)
+
+Kaio is the founder of Liftaris, an early-stage startup building specialized video game intelligence and stream analytics platforms.
+- **Inception & Prototype:** Liftaris started with BazaarGhost (https://bazaarghost.stream), a stream analytics website and computer vision pipeline for players of *The Bazaar* that reached 18,000+ unique visitors in month one.
+- **Mission:** Liftaris scales the prototype into a comprehensive video game intelligence platform with a deep connection to streaming audiences across Twitch, YouTube, and other live platforms.
+- **Claude & AI Foundation:** Liftaris uses Claude and frontier LLM tooling to build the underlying analysis, data extraction, and platform foundation.
+- **Status:** Liftaris is currently an early-stage startup; `liftaris.dev` serves as the founder's visible portfolio and technical sandbox until out of stealth.
+
+## Featured Projects
+
+- [BazaarGhost](https://bazaarghost.stream): Computer vision and OCR pipeline for Twitch VODs for The Bazaar, serving as the foundational prototype for Liftaris. Built with Python, OpenCV, PaddleOCR, FFmpeg, Supabase, and Next.js. GitHub: https://github.com/liftaris/bazaar-ghost.
+- [Herm TUI](https://github.com/liftaris/herm): A terminal user interface (TUI) for Hermes Agent. Built with TypeScript, Bun, OpenTUI React, SQLite, and stdio JSON-RPC. Features streaming chat, markdown, diff chips, tool-call inspection, animated ASCII avatar, profile switching, and workspace tabs. Distributed on npm as `herm-tui`.
+
+## Site Architecture
+
+- **Framework:** Astro 5 with React components and Tailwind CSS.
+- **Hosting & Infrastructure:** Cloudflare Workers, Static Assets, Smart Placement, and Cloudflare Images.
+- **Data & Storage:** Cloudflare D1 (SQLite) via EmDash CMS, Cloudflare R2 (media/assets), Cloudflare KV (sessions and content caching).
+- **Desktop UI:** Custom interactive 2D canvas simulation built with Matter.js and WinBox windowing.
+
+## Primary Pages
+
+- [/](https://www.liftaris.dev/): Interactive desktop interface ("House") with draggable folders, items, and floating windows.
+- [/projects](https://www.liftaris.dev/projects): Portfolio of major open-source and standalone projects.
+- [/experience](https://www.liftaris.dev/experience): Work history, technical roles, and engineering accomplishments.
+- [/about-me](https://www.liftaris.dev/about-me): Personal biography, interests, and background.
+- [/resume](https://www.liftaris.dev/resume): Interactive resume viewer (also available as direct PDF at [/resume.pdf](https://www.liftaris.dev/resume.pdf)).
+- [/github](https://www.liftaris.dev/github): Public GitHub repository viewer and activity stream.
+- [/guestbook](https://www.liftaris.dev/guestbook): Interactive digital guestbook for visitors.
+
+## Writing & Articles
+
+- [Bazaar Ghost](https://www.liftaris.dev/blog/bazaar-ghost): Engineering retrospective on launching the BazaarGhost computer vision pipeline, containerized video chunk processing, and scaling to 18,000 users.
+- [Building a Website](https://www.liftaris.dev/blog/building-a-website): Philosophy on simplicity and maintainability in personal site architecture, balancing DIY custom engines with drag-and-drop builders.
+- [Understanding L Systems](https://www.liftaris.dev/blog/understanding-l-systems): An exploration of Lindenmayer systems (L-systems), turtle graphics, and algorithmic plant modeling based on *The Algorithmic Beauty of Plants*.
+
+## Optional / Raw Content
+
+- [Resume PDF](https://www.liftaris.dev/resume.pdf): Printable curriculum vitae and work history.
+- [Sitemap](https://www.liftaris.dev/sitemap.xml): Full XML sitemap index.
