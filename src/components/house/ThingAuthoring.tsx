@@ -2,7 +2,6 @@ import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { STUDIO_PATH } from '../../lib/things/model';
 import { validMessage, messageFor, type PreviewMessage } from '../../lib/things/bridge';
-import { sceneThings } from '../../lib/things/scene';
 import type { ThingSpec } from '../../lib/things/scene';
 
 export const AuthoringContext = createContext<{enabled: boolean; session: string; selected: string | null; send: (message: PreviewMessage) => void}>({ enabled:false,session:'',selected:null,send:()=>{} });
@@ -15,7 +14,7 @@ export function useThingPreview(initial: readonly ThingSpec[], enabled: boolean)
     if(!enabled || !session || parent===window) return;
     const receive=(event:MessageEvent)=> {
       if(!validMessage(event,parent,session)||event.data.type!=='snapshot')return;
-      const data=event.data; const next=sceneThings(data.things);
+      const data=event.data; const next=data.things;
       setSnapshot(next.map(t=>t.id===data.selected?{...t,desktop:true,previewUrl:data.previewUrl}:t));setSelected(data.selected);
     };
     window.addEventListener('message',receive);send({type:'ready'});

@@ -3,7 +3,7 @@
  * browser-safe so live authoring and the public React renderer use the same path.
  * Leave remote providers, vector artwork and animations to their own delivery.
  */
-export function normalizeImageSrc(src: string): string {
+function normalizeImageSrc(src: string): string {
   if (!src || typeof src !== 'string') return '';
   if (/^https?:\/\//i.test(src)) {
     try {
@@ -16,7 +16,7 @@ export function normalizeImageSrc(src: string): string {
   return src;
 }
 
-export function isOptimizableImage(src: string): boolean {
+function isOptimizableImage(src: string): boolean {
   if (!src || typeof src !== 'string') return false;
   const s = normalizeImageSrc(src);
   if (/^\/_emdash\/api\/media\/file\/[A-Za-z0-9._-]+(?:[?#].*)?$/i.test(s)) return true;

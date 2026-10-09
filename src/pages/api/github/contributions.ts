@@ -1,16 +1,13 @@
+import { cachePublicResponse } from "../../../server/things/page-cache";
 import type { APIRoute } from "astro";
 import { FALLBACK_TOTAL, FALLBACK_DAYS } from "../../../components/house/github-data";
 
-export const GET: APIRoute = async () => {
+export const GET: APIRoute = async (context) => {
   const username = "liftaris";
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3500);
-
     const res = await fetch(`https://github-contributions-api.jogruber.de/v4/${username}?y=last`, {
-      signal: controller.signal,
+      signal: AbortSignal.timeout(3500),
     });
-    clearTimeout(timeout);
 
     if (res.ok) {
       const data = (await res.json()) as {
@@ -18,6 +15,8 @@ export const GET: APIRoute = async () => {
         contributions?: Array<{ date: string; count: number; level: number }>;
       };
       if (Array.isArray(data.contributions) && data.contributions.length > 0) {
+        const headers = new Headers({ "Content-Type": "application/json" });
+        cachePublicResponse(context, headers, { maxAge: 3600, tags: [] });
         return new Response(
           JSON.stringify({
             username,
@@ -26,10 +25,7 @@ export const GET: APIRoute = async () => {
           }),
           {
             status: 200,
-            headers: {
-              "Content-Type": "application/json",
-              "Cache-Control": "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400",
-            },
+            headers,
           }
         );
       }
@@ -38,6 +34,8 @@ export const GET: APIRoute = async () => {
     // Ignore network error and serve fallback
   }
 
+  const headers = new Headers({ "Content-Type": "application/json" });
+  cachePublicResponse(context, headers, { maxAge: 60, swr: 0, tags: [] });
   return new Response(
     JSON.stringify({
       username,
@@ -46,10 +44,7 @@ export const GET: APIRoute = async () => {
     }),
     {
       status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "public, max-age=1800, s-maxage=1800",
-      },
+      headers,
     }
   );
 };

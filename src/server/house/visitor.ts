@@ -193,6 +193,14 @@ export async function cmsVisitorGuard(context: APIContext, ownerId: string | und
   // Authentication only, never registration, OAuth consent, signup, or invites.
   if (exactPath && (method === "GET" || method === "HEAD") && (path === "/_emdash/admin/login" || path === "/_emdash/api/auth/mode")) return null;
   if (exactPath && method === "POST" && (path === "/_emdash/api/auth/passkey/options" || path === "/_emdash/api/auth/passkey/verify")) return null;
+  // Device login starts without a session. EmDash validates/rate-limits codes
+  // and validates refresh tokens; granting consent still requires the owner
+  // check below, including the browser's /admin/device authorization screen.
+  if (exactPath && (method === "GET" || method === "HEAD") && path === "/_emdash/.well-known/auth") return null;
+  if (exactPath && method === "POST" && [
+    "/_emdash/api/oauth/device/code", "/_emdash/api/oauth/device/token",
+    "/_emdash/api/oauth/token/refresh",
+  ].includes(path)) return null;
   if (exactPath && (method === "GET" || method === "HEAD") && path.startsWith("/_emdash/api/media/file/")) return null;
 
   context.cache.set(false);

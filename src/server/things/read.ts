@@ -1,11 +1,16 @@
-import { ContentRepository, getEmDashCollection, getEmDashEntry, getEmDashReferences, type ContentEntry, type InferCollectionData } from 'emdash';
+import { ContentRepository, getEmDashEntry, getEmDashReferences, type ContentEntry, type InferCollectionData } from 'emdash';
 import { getDb } from 'emdash/runtime';
 import { getRequestContext, runWithContext } from 'emdash/request-context';
-import { normalizeData, pathFor, PAGE_SOURCES, type ThingRecord } from '../../lib/things/model';
-import { policyGraph } from './graph';
+import { normalizeData, pathFor, type ThingRecord } from '../../lib/things/model';
+import { policyGraph, publicGraph } from './graph';
+import { readOnce } from './request-cache';
 
 /** Resolve fields and native relationships identically for routes, lists, and previews. */
-export async function readThing(id: string, includeContents = false): Promise<ThingRecord | null> {
+export function readThing(id: string, includeContents = false): Promise<ThingRecord | null> {
+  return readOnce(`thing:${id}:${includeContents}`, () => loadThing(id, includeContents));
+}
+
+async function loadThing(id: string, includeContents: boolean): Promise<ThingRecord | null> {
   const result = await getEmDashEntry('things', id, { references: {
     primary_folder: { limit: 1 }, post: { limit: 1 },
     ...(includeContents ? { contents: { limit: 100 } } : {}),
@@ -45,7 +50,8 @@ export async function readThings(mode: 'request' | 'published' = 'request'): Pro
     const context = getRequestContext();
     const isRequestMode = mode === 'request';
     const includeUnpublished = isRequestMode && context?.editMode === true;
-    const draftId = isRequestMode ? context?.preview?.id : undefined;
+    const draftId = isRequestMode && context?.preview?.collection === 'things' ? context.preview.id : undefined;
+    if (!includeUnpublished && !draftId) return publicGraph(db);
 
     const all = await policyGraph(db, draftId, includeUnpublished);
     const postIds = all
@@ -55,13 +61,7 @@ export async function readThings(mode: 'request' | 'published' = 'request'): Pro
     let visiblePostIds: Set<string> | null = null;
     if (postIds.length > 0) {
       const postRepo = new ContentRepository(db);
-      const posts: { id: string; status: string }[] = [];
-      let cursor: string | undefined;
-      do {
-        const page = await postRepo.findMany('posts', { limit: 100, cursor });
-        posts.push(...page.items.map(p => ({ id: p.id, status: p.status })));
-        cursor = page.nextCursor;
-      } while (cursor);
+      const posts = [...(await postRepo.findManyByIds('posts', [...new Set(postIds)])).values()];
       visiblePostIds = new Set(
         posts
           .filter(p => includeUnpublished || p.status === 'published')
@@ -76,52 +76,29 @@ export async function readThings(mode: 'request' | 'published' = 'request'): Pro
       return true;
     });
   };
-  if (mode === 'request') return fetchThings();
-  return runWithContext({ ...getRequestContext(), editMode: false, preview: undefined }, fetchThings);
+  if (mode === 'request') return readOnce('things:request', fetchThings);
+  return runWithContext({ ...getRequestContext(), editMode: false, preview: undefined }, () => readOnce('things:published', fetchThings));
 }
 
-/** Resolve a normal page in O(primary-folder depth), not O(all Things).
- * Native slugs are unique within the collection; validate the full canonical
- * path so an unrelated page with the same final segment is never served.
- */
+/** Resolve ancestry from metadata, then load only the selected page body. */
 export async function readThingAtPath(path: string): Promise<{ thing: ThingRecord; things: ThingRecord[] } | null> {
   return runWithContext({ ...getRequestContext(), editMode: false, preview: undefined }, async () => {
-    const resolve = async (id: string) => {
-      const things: ThingRecord[] = [];
-      const seen = new Set<string>();
-      let next: string | null = id;
-      while (next) {
-        const thing = await readThing(next);
-        if (!thing || seen.has(thing.id)) return null;
-        seen.add(thing.id);
-        things.push(thing);
-        next = thing.data.path_override ? null : thing.primaryFolder;
-      }
-      const thing = things[0];
-      return thing && pathFor(thing, things) === path ? {thing,things} : null;
-    };
-    const builtin = Object.entries(PAGE_SOURCES).find(([, route]) => route === path)?.[0];
-    if (builtin) {
-      const matches = await getEmDashCollection('things', { where: { kind: 'page', page_source: builtin }, limit: 1 });
-      if (matches.error) throw matches.error;
-      // The collection result already contains all page fields. Built-in paths
-      // are independent of folder ancestry, so do not reread the entry/relations.
-      const thing = matches.entries[0] && thingRecord(matches.entries[0]);
-      return thing ? { thing, things: [thing] } : null;
+    const things = await readThings('published');
+    const match = things.find(thing => {
+      try { return pathFor(thing, things) === path; }
+      catch { return false; } // An unavailable ancestor cannot expose a child route.
+    });
+    if (!match) return null;
+    let thing = match;
+    if (match.data.kind === 'page' && match.data.page_source === 'content') {
+      // Relationships are already resolved by the metadata graph. Ask the
+      // native loader only for this entry's published fields/body.
+      const result = await getEmDashEntry('things', match.id);
+      if (result.error?.name === 'LiveEntryNotFoundError') return null;
+      if (result.error) throw result.error;
+      if (!result.entry) return null;
+      thing = { ...match, data: normalizeData({ ...result.entry.data }) };
     }
-    const slug = path.split('/').at(-1);
-    if (!slug) return null;
-    const normal = await resolve(slug);
-    if (normal) return normal;
-    const bySlug = await getEmDashCollection('things', { where: { slug }, limit: 1 });
-    if (!bySlug.error && bySlug.entries[0]) {
-      const thing = thingRecord(bySlug.entries[0]);
-      if (!thing.primaryFolder && pathFor(thing, [thing]) === path) return { thing, things: [thing] };
-      const match = await resolve(bySlug.entries[0].data?.id || bySlug.entries[0].id);
-      if (match) return match;
-    }
-    const override = await getEmDashCollection('things', { where: { path_override: path }, limit: 1 });
-    if (override.error) throw override.error;
-    return override.entries[0] ? resolve(override.entries[0].data.id) : null;
+    return thing ? { thing, things } : null;
   });
 }

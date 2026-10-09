@@ -1,3 +1,4 @@
+import { readOnce } from './request-cache';
 import { getEmDashEntry, type PortableTextBlock } from 'emdash';
 import { mediaUrl, pathFor, type ThingData, type ThingRecord } from '../../lib/things/model';
 
@@ -13,9 +14,11 @@ export interface Page {
 }
 
 export async function readPost(id: string) {
-  const { entry, error } = await getEmDashEntry('posts', id);
-  if (error && error.name !== 'LiveEntryNotFoundError') throw error;
-  return entry;
+  return readOnce(`post:${id}`, async () => {
+    const { entry, error } = await getEmDashEntry('posts', id);
+    if (error && error.name !== 'LiveEntryNotFoundError') throw error;
+    return entry;
+  });
 }
 
 export function postPage(post: NonNullable<Awaited<ReturnType<typeof readPost>>>): Page {
