@@ -16,7 +16,7 @@ export const GET: APIRoute = async (context) => {
       };
       if (Array.isArray(data.contributions) && data.contributions.length > 0) {
         const headers = new Headers({ "Content-Type": "application/json" });
-        cachePublicResponse(context, headers, { maxAge: 3600, tags: [] });
+        cachePublicResponse(context, headers, { maxAge: 3600, swr: 86400, tags: [] });
         return new Response(
           JSON.stringify({
             username,

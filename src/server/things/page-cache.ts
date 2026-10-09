@@ -8,7 +8,7 @@ type CacheContext = Pick<APIContext, 'request' | 'cache' | 'locals'>;
 export function cachePublicResponse(
   context: CacheContext,
   headers: Headers,
-  { privateResponse = false, window = false, maxAge = 300, swr = 86400, tags = PAGE_TAGS } = {},
+  { privateResponse = false, window = false, maxAge = 86400, swr = 604800, tags = PAGE_TAGS } = {},
 ): void {
   const { request, cache } = context;
   const url = new URL(request.url);
@@ -30,7 +30,12 @@ export function cachePublicResponse(
     return;
   }
   cache.set({ maxAge, swr, tags });
-  headers.set('Cache-Control', 'public, max-age=0, must-revalidate');
+  // EmDash purges tagged edge entries on content changes, but cannot purge a
+  // visitor's browser. Allow one hour of browser freshness and one day of SWR
+  // for repeat window opens; honor shorter policies (including error fallbacks).
+  const browserMaxAge = Math.min(maxAge, 3600);
+  const browserSwr = Math.min(swr, 86400);
+  headers.set('Cache-Control', `public, max-age=${browserMaxAge}${browserSwr > 0 ? `, stale-while-revalidate=${browserSwr}` : ''}`);
 }
 
 /** Run after rendering so layouts cannot re-enable caching on errors/redirects. */
