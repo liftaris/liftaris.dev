@@ -32,27 +32,28 @@ bun run build
 `bun run emoji:generate` rebuilds the 255-icon catalog from Emojibase using
 Unicode IDs. `things-preview/[id]` is the signed CMS preview route.
 
-`bun run deploy:check` builds and checks the production database identity and
-pending EmDash migrations without changing the database or deploying.
-`bun run deploy` builds once, records a D1 Time Travel restore point before pending
-migrations, applies and verifies migrations, deploys that same artifact, and warms
-public pages after verifying the Worker version. Local runs reuse Wrangler login;
-Workers Builds needs `CLOUDFLARE_API_TOKEN` with D1 and Worker deployment permissions.
-Keep `.emdash/deployments/` as a CI artifact. Restore bookmarks expire after the
-account's Time Travel retention window (7 days Free, 30 days Paid); restoring one
-also rolls back subsequent content writes. Application rollback does not roll back
-database changes.
+Cloudflare Workers Builds handles deployment through the connected Git repository.
+Use these commands in the integration settings:
 
-In Workers Builds use `bun install --frozen-lockfile && bun run build` for the build
-command and `bun run deploy --skip-build` for the production deployment command.
-Runtime migrations remain automatic until this pipeline has been exercised on
-preview and installed on every deployment path. Move to `migrations.runtime:
-"check"` next; keep development automatic. Do not switch to manual prematurely.
+- Build: `bun run build` (Workers Builds installs dependencies before this step).
+- Production deploy: `bunx wrangler deploy`.
+- Preview deploy: `bunx wrangler preview`.
 
-Preview uses isolated bindings. Check with `bun run deploy:check --target preview`;
-deploy with `bun run deploy --target preview --preview-name perf-pass --origin
-https://YOUR-PREVIEW-HOST`. Preview warming always stays on the selected origin.
-Deploying code does not migrate preview content to production.
+Wrangler uses the Astro-generated configuration in `dist/server/wrangler.json`.
+For a manual production deployment, `bun run deploy` builds and runs Wrangler.
+EmDash runtime migrations remain automatic. Deployment does not run a separate
+migration or cache-warming script; the performance tools below are optional.
+
+Previews use isolated database, media, and session bindings. Deploying code does
+not migrate preview content to production. Set `EMDASH_SETUP_KEY` in Previews Base
+using `bunx wrangler preview base-config secret put EMDASH_SETUP_KEY` before creating
+previews. Do not add an explicit `type: "inherit"` secret binding or pass
+`--ignore-base-config`: inheritance requires an existing deployment and fails with
+error 10222 on the first upload. Wrangler preserves existing Preview secrets on
+subsequent deployments. Base secret changes apply only to new previews; use
+`bunx wrangler preview secret put EMDASH_SETUP_KEY --name PREVIEW_NAME` to update
+an existing deployed preview.
+
 The `House` deletion declaration retires the unused Durable Object store on
 deployment. Local notes live under ignored `.ignore/` and `docs/`.
 

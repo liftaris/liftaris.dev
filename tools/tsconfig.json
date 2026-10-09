@@ -1,6 +1,6 @@
 {
   "extends": "../tsconfig.json",
   "compilerOptions": { "noEmit": true, "skipLibCheck": true },
-  "include": ["deploy.ts", "performance.ts", "migrate-inline-images.ts"],
+  "include": ["performance.ts", "migrate-inline-images.ts"],
   "exclude": []
 }
