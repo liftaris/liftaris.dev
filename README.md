@@ -65,6 +65,18 @@ URLs, window variants and GitHub data. Run from several regions for CDN comparis
 concurrency and checks their second responses. Local runs verify headers and
 rendering; only deployed runs can verify HIT/UPDATING and publication invalidation.
 
+Public pages (including desktop window URLs) and the sitemap stay fresh at the
+edge for one day, then allow seven days of stale-while-revalidate. Browsers use
+one hour of freshness plus one day of SWR, avoiding a blocking network request
+on every window reopen. EmDash invalidates the collection/settings tags on CMS
+changes; the Cloudflare adapter purges those edge entries. Browser copies cannot
+be purged, so returning visitors can briefly see older content after an edit.
+Purges, new deployments, eviction, and expired stale windows can still cause a
+blocking first render. GitHub/npm project counters remain server-rendered with
+their existing 12-hour data cache; page SWR covers their background refresh.
+Private and preview responses remain uncached. GitHub contributions use a
+separate one-hour policy with one day of SWR (60 seconds without SWR on fallback).
+
 To move Pixel Art's embedded PNGs to managed media, log in with the CLI (or set
 `EMDASH_TOKEN` to an owner token) and run `bun run media:migrate-inline --origin https://www.liftaris.dev --id
 01M44KXX7JXGZHCE55YZ6C966M --directory .emdash/pixel-art-backup`. Review the backed-up
