@@ -24,9 +24,9 @@ export default {
     // Workers Cache omits hostname and runs before fetch. Keep cached www
     // responses from bypassing the apex redirect; preserve existing variants.
     const vary = response.headers.get("Vary")?.split(",").map((value) => value.trim().toLowerCase()) ?? [];
-    if (vary.includes("host") || vary.includes("*")) return response;
     const varied = new Response(response.body, response);
-    varied.headers.append("Vary", "Host");
+    if (!vary.includes("host") && !vary.includes("*")) varied.headers.append("Vary", "Host");
+    varied.headers.set("X-Worker-Version", env.CF_VERSION_METADATA.id);
     return varied;
   },
   scheduled: createScheduledHandler(),

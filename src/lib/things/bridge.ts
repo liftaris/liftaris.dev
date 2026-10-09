@@ -1,6 +1,6 @@
-import type { ThingRecord } from './model';
+import type { ThingSpec } from './scene';
 export type PreviewMessage =
-  | { type: 'snapshot'; things: ThingRecord[]; selected: string | null; previewUrl?: string }
+  | { type: 'snapshot'; things: ThingSpec[]; selected: string | null; previewUrl?: string }
   | { type: 'ready' }
   | { type: 'select' | 'trash'; id: string }
   | { type: 'position'; id: string; spawn_x: number; spawn_y: number }
@@ -11,7 +11,7 @@ export function validMessage(event: MessageEvent, source: Window | null, session
   if (event.origin !== location.origin || event.source !== source || !event.data || event.data.channel !== 'liftaris-things' || event.data.session !== session) return false;
   const d = event.data;
   if (d.type === 'ready') return true;
-  if (d.type === 'snapshot') return Array.isArray(d.things) && d.things.length <= 10000 && d.things.every((t: ThingRecord) => t && typeof t === 'object' && typeof t.id === 'string' && typeof t.data?.name === 'string' && Array.isArray(t.contents));
+  if (d.type === 'snapshot') return Array.isArray(d.things) && d.things.length <= 10000 && d.things.every((t: ThingSpec) => t && typeof t === 'object' && typeof t.id === 'string' && typeof t.name === 'string' && Array.isArray(t.contents));
   if (typeof d.id !== 'string') return false;
   if (d.type === 'select' || d.type === 'trash') return true;
   if (d.type === 'position') return [d.spawn_x, d.spawn_y].every(v => Number.isFinite(v) && v >= 0 && v <= 1);

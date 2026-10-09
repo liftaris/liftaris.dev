@@ -14,9 +14,6 @@ export default defineConfig({
   cache: {
     provider: cacheCloudflare(),
   },
-  routeRules: {
-    "/": { maxAge: 300, swr: 86400 },
-  },
   image: {
     remotePatterns: [
       { protocol: "https", pathname: "/_emdash/api/media/file/**" },
@@ -46,6 +43,7 @@ export default defineConfig({
     storage: r2({ binding: "MEDIA" }),
     objectCache: kvCache({ binding: "CONTENT_CACHE", defaultTtl: 3600 }),
     toolbar: "client",
+    admin: { locales: ["en"] },
     plugins: [{
       id: "liftaris-things", version: "1.0.0", format: "native",
       entrypoint: fileURLToPath(new URL("./src/plugins/things.ts", import.meta.url)),

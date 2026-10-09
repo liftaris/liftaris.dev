@@ -1,6 +1,6 @@
 ---
 import { getRequestContext } from "emdash/request-context";
-import { pageCacheControl } from "../server/things/page-cache";
+import { cachePublicResponse } from "../server/things/page-cache";
 import { ClientRouter } from "astro:transitions";
 import { EmDashHead, EmDashBodyStart, EmDashBodyEnd } from "emdash/ui";
 import { createPublicPageContext } from "emdash/page";
@@ -40,11 +40,7 @@ const {
 } = Astro.props;
 const context = getRequestContext();
 const isPrivate = Boolean(context?.editMode || context?.preview);
-const cacheControl = pageCacheControl(Astro.request, isPrivate);
-Astro.response.headers.set("Cache-Control", cacheControl);
-if (cacheControl.includes("private")) {
-  Astro.response.headers.append("Vary", "Cookie, Authorization");
-}
+cachePublicResponse(Astro, Astro.response.headers, { privateResponse: isPrivate, window: true });
 const pathname = Astro.url.pathname.replace(/\/$/, "") || "/";
 const displayTitle = windowTitle ?? title.replace(/\s*\|\s*Kaio Barbosa\s*$/, '');
 const displayIcon = windowIcon;

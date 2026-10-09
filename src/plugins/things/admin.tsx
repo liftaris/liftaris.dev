@@ -6,6 +6,7 @@ import { MediaPickerModal, PortableTextEditor, apiFetch, parseApiResponse, fetch
 import { Button } from '@cloudflare/kumo';
 import { DEFAULT_DATA, PAGE_SOURCES, STUDIO_PATH, mediaUrl, pathFor, slugFromName, dependentNames, canAddToFolder, type ThingRecord, type ThingData } from '../../lib/things/model';
 import { messageFor, validMessage } from '../../lib/things/bridge';
+import { sceneThings } from '../../lib/things/scene';
 import { EmojiSearch } from '../../components/EmojiSearch';
 import './workspace.css';
 
@@ -168,7 +169,7 @@ function Workspace() {
   }, [locked]);
   useEffect(() => {
     const snapshot = draft ? [...things.filter(t => t.id !== draft.id), draft] : things;
-    frame.current?.contentWindow?.postMessage(messageFor(session, { type: 'snapshot', things: snapshot, selected: draft?.id ?? null, previewUrl }), location.origin);
+    frame.current?.contentWindow?.postMessage(messageFor(session, { type: 'snapshot', things: sceneThings(snapshot), selected: draft?.id ?? null, previewUrl }), location.origin);
   }, [draft, things, session, ready, previewUrl]);
   const act = (task: () => Promise<unknown>) => { setError(''); void task().catch(fail); };
   const d = draft?.data;

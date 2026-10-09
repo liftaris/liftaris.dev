@@ -1,10 +1,12 @@
-import { defineMiddleware } from "astro:middleware";
+import { defineMiddleware, sequence } from "astro:middleware";
+import { withThingReads } from "./server/things/request-cache";
+import { finalizeResponseCache } from "./server/things/page-cache";
 import { env } from "cloudflare:workers";
 import { cmsVisitorGuard, visitorDb } from "./server/house/visitor";
 
 // Protect first-admin registration on the public site until the owner creates
 // their passkey. Afterwards EmDash's normal session authentication takes over.
-export const onRequest = defineMiddleware(async (context, next) => {
+const applicationMiddleware = defineMiddleware(async (context, next) => {
   if (context.url.hostname === "liftaris.dev") {
     context.cache.set(false);
     const canonical = new URL(context.url);
@@ -63,3 +65,8 @@ async function matches(expected: string, actual: string) {
   for (let i = 0; i < left.length; i++) difference |= left[i] ^ right[i];
   return difference === 0;
 }
+
+export const onRequest = sequence(
+  defineMiddleware((context, next) => withThingReads(async () => finalizeResponseCache(context, await next()))),
+  applicationMiddleware,
+);
