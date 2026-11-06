@@ -1,6 +1,7 @@
 import { spawnPoint } from '../../lib/things/model';
 import Matter from "matter-js";
 import { createCollider } from "./colliders";
+import { cinch, distanceToRope, flingRope, haulRope, holdInside, isCinching, isSpent, settle, tieRope, untieRope, type Rope } from "./rope";
 import {
   type EngineOptions,
   type ObjectSpec,
@@ -46,6 +47,15 @@ type Drag = {
   offset: Point;
   target: Point;
   constraint: Matter.Constraint | null;
+  /** Whether the dragged item is pulling its lasso along. */
+  towing: boolean;
+};
+
+/** Dragging the lasso by its rope carries everything inside it. */
+type Haul = {
+  anchor: Point;
+  target: Point;
+  velocity: Point;
 };
 
 /**
@@ -56,6 +66,8 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
   let size = { ...options.size };
   let disposed = false;
   let drag: Drag | null = null;
+  let rope: Rope | null = null;
+  let haul: Haul | null = null;
   const layoutEditing = options.layoutEditing;
   const engine = Engine.create({
     enableSleeping: true,
@@ -112,7 +124,20 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
     });
   }
 
+  function releaseLasso(): void {
+    if (!rope) return;
+    haul = null;
+    Composite.remove(engine.world, [...rope.links, ...rope.bodies]);
+    untieRope(rope);
+    rope = null;
+  }
+
   function endDrag(cancel = false): void {
+    if (haul) {
+      const { velocity } = haul;
+      haul = null;
+      if (rope && !cancel && !options.reducedMotion) flingRope(rope, velocity);
+    }
     if (!drag) return;
     const previous = drag;
     drag = null;
@@ -121,7 +146,7 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
     else if (layoutEditing || options.reducedMotion) {
       Body.setVelocity(previous.item.body, { x: 0, y: 0 });
       Body.setAngularVelocity(previous.item.body, 0);
-    }
+    } else if (rope && previous.towing) flingRope(rope, { ...previous.item.body.velocity });
     wake(previous.item);
   }
 
@@ -161,7 +186,7 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
     step(deltaMs) {
       if (disposed || layoutEditing) return false;
       if (deltaMs <= 0 || !Number.isFinite(deltaMs)) {
-        return Boolean(drag) || items.some(({ body }) => !body.isStatic && !body.isSleeping);
+        return Boolean(drag) || Boolean(haul) || Boolean(rope && !rope.asleep) || items.some(({ body }) => !body.isStatic && !body.isSleeping);
       }
       const delta = Math.min(deltaMs, FIXED_STEP);
       if (drag?.constraint) {
@@ -175,9 +200,20 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
         point.y += dy * scale;
         wake(drag.item);
       }
+      if (haul && rope) {
+        const dx = haul.target.x - haul.anchor.x;
+        const dy = haul.target.y - haul.anchor.y;
+        const scale = Math.min(1, 26 / (Math.hypot(dx, dy) || 1));
+        haul.velocity = haulRope(rope, { x: dx * scale, y: dy * scale }, size);
+        haul.anchor.x += haul.velocity.x;
+        haul.anchor.y += haul.velocity.y;
+      }
 
+      if (rope) cinch(rope);
       const before = items.map(({ body }) => ({ ...body.position }));
+      const ropeBefore = rope?.bodies.map((body) => ({ ...body.position })) ?? [];
       Engine.update(engine, delta);
+      const held = rope && (haul || isCinching(rope)) ? new Set(rope.captured) : null;
       items.forEach((item, index) => {
         const { body } = item;
         if (body.isStatic) return;
@@ -189,9 +225,12 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
         item.quietFrames = motion < 0.035 ? item.quietFrames + 1 : 0;
         // Contact can stop an outward object at the envelope. Sleeping here
         // prevents attraction into a packed neighbor from keeping RAF alive.
-        if (item !== drag?.item && item.quietFrames >= 40) Sleeping.set(body, true);
+        if (item !== drag?.item && !held?.has(body) && item.quietFrames >= 40) Sleeping.set(body, true);
       });
-      return Boolean(drag) || items.some(({ body }) => !body.isStatic && !body.isSleeping);
+      if (rope && drag) drag.towing = holdInside(rope, drag.item.body, size);
+      const roping = rope ? settle(rope, size, ropeBefore) : false;
+      if (rope && !haul && isSpent(rope)) releaseLasso();
+      return Boolean(drag) || Boolean(haul) || roping || items.some(({ body }) => !body.isStatic && !body.isSleeping);
     },
 
     beginDrag(id, point) {
@@ -209,19 +248,22 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
         damping: 0.15,
       });
       if (constraint) Composite.add(engine.world, constraint);
-      drag = { item, before, offset, target: { ...point }, constraint };
+      drag = { item, before, offset, target: { ...point }, constraint, towing: false };
       wake(item);
       return true;
     },
 
     moveDrag(point) {
-      if (disposed || !drag) return;
+      if (disposed) return;
       // Keep the handle within the stage even when pointer capture takes the
       // pointer outside it. The artwork's extents get a second clamp.
-      drag.target = {
+      const target = {
         x: bounded(point.x, 0, size.width),
         y: bounded(point.y, 0, size.height),
       };
+      if (haul) haul.target = target;
+      if (!drag) return;
+      drag.target = target;
       if (layoutEditing) {
         setPose(drag.item, {
           ...poseOf(drag.item.object.id, drag.item.body),
@@ -233,9 +275,34 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
 
     endDrag,
 
+    lasso(rect, ids) {
+      if (disposed || layoutEditing) return;
+      releaseLasso();
+      rope = tieRope(rect, ids.flatMap((id) => byId.get(id)?.body ?? []));
+      Composite.add(engine.world, [...rope.bodies, ...rope.links]);
+    },
+
+    releaseLasso,
+
+    touchesLasso(point, reach) {
+      return Boolean(rope && distanceToRope(rope, point) <= reach);
+    },
+
+    grabLasso(point) {
+      if (disposed || !rope) return false;
+      endDrag();
+      haul = { anchor: { ...point }, target: { ...point }, velocity: { x: 0, y: 0 } };
+      return true;
+    },
+
+    getLasso() {
+      return rope?.bodies.map(({ position }) => ({ x: position.x, y: position.y })) ?? null;
+    },
+
     resize(nextSize) {
       if (disposed || nextSize.width <= 0 || nextSize.height <= 0) return;
       endDrag();
+      releaseLasso();
       const previousSize = size;
       size = { ...nextSize };
       for (const item of items) {
@@ -251,6 +318,7 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
     dispose() {
       if (disposed) return;
       endDrag();
+      releaseLasso();
       disposed = true;
       Composite.clear(engine.world, false);
       Engine.clear(engine);
