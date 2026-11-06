@@ -11,8 +11,10 @@ import { House } from './House';
 import { sceneThings } from '../../lib/things/scene';
 import type { ThingRecord } from '../../lib/things/model';
 import type { Page } from '../../server/things/page';
+import { versionThings } from '../../server/media';
 interface Props { page: Page; things?: ThingRecord[] }
 const { page, things = [] } = Astro.props;
+const folderThings = page.source === 'folder' ? await versionThings(sceneThings(things)) : [];
 ---
 <Portfolio
   unconstrained={['content', 'post'].includes(page.source)}
@@ -24,8 +26,9 @@ const { page, things = [] } = Astro.props;
   restoreSlug={page.restoreId}
   canonicalPath={page.canonical}
   content={page.content}
+  cacheMaxAge={page.source === 'projects' ? 43200 : undefined}
 >
-  {page.source === 'folder' ? <House things={sceneThings(things)} initialFolderId={page.restoreId} editMode={Boolean(getRequestContext()?.editMode)} client:load /> :
+  {page.source === 'folder' ? <House things={folderThings} initialFolderId={page.restoreId} editMode={Boolean(getRequestContext()?.editMode)} client:load /> :
   page.source === 'projects' ? <Projects /> :
   page.source === 'experience' ? <Experience /> :
   page.source === 'github' ? <GitHubViewer client:load /> :

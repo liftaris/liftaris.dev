@@ -9,6 +9,7 @@ import {
   getInitialDefaultOpenThings,
 } from "../../lib/things/folders";
 import { PageReader } from "./PageReader";
+import { windowPageUrl } from "../../lib/house/window-url";
 
 import type { ThingSpec } from '../../lib/things/scene';
 
@@ -37,7 +38,23 @@ export function House({
   const [windowRoot, setWindowRoot] = useState<HTMLElement | null>(null);
   useEffect(() => {
     setWindowRoot(house.current?.closest('[data-window-surface]')?.querySelector<HTMLElement>(':scope > [data-window-root]') ?? null);
+    void import('winbox/src/js/winbox.js');
   }, []);
+  useEffect(() => {
+    if (editMode) return;
+    let cancelled = false;
+    const preload = () => {
+      void import('astro:prefetch').then(({ prefetch }) => {
+        if (cancelled) return;
+        for (const thing of desktopThings) {
+          if (thing.kind === 'page' && thing.href && !thing.previewUrl) prefetch(windowPageUrl(thing.href));
+        }
+      });
+    };
+    if (document.readyState === 'complete') preload();
+    else window.addEventListener('load', preload, { once: true });
+    return () => { cancelled = true; window.removeEventListener('load', preload); };
+  }, [desktopThings, editMode]);
   const close = (id: string) => setWindows(current => editMode
     ? current.filter(item => item.id !== id)
     : retain(current.map(item => item.id === id ? { ...item, open: false } : item)));

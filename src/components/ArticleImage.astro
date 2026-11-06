@@ -1,5 +1,6 @@
 ---
 import { imageUrl, imageSources } from '../lib/images';
+import { versionImage } from '../server/media';
 
 interface Props {
   node: {
@@ -71,8 +72,9 @@ if (customWidth && customHeight) {
 }
 
 const targetWidth = Math.min(renderWidth || 960, 1600);
-const src = imageUrl(rawSrc, targetWidth);
-const srcset = imageSources(rawSrc, targetWidth);
+const versionedSrc = await versionImage(rawSrc);
+const src = imageUrl(versionedSrc, targetWidth);
+const srcset = imageSources(versionedSrc, targetWidth);
 const sizes = renderWidth
   ? `(min-width: ${renderWidth}px) ${renderWidth}px, 100vw`
   : '(min-width: 960px) 960px, 100vw';

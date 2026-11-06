@@ -13,6 +13,7 @@ import "@fontsource-variable/noto-emoji";
 import "../styles/global.css";
 import { imageUrl, imageSources } from "../lib/images";
 import { isImageUrl } from "../components/clump/model";
+import { versionImage } from '../server/media';
 
 interface Props {
   title?: string;
@@ -24,6 +25,7 @@ interface Props {
   guestbook?: boolean;
   home?: boolean;
   unconstrained?: boolean;
+  cacheMaxAge?: number;
   content?: { collection: string; id: string; slug?: string | null };
 }
 const {
@@ -37,13 +39,14 @@ const {
   guestbook = false,
   home: isHome = false,
   unconstrained: isUnconstrained = false,
+  cacheMaxAge,
 } = Astro.props;
 const context = getRequestContext();
 const isPrivate = Boolean(context?.editMode || context?.preview);
-cachePublicResponse(Astro, Astro.response.headers, { privateResponse: isPrivate, window: true });
+cachePublicResponse(Astro, Astro.response.headers, { privateResponse: isPrivate, window: true, maxAge: cacheMaxAge });
 const pathname = Astro.url.pathname.replace(/\/$/, "") || "/";
 const displayTitle = windowTitle ?? title.replace(/\s*\|\s*Kaio Barbosa\s*$/, '');
-const displayIcon = windowIcon;
+const displayIcon = windowIcon ? await versionImage(windowIcon) : undefined;
 const actualRestoreSlug = restoreSlug;
 
 const isIconImage = displayIcon ? isImageUrl(displayIcon) : false;

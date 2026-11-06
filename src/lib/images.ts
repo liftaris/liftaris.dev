@@ -26,6 +26,11 @@ function isOptimizableImage(src: string): boolean {
 export function imageUrl(src: string, width: number, quality = 80): string {
   const normalized = normalizeImageSrc(src);
   if (!isOptimizableImage(normalized)) return src;
+  if (normalized.startsWith('/_media/')) {
+    const url = new URL(normalized, 'https://www.liftaris.dev');
+    url.search = new URLSearchParams({ w: String(Math.min(2400, Math.max(16, Math.round(width)))), f: 'webp', q: String(quality) }).toString();
+    return url.pathname + url.search;
+  }
   const params = new URLSearchParams({ href: normalized, w: String(Math.min(2400, Math.max(16, Math.round(width)))), f: 'webp', q: String(quality) });
   return `/_image?${params}`;
 }

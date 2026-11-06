@@ -45,6 +45,7 @@ export function HouseClump({
   const [grabId, setGrabId] = useState<string | null>(null);
   const [scale, setScale] = useState(1);
   const [size, setSize] = useState(INITIAL_SIZE);
+  const [measured, setMeasured] = useState(false);
   const bounds = useRef(INITIAL_SIZE);
   const available = useRef(INITIAL_SIZE);
   const objects = desktopObjects;
@@ -57,6 +58,7 @@ export function HouseClump({
       bounds.current = measured.size;
       setSize(bounds.current);
       setScale(measured.scale);
+      setMeasured(true);
     }
     const reduced = matchMedia("(prefers-reduced-motion: reduce)");
     const scene = createSceneEngine({ layoutEditing: Boolean(authoring.session), objects: [], size: bounds.current, reducedMotion: reduced.matches });
@@ -109,6 +111,7 @@ export function HouseClump({
     const observer = new ResizeObserver(() => {
       const next = measureViewport(element);
       if (!next) return;
+      setMeasured(true);
       setScale(next.scale);
       if (next.size.width === available.current.width && next.size.height === available.current.height) return;
       available.current = next.size;
@@ -153,6 +156,10 @@ export function HouseClump({
       engine.current = null;
     };
   }, []);
+
+  useLayoutEffect(() => {
+    if (measured) paint.current();
+  }, [measured]);
 
   useLayoutEffect(() => {
     const scene = engine.current;
@@ -249,8 +256,8 @@ export function HouseClump({
 
   return <div className="house-clump-area relative flex-1 w-full min-w-0 min-h-0 flex flex-col">
     <div ref={viewport} className="house-viewport relative flex-1 w-full min-w-0 min-h-0 overflow-auto overscroll-contain [scrollbar-width:thin] [scrollbar-color:color-mix(in_srgb,var(--color-paper)_35%,transparent)_transparent]" role="group" aria-label="Kaio’s things" aria-describedby="house-movement-help">
-      <div className="house-world-space relative mx-auto overflow-clip" style={{ width: size.width * scale, height: size.height * scale }}>
-        <div ref={world} className="house-world relative origin-top-left" style={{ width: size.width, height: size.height, transform: `scale(${scale})` }}>
+      <div className="house-world-space relative mx-auto overflow-clip" style={{ width: measured ? size.width * scale : '100%', height: measured ? size.height * scale : '100%' }}>
+        <div ref={world} className="house-world relative origin-top-left" style={{ width: measured ? size.width : '100%', height: measured ? size.height : '100%', transform: `scale(${scale})` }}>
           {objects.map((object) => {
             const opened = inspectedIds.includes(object.id);
             return (
@@ -258,7 +265,7 @@ export function HouseClump({
               <ThingControls id={object.id} name={object.name} floating />
               <button
                 type="button"
-                className="house-object group absolute top-0 left-0 flex flex-col items-center m-0 p-0 border-0 bg-transparent cursor-grab touch-none select-none [-webkit-tap-highlight-color:transparent] leading-none no-underline hover:no-underline focus:no-underline focus-visible:no-underline overflow-visible invisible data-[grabbed=true]:z-[3] data-[grabbed=true]:cursor-grabbing data-[window-open=true]:opacity-0 data-[window-open=true]:pointer-events-none outline-none hover:outline-none focus:outline-none focus-visible:outline-none"
+                className="house-object group absolute top-0 left-0 flex flex-col items-center m-0 p-0 border-0 bg-transparent cursor-grab touch-none select-none [-webkit-tap-highlight-color:transparent] leading-none no-underline hover:no-underline focus:no-underline focus-visible:no-underline overflow-visible data-[grabbed=true]:z-[3] data-[grabbed=true]:cursor-grabbing data-[window-open=true]:opacity-0 data-[window-open=true]:pointer-events-none outline-none hover:outline-none focus:outline-none focus-visible:outline-none"
                 data-object={object.id}
                 data-grabbed={grabId === object.id}
                 data-window-open={opened}
@@ -267,6 +274,11 @@ export function HouseClump({
                   width: Math.max(44, object.width),
                   height: Math.max(44, object.height),
                   fontSize: Math.max(object.width, object.height) * 0.87,
+                  ...(!measured && {
+                    left: `calc(${object.width / 2 + 5}px + ${object.spawn_x ?? .5} * max(0px, 100% - ${object.width + 10}px))`,
+                    top: `calc(${object.height / 2 + 5}px + ${object.spawn_y ?? .5} * max(0px, 100% - ${object.height + 32}px))`,
+                    transform: 'translate(-50%, -50%)',
+                  }),
                   outline:authoring.session && authoring.selected===object.id?'2px dashed #516aff':undefined,
                   outlineOffset:6,
                 }}
@@ -289,7 +301,7 @@ export function HouseClump({
                   if (!opened && !(suppressed?.id === object.id && performance.now() < suppressed.until)) onOpen(object, event.currentTarget);
                 }}
               >
-                <ThingArtwork thing={object} className="house-object-art rounded-xl" imageClassName="house-object-image" />
+                <ThingArtwork thing={object} className="house-object-art rounded-xl" imageClassName="house-object-image" eager />
                   <ThingLabel
                     name={object.name}
                     className="absolute top-full left-1/2 -translate-x-1/2 mt-[1px] w-max max-w-[100px] pointer-events-none text-paper [text-shadow:0_1px_2px_rgba(0,0,0,0.7)]"

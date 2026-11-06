@@ -11,7 +11,15 @@ bun install --frozen-lockfile
 bun run dev
 ```
 
-Worker declarations are generated before development, build, and type checking.
+This project uses the beta Cloudflare CLI (`cf`), Astro 7.4 beta, and the
+Cloudflare adapter 15 beta. `cloudflare.config.ts` is the source of truth for
+bindings, domains, scheduled triggers, and preview resources. Worker declarations
+are generated in `.cloudflare/types/` before development, build, and type checking.
+Local D1, R2, and KV data continues to use `.wrangler/state/`.
+
+Use `bun run preview` to build and serve locally. `bun run start` serves the last
+build. Build output for deployment lives in `.cloudflare/output/v0/`.
+Run `cf auth login` once before using authenticated CLI commands.
 
 Use `.dev.vars` for local `EMDASH_SETUP_KEY` and `HOUSE_OWNER_ID`. Native EmDash
 Dev bypass is available locally. Hosted administration requires the configured
@@ -36,26 +44,30 @@ Cloudflare Workers Builds handles deployment through the connected Git repositor
 Use these commands in the integration settings:
 
 - Build: `bun run build` (Workers Builds installs dependencies before this step).
-- Production deploy: `bunx wrangler deploy`.
-- Preview deploy: `bunx wrangler preview`.
+- Production deploy: `bunx cf deploy --prebuilt --mode production`.
+- Preview deploy: `bunx cf previews deploy` (builds with preview-specific bindings).
 
-Wrangler uses the Astro-generated configuration in `dist/server/wrangler.json`.
-For a manual production deployment, `bun run deploy` builds and runs Wrangler.
+Update both deployment commands in the Workers Builds integration when adopting
+this migration. The production command reuses the output from the build step;
+previews rebuild with `isPreview: true` so production resources are never selected.
+For a manual production deployment, `bun run deploy` builds and deploys with `cf`.
+Validate production uploads without publishing with
+`bunx cf deploy --prebuilt --mode production --dry-run` after a build.
 EmDash runtime migrations remain automatic. Deployment does not run a separate
 migration or cache-warming script; the performance tools below are optional.
 
-Previews use isolated database, media, and session bindings. Deploying code does
-not migrate preview content to production. Set `EMDASH_SETUP_KEY` in Previews Base
-using `bunx wrangler preview base-config secret put EMDASH_SETUP_KEY` before creating
-previews. Do not add an explicit `type: "inherit"` secret binding or pass
-`--ignore-base-config`: inheritance requires an existing deployment and fails with
-error 10222 on the first upload. Wrangler preserves existing Preview secrets on
-subsequent deployments. Base secret changes apply only to new previews; use
-`bunx wrangler preview secret put EMDASH_SETUP_KEY --name PREVIEW_NAME` to update
-an existing deployed preview.
+Previews use isolated database, media, and session bindings, and no production
+custom domains or scheduled triggers. Deploying code does not migrate preview content to production.
+`EMDASH_SETUP_KEY` must already be set in Previews Base before creating previews.
+Existing Preview secrets remain in Cloudflare; the local configuration declares
+the required secret without copying its value. Retain `wrangler.jsonc` during the
+transition for existing Workers Builds commands and Preview secret management.
+It is a legacy snapshot: `cf` reads only `cloudflare.config.ts`. Remove it after
+the first successful `cf` deployment and the hosted integration has switched.
 
-The `House` deletion declaration retires the unused Durable Object store on
-deployment. Local notes live under ignored `.ignore/` and `docs/`.
+The retired `House` Durable Object has no remaining namespace, so its deletion
+tombstone has been removed from the cf configuration. Local notes live under
+ignored `.ignore/` and `docs/`.
 
 `bun run perf:measure --samples 5 --out .emdash/performance.json` records header
 latency, response size, cache status, edge location and server timings for sitemap
@@ -65,17 +77,26 @@ URLs, window variants and GitHub data. Run from several regions for CDN comparis
 concurrency and checks their second responses. Local runs verify headers and
 rendering; only deployed runs can verify HIT/UPDATING and publication invalidation.
 
-Public pages (including desktop window URLs) and the sitemap stay fresh at the
-edge for one day, then allow seven days of stale-while-revalidate. Browsers use
-one hour of freshness plus one day of SWR, avoiding a blocking network request
-on every window reopen. EmDash invalidates the collection/settings tags on CMS
-changes; the Cloudflare adapter purges those edge entries. Browser copies cannot
-be purged, so returning visitors can briefly see older content after an edit.
-Purges, new deployments, eviction, and expired stale windows can still cause a
-blocking first render. GitHub/npm project counters remain server-rendered with
-their existing 12-hour data cache; page SWR covers their background refresh.
-Private and preview responses remain uncached. GitHub contributions use a
-separate one-hour policy with one day of SWR (60 seconds without SWR on fallback).
+Public pages, desktop window URLs, and the sitemap cache at the edge for seven
+days. Browsers revalidate HTML so CMS invalidation can reach returning visitors.
+EmDash invalidates collection and settings tags on writes. Media writes and
+additional CMS mutation routes invalidate the site's media-reference tag.
+Seven days also bounds stale pages if a purge fails or hits Cloudflare's rate limit.
+The Projects page and its GitHub/npm data use twelve-hour caches. GitHub
+contributions retain their separate one-hour policy with one day of SWR,
+or 60 seconds without SWR on fallback. Private and preview responses stay uncached.
+
+CMS images use `/_media/<etag>/<key>` URLs with one-year immutable caching.
+`src/server/media.ts` retains each published image version under
+`.liftaris-versions/` in R2 before emitting its URL. Replacement creates a new
+URL; already-open pages can still load the old bytes and resized variants.
+These retained copies survive deletion of the CMS original and have no automatic
+cleanup. Unversioned CMS URLs keep EmDash's mutable-image policy.
+
+The cache policy follows [EmDash's route-caching guidance](https://docs.emdashcms.com/deployment/route-caching/).
+Version retention and media invalidation fill gaps in EmDash's built-in behavior.
+Purges, deployments, eviction, and new cookie variants can still require a cold
+render. Window-document prefetch and eager desktop artwork reduce click-time loading.
 
 To move Pixel Art's embedded PNGs to managed media, log in with the CLI (or set
 `EMDASH_TOKEN` to an owner token) and run `bun run media:migrate-inline --origin https://www.liftaris.dev --id

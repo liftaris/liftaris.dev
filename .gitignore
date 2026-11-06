@@ -37,6 +37,7 @@ yarn-error.log*
 
 # Cloudflare
 .wrangler/
+.cloudflare/
 .dev.vars*
 .alchemy/
 

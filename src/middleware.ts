@@ -3,6 +3,8 @@ import { withThingReads } from "./server/things/request-cache";
 import { finalizeResponseCache } from "./server/things/page-cache";
 import { env } from "cloudflare:workers";
 import { cmsVisitorGuard, visitorDb } from "./server/house/visitor";
+import { MEDIA_CACHE_TAG } from './server/cache-tags';
+import { GIFT_API } from './lib/house/gift-api';
 
 // Protect first-admin registration on the public site until the owner creates
 // their passkey. Afterwards EmDash's normal session authentication takes over.
@@ -67,6 +69,41 @@ async function matches(expected: string, actual: string) {
 }
 
 export const onRequest = sequence(
-  defineMiddleware((context, next) => withThingReads(async () => finalizeResponseCache(context, await next()))),
+  defineMiddleware((context, next) => withThingReads(async () => {
+    const path = context.url.pathname;
+    const mutation = Boolean(context.locals.user) && !['GET', 'HEAD', 'OPTIONS'].includes(context.request.method) &&
+        /^\/_emdash\/api\/(?:media|revisions|relations|plugins|import|mcp)(?:\/|$)/.test(path) &&
+        !path.startsWith(GIFT_API);
+    const invalidate = () => context.cache.invalidate({ tags: [MEDIA_CACHE_TAG] });
+    let response: Response;
+    try {
+      response = await next();
+    } finally {
+      if (mutation) await invalidate();
+    }
+    if (mutation && response.body && /(?:text\/event-stream|application\/(?:x-ndjson|ndjson))/.test(response.headers.get('Content-Type') ?? '')) {
+      const reader = response.body.getReader();
+      const body = new ReadableStream<Uint8Array>({
+        async pull(controller) {
+          try {
+            const { done, value } = await reader.read();
+            if (done) {
+              await invalidate();
+              controller.close();
+            } else controller.enqueue(value);
+          } catch (error) {
+            await invalidate();
+            controller.error(error);
+          }
+        },
+        async cancel(reason) {
+          try { await reader.cancel(reason); }
+          finally { await invalidate(); }
+        },
+      });
+      response = new Response(body, response);
+    }
+    return finalizeResponseCache(context, response);
+  })),
   applicationMiddleware,
 );

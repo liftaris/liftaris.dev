@@ -2,7 +2,7 @@ import cloudflare from "@astrojs/cloudflare";
 import { cacheCloudflare } from "@astrojs/cloudflare/cache";
 import react from "@astrojs/react";
 import tailwind from "@tailwindcss/vite";
-import { d1, r2, kvCache } from "@emdash-cms/cloudflare";
+import { d1, kvCache } from "@emdash-cms/cloudflare";
 import { defineConfig } from "astro/config";
 import emdash from "emdash/astro";
 import { fileURLToPath } from "node:url";
@@ -10,7 +10,11 @@ import { fileURLToPath } from "node:url";
 export default defineConfig({
   site: "https://www.liftaris.dev",
   output: "server",
-  adapter: cloudflare({ imageService: "cloudflare-binding" }),
+  adapter: cloudflare({
+    imageService: "cloudflare-binding",
+    // Keep the existing local D1, R2, and KV data after the CLI migration.
+    persistState: { path: ".wrangler/state" },
+  }),
   cache: {
     provider: cacheCloudflare(),
   },
@@ -40,7 +44,10 @@ export default defineConfig({
   integrations: [react(), emdash({
     siteUrl: "https://www.liftaris.dev",
     database: d1({ binding: "DB", session: "auto" }),
-    storage: r2({ binding: "MEDIA" }),
+    storage: {
+      entrypoint: fileURLToPath(new URL("./src/server/media-storage.ts", import.meta.url)),
+      config: {},
+    },
     objectCache: kvCache({ binding: "CONTENT_CACHE", defaultTtl: 3600 }),
     toolbar: "client",
     admin: { locales: ["en"] },

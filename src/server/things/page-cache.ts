@@ -1,14 +1,15 @@
 import type { APIContext } from 'astro';
+import { MEDIA_CACHE_TAG } from '../cache-tags';
 
 // These tags match EmDash's native publish/settings invalidation. Collection tags
 // cover folder moves, Post placements, navigation, and initially empty listings.
-const PAGE_TAGS = ['things', 'posts', 'emdash:settings'];
+const PAGE_TAGS = ['things', 'posts', 'emdash:settings', MEDIA_CACHE_TAG];
 type CacheContext = Pick<APIContext, 'request' | 'cache' | 'locals'>;
 
 export function cachePublicResponse(
   context: CacheContext,
   headers: Headers,
-  { privateResponse = false, window = false, maxAge = 86400, swr = 604800, tags = PAGE_TAGS } = {},
+  { privateResponse = false, window = false, maxAge = 604800, swr = 0, tags = PAGE_TAGS } = {},
 ): void {
   const { request, cache } = context;
   const url = new URL(request.url);
@@ -30,12 +31,7 @@ export function cachePublicResponse(
     return;
   }
   cache.set({ maxAge, swr, tags });
-  // EmDash purges tagged edge entries on content changes, but cannot purge a
-  // visitor's browser. Allow one hour of browser freshness and one day of SWR
-  // for repeat window opens; honor shorter policies (including error fallbacks).
-  const browserMaxAge = Math.min(maxAge, 3600);
-  const browserSwr = Math.min(swr, 86400);
-  headers.set('Cache-Control', `public, max-age=${browserMaxAge}${browserSwr > 0 ? `, stale-while-revalidate=${browserSwr}` : ''}`);
+  headers.set('Cache-Control', 'public, max-age=0, must-revalidate');
 }
 
 /** Run after rendering so layouts cannot re-enable caching on errors/redirects. */

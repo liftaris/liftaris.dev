@@ -17,7 +17,8 @@
   },
   "include": [
     ".astro/types.d.ts",
-    "**/*"
+    "**/*",
+    ".cloudflare/types/**/*.d.ts"
   ],
   "exclude": [
     "tools",
@@ -28,6 +29,8 @@
     "out",
     ".next",
     ".wrangler",
-    ".ignore"
+    ".ignore",
+    ".cloudflare/output",
+    "worker-configuration.d.ts"
   ]
 }

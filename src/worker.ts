@@ -1,6 +1,7 @@
 import handler, { createScheduledHandler } from "@emdash-cms/cloudflare/worker";
+import { publicReadRequest } from "./server/public-read";
+import { serveVersionedMedia } from "./server/media";
 
-// EmDash and Astro own media response headers, including mutable image revalidation.
 export default {
   ...handler,
   async fetch(request, env, ctx) {
@@ -19,7 +20,9 @@ export default {
       });
     }
     // EmDash's exported type makes fetch optional; its Astro handler provides it.
-    const response = await handler.fetch!(request, env, ctx);
+    const response = url.pathname.startsWith('/_media/')
+      ? await serveVersionedMedia(request)
+      : await handler.fetch!(publicReadRequest(request), env, ctx);
     if (response.status === 101) return response;
     // Workers Cache omits hostname and runs before fetch. Keep cached www
     // responses from bypassing the apex redirect; preserve existing variants.

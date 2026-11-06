@@ -75,7 +75,7 @@ function validPath(path: string): string {
   if (!/^\/(?:[a-z0-9][a-z0-9_-]*)(?:\/[a-z0-9][a-z0-9_-]*)*$/.test(path)) throw new Error('Use a site path such as /writing/my-post, with lowercase URL segments.');
   return path;
 }
-const RESERVED = new Set(['api', '_emdash', '_astro', '_image', 'admin', 'blog', 'things-preview', '404']);
+const RESERVED = new Set(['api', '_emdash', '_astro', '_image', '_media', 'admin', 'blog', 'things-preview', '404']);
 export function validateGraph(all: readonly ThingRecord[]): void {
   const routes = new Map<string, string>();
   const visit = (thing: ThingRecord, seen: Set<string>) => {
