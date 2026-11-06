@@ -17,6 +17,7 @@ const INITIAL_SIZE = { width: 500, height: 600 };
 const ROPE_WIDTH = 8;
 /** Screen pixels from the rope's center line that still grab it. */
 const ROPE_REACH = ROPE_WIDTH / 2 + 10;
+const DOUBLE_CLICK_MS = 400;
 
 /** Leaves the drawn rope behind as a ghost that fades out. */
 function letGo(path: SVGPathElement | null) {
@@ -56,6 +57,7 @@ export function HouseClump({
   const engine = useRef<SceneEngine | null>(null);
   const grabbed = useRef<Grab | null>(null);
   const marquee = useRef<Marquee | null>(null);
+  const lastClick = useRef<{ time: number; point: Point } | null>(null);
   const marqueeBox = useRef<SVGRectElement>(null);
   const rope = useRef<SVGPathElement>(null);
   const start = useRef<() => void>(() => {});
@@ -334,7 +336,14 @@ export function HouseClump({
         x >= rect.x && x <= rect.x + rect.width && y >= rect.y && y <= rect.y + rect.height
         && nodes.current.get(id)?.dataset.windowOpen !== "true");
       scene.lasso(rect, inside.map(({ id }) => id));
-    } else scene.releaseLasso();
+    } else {
+      scene.releaseLasso();
+      const previous = lastClick.current;
+      const double = previous && event.timeStamp - previous.time < DOUBLE_CLICK_MS
+        && Math.hypot(selection.origin.x - previous.point.x, selection.origin.y - previous.point.y) * scale < 10;
+      lastClick.current = double ? null : { time: event.timeStamp, point: selection.origin };
+      if (double) scene.scatter();
+    }
     paint.current();
     start.current();
   };

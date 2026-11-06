@@ -68,6 +68,8 @@ export interface SceneEngine {
   grabLasso(point: Point): boolean;
   /** The rope's outline, or null when no lasso is tied. */
   getLasso(): Point[] | null;
+  /** Pushes things apart, hardest where they're closest together. */
+  scatter(): void;
   resize(size: Size): void;
   dispose(): void;
 }

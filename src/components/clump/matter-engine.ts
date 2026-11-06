@@ -14,6 +14,10 @@ import {
 const { Body, Composite, Constraint, Engine, Sleeping } = Matter;
 const EDGE_PADDING = 5;
 const FIXED_STEP = 1000 / 60;
+/** Things farther apart than this don't push each other. */
+const SCATTER_RANGE = 220;
+/** The fastest a scatter sends a thing, in pixels per step. */
+const SCATTER_SPEED = 18;
 
 function bounded(value: number, low: number, high: number): number {
   return low > high ? (low + high) / 2 : Math.max(low, Math.min(high, value));
@@ -297,6 +301,44 @@ export function createSceneEngine(options: EngineOptions): SceneEngine {
 
     getLasso() {
       return rope?.bodies.map(({ position }) => ({ x: position.x, y: position.y })) ?? null;
+    },
+
+    scatter() {
+      if (disposed || layoutEditing) return;
+      const movable = items.filter(({ body }) => !body.isStatic);
+      const pushes = movable.map(({ body }, index) => movable.reduce((push, { body: other }, otherIndex) => {
+        if (other === body) return push;
+        const dx = body.position.x - other.position.x;
+        const dy = body.position.y - other.position.y;
+        const distance = Math.hypot(dx, dy);
+        if (distance >= SCATTER_RANGE) return push;
+        // Stacked things have no direction between them; fan them out by index.
+        const angle = (index - otherIndex) * 2.39996;
+        const direction = distance > 0 ? { x: dx / distance, y: dy / distance } : { x: Math.cos(angle), y: Math.sin(angle) };
+        const closeness = 1 - distance / SCATTER_RANGE;
+        return { x: push.x + direction.x * closeness, y: push.y + direction.y * closeness };
+      }, { x: 0, y: 0 }));
+      movable.forEach((item, index) => {
+        const push = pushes[index];
+        const strength = Math.hypot(push.x, push.y);
+        if (strength === 0) return;
+        const direction = { x: push.x / strength, y: push.y / strength };
+        // Air friction stops a thing after about speed / frictionAir pixels,
+        // so near an edge the push only carries it as far as the wall.
+        const { x, y } = item.body.position;
+        const halfWidth = item.object.width / 2 + EDGE_PADDING;
+        const halfHeight = item.object.height / 2 + EDGE_PADDING;
+        const room = Math.min(
+          direction.x > 0 ? (size.width - halfWidth - x) / direction.x : direction.x < 0 ? (halfWidth - x) / direction.x : Infinity,
+          direction.y > 0 ? (size.height - halfHeight - 22 - y) / direction.y : direction.y < 0 ? (halfHeight - y) / direction.y : Infinity,
+        );
+        const speed = Math.min(Math.min(1, strength) * SCATTER_SPEED, Math.max(0, room) * item.body.frictionAir);
+        Body.setVelocity(item.body, {
+          x: item.body.velocity.x + direction.x * speed,
+          y: item.body.velocity.y + direction.y * speed,
+        });
+        wake(item);
+      });
     },
 
     resize(nextSize) {
