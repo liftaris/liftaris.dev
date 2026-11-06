@@ -1,6 +1,7 @@
 import { imageUrl } from '../../lib/images';
 export type Point = { x: number; y: number };
 export type Size = { width: number; height: number };
+export type Rect = Point & Size;
 export type Pose = Point & { id: string; angle: number };
 
 import type { CSSProperties } from "react";
@@ -59,6 +60,16 @@ export interface SceneEngine {
   beginDrag(id: string, point: Point): boolean;
   moveDrag(point: Point): void;
   endDrag(cancel?: boolean): void;
+  /** Ties a rope around `rect` that cinches the given Things together, replacing any current lasso. */
+  lasso(rect: Rect, ids: readonly string[]): void;
+  releaseLasso(): void;
+  touchesLasso(point: Point, reach: number): boolean;
+  /** Starts carrying the lasso and everything in it; continue with moveDrag and endDrag. */
+  grabLasso(point: Point): boolean;
+  /** The rope's outline, or null when no lasso is tied. */
+  getLasso(): Point[] | null;
+  /** Pushes things apart, hardest where they're closest together. */
+  scatter(): void;
   resize(size: Size): void;
   dispose(): void;
 }

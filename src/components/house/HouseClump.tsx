@@ -5,12 +5,29 @@ import { spawnPoint, normalizedPoint } from '../../lib/things/model';
 import { useLayoutEffect, useRef, useState } from "react";
 import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
 import { createSceneEngine } from "../clump/matter-engine";
-import type { Point, SceneEngine } from "../clump/model";
+import type { Point, Rect, SceneEngine } from "../clump/model";
 import { ThingArtwork } from "./ThingArtwork";
 import { ThingLabel } from "./ThingLabel";
 
 type Grab = { id: string; point: Point; origin: Point; moved: boolean; pointerId?: number };
+type Marquee =
+  | { kind: "select"; pointerId: number; origin: Point; rect: Rect | null }
+  | { kind: "haul"; pointerId: number };
 const INITIAL_SIZE = { width: 500, height: 600 };
+const ROPE_WIDTH = 8;
+/** Screen pixels from the rope's center line that still grab it. */
+const ROPE_REACH = ROPE_WIDTH / 2 + 10;
+const DOUBLE_CLICK_MS = 400;
+
+/** Leaves the drawn rope behind as a ghost that fades out. */
+function letGo(path: SVGPathElement | null) {
+  if (!path?.hasAttribute("d")) return;
+  const ghost = path.cloneNode() as SVGPathElement;
+  path.removeAttribute("d");
+  path.parentNode?.insertBefore(ghost, path);
+  const remove = () => ghost.remove();
+  ghost.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, easing: "ease-out" }).finished.then(remove, remove);
+}
 
 function measureViewport(element: HTMLDivElement) {
   // Measure the outer box in CSS pixels, then account for artwork scaling.
@@ -39,6 +56,10 @@ export function HouseClump({
   const nodes = useRef(new Map<string, HTMLButtonElement>());
   const engine = useRef<SceneEngine | null>(null);
   const grabbed = useRef<Grab | null>(null);
+  const marquee = useRef<Marquee | null>(null);
+  const lastClick = useRef<{ time: number; point: Point } | null>(null);
+  const marqueeBox = useRef<SVGRectElement>(null);
+  const rope = useRef<SVGPathElement>(null);
   const start = useRef<() => void>(() => {});
   const paint = useRef<() => void>(() => {});
   const clickSuppressed = useRef<{ id: string; until: number } | null>(null);
@@ -81,6 +102,9 @@ export function HouseClump({
         element.dataset.y = String(pose.y);
         element.dataset.angle = String(pose.angle);
       }
+      const outline = scene.getLasso();
+      if (outline) rope.current?.setAttribute("d", `M${outline.map(({ x, y }) => `${x.toFixed(1)} ${y.toFixed(1)}`).join("L")}Z`);
+      else letGo(rope.current);
     };
     const hidden = () => document.hidden || Boolean(element.closest('[data-persisted-desktop]') && !document.documentElement.classList.contains('on-home'));
     const tick = (now: number) => {
@@ -254,10 +278,96 @@ export function HouseClump({
     start.current();
   };
 
+  const marqueeDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (authoring.session || event.button !== 0 || event.pointerType === "touch" || marquee.current || grabbed.current) return;
+    if ((event.target as Element).closest("button, a, input, textarea, select, label")) return;
+    const scene = engine.current;
+    if (!scene) return;
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const point = position(event);
+    if (scene.touchesLasso(point, ROPE_REACH / scale) && scene.grabLasso(point)) {
+      marquee.current = { kind: "haul", pointerId: event.pointerId };
+      event.currentTarget.style.cursor = "grabbing";
+      start.current();
+      return;
+    }
+    marquee.current = { kind: "select", pointerId: event.pointerId, origin: point, rect: null };
+  };
+
+  const marqueeMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const selection = marquee.current;
+    const box = marqueeBox.current;
+    const point = position(event);
+    if (!selection) {
+      const onRope = !(event.target as Element).closest("button") && engine.current?.touchesLasso(point, ROPE_REACH / scale);
+      event.currentTarget.style.cursor = onRope ? "grab" : "";
+      return;
+    }
+    if (!box || selection.pointerId !== event.pointerId) return;
+    if (selection.kind === "haul") {
+      engine.current?.moveDrag(point);
+      start.current();
+      return;
+    }
+    const { origin } = selection;
+    const x = Math.max(0, Math.min(size.width, point.x));
+    const y = Math.max(0, Math.min(size.height, point.y));
+    if (!selection.rect && Math.hypot(x - origin.x, y - origin.y) * scale < 5) return;
+    selection.rect = { x: Math.min(origin.x, x), y: Math.min(origin.y, y), width: Math.abs(x - origin.x), height: Math.abs(y - origin.y) };
+    box.setAttribute("x", String(selection.rect.x));
+    box.setAttribute("y", String(selection.rect.y));
+    box.setAttribute("width", String(selection.rect.width));
+    box.setAttribute("height", String(selection.rect.height));
+    box.setAttribute("visibility", "visible");
+  };
+
+  const marqueeEnd = (event: ReactPointerEvent<HTMLDivElement>, cancel = false) => {
+    const selection = marquee.current;
+    if (selection?.pointerId !== event.pointerId) return;
+    marquee.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    const scene = engine.current;
+    if (selection.kind === "haul") {
+      event.currentTarget.style.cursor = "grab";
+      scene?.endDrag(cancel);
+      start.current();
+      return;
+    }
+    marqueeBox.current?.setAttribute("visibility", "hidden");
+    if (!scene || cancel) return;
+    letGo(rope.current);
+    const { rect } = selection;
+    if (rect) {
+      const inside = scene.getPoses().filter(({ id, x, y }) =>
+        x >= rect.x && x <= rect.x + rect.width && y >= rect.y && y <= rect.y + rect.height
+        && nodes.current.get(id)?.dataset.windowOpen !== "true");
+      scene.lasso(rect, inside.map(({ id }) => id));
+    } else {
+      scene.releaseLasso();
+      const previous = lastClick.current;
+      const double = previous && event.timeStamp - previous.time < DOUBLE_CLICK_MS
+        && Math.hypot(selection.origin.x - previous.point.x, selection.origin.y - previous.point.y) * scale < 10;
+      lastClick.current = double ? null : { time: event.timeStamp, point: selection.origin };
+      if (double) scene.scatter();
+    }
+    paint.current();
+    start.current();
+  };
+
   return <div className="house-clump-area relative flex-1 w-full min-w-0 min-h-0 flex flex-col">
     <div ref={viewport} className="house-viewport relative flex-1 w-full min-w-0 min-h-0 overflow-auto overscroll-contain [scrollbar-width:thin] [scrollbar-color:color-mix(in_srgb,var(--color-paper)_35%,transparent)_transparent]" role="group" aria-label="Kaio’s things" aria-describedby="house-movement-help">
       <div className="house-world-space relative mx-auto overflow-clip" style={{ width: measured ? size.width * scale : '100%', height: measured ? size.height * scale : '100%' }}>
-        <div ref={world} className="house-world relative origin-top-left" style={{ width: measured ? size.width : '100%', height: measured ? size.height : '100%', transform: `scale(${scale})` }}>
+        <div
+          ref={world}
+          className="house-world relative origin-top-left"
+          style={{ width: measured ? size.width : '100%', height: measured ? size.height : '100%', transform: `scale(${scale})` }}
+          onPointerDown={marqueeDown}
+          onPointerMove={marqueeMove}
+          onPointerUp={(event) => marqueeEnd(event)}
+          onPointerCancel={(event) => marqueeEnd(event, true)}
+          onLostPointerCapture={(event) => marqueeEnd(event, true)}
+        >
           {objects.map((object) => {
             const opened = inspectedIds.includes(object.id);
             return (
@@ -309,6 +419,17 @@ export function HouseClump({
               </button></Fragment>
             );
           })}
+          <svg
+            className="house-lasso absolute inset-0 size-full overflow-visible pointer-events-none z-[4] [filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.5))]"
+            fill="none"
+            stroke="white"
+            strokeWidth={ROPE_WIDTH / scale}
+            strokeDasharray={`${18 / scale} ${12 / scale}`}
+            aria-hidden="true"
+          >
+            <rect ref={marqueeBox} visibility="hidden" />
+            <path ref={rope} strokeLinejoin="round" />
+          </svg>
         </div>
       </div>
       <p id="house-movement-help" className="house-sr-only sr-only">Drag to move things in your own arrangement. With a keyboard, arrows move, Enter places, and Escape cancels. Press Enter on a thing to open its window.</p>
